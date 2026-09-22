@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: culinary_postgres
+    environment:
+      POSTGRES_DB: culinary_blog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    container_name: culinary_redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: culinary_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  seq:
+    image: datalust/seq:latest
+    container_name: culinary_seq
+    environment:
+      ACCEPT_EULA: Y
+    ports:
+      - "5341:80"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: culinary_mailhog
+    ports:
+      - "8025:8025" # UI
+      - "1025:1025" # SMTP
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

@@ -1,0 +1,27 @@
+name: Backend CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore backend/CulinaryBlog.slnx
+
+      - name: Build
+        run: dotnet build backend/CulinaryBlog.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test backend/CulinaryBlog.slnx --no-build --verbosity normal
