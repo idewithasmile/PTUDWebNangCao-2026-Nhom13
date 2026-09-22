@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- NOTE: CONS-001 requires Domain to reference no NuGet outside BCL.
+       ApplicationUser inherits IdentityUser<string>. In .NET 10 the
+       IdentityUser type lives in Microsoft.AspNetCore.Identity.EntityFrameworkCore,
+       so this minimal reference is required for compilation. No EF Core
+       DbContext / validation packages here. If strict CONS-001 compliance is
+       required, move ApplicationUser to Infrastructure as a future refactor. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>
