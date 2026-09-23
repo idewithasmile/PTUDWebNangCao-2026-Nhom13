@@ -172,17 +172,17 @@ culinary-blog/
 | Tuần | Module | FR/NFR | Phụ trách chính | Hỗ trợ | Phụ thuộc trước |
 |---|---|---|---|---|---|
 | 0 | Scaffold codebase | — | Cả 4 người review kết quả AI Agent tạo, chạy thử local | — | — |
-| 1 | Domain entities + EF configs (nếu scaffold chưa đủ chi tiết) | Ch.7 | B, C, D (song song) | A | Scaffold |
-| 1 | **FR-AUTH** (đăng ký, login, Google OAuth, refresh, logout, profile) | 7 FR | **A** | — | Scaffold |
-| 2 | **FR-CAT** (CRUD danh mục, cần role Admin) | 5 FR | **B** | A (review) | FR-AUTH (role check) |
-| 2 | **FR-FILE** (upload/xóa ảnh trên MinIO) | 2 FR | **D** | — | Scaffold |
-| 2–3 | **FR-RCP-001→004** (list, detail, tạo, cập nhật recipe) | 4 FR | **C** | — | FR-CAT (FK CategoryId), FR-AUTH |
-| 3–4 | **FR-RCP-005→007** (publish/unpublish, archive, xóa) | 3 FR | **C** | — | FR-RCP-001→004 |
-| 3–4 | **FR-RCP-008→010** (ảnh, nguyên liệu, bước) | 3 FR | **D** | — | FR-FILE, FR-RCP-001→004 |
-| 4 | **FR-SRCH** (full-text search, filter, sort, pagination) | 4 FR | **B** | C | FR-RCP đã có data thật để test search |
-| 2–5 | **FR-OBS** (health check, structured logging, tracing) — làm song song, xuyên suốt | 3 FR | **A** | — | Scaffold (health check cơ bản đã có sẵn) |
-| 5 | **FR-JOB** (welcome email, resize ảnh, sitemap) | 3 FR | **D** | A | FR-AUTH (trigger email), FR-RCP-008 (trigger resize), FR-CAT+RCP (sitemap) |
-| 6 | **NFR-SEO** hoàn thiện (JSON-LD Schema.org, meta/OG tags, sitemap route, slug redirect) | 4 NFR | **B, C** | — | FR-RCP, FR-CAT hoàn thiện |
+| 1 | Domain entities + EF configs (nếu scaffold chưa đủ chi tiết) | Ch.7 | Trần Ngọc Bảo Phước, Nguyễn Thành Minh, Đặng Nam Huy (song song) | Trịnh Trung Hiếu | Scaffold |
+| 1 | **FR-AUTH** (đăng ký, login, Google OAuth, refresh, logout, profile) | 7 FR | **Trịnh Trung Hiếu** | — | Scaffold |
+| 2 | **FR-CAT** (CRUD danh mục, cần role Admin) | 5 FR | **Trần Ngọc Bảo Phước** | Trịnh Trung Hiếu (review) | FR-AUTH (role check) |
+| 2 | **FR-FILE** (upload/xóa ảnh trên MinIO) | 2 FR | **Đặng Nam Huy** | — | Scaffold |
+| 2–3 | **FR-RCP-001→004** (list, detail, tạo, cập nhật recipe) | 4 FR | **Nguyễn Thành Minh** | — | FR-CAT (FK CategoryId), FR-AUTH |
+| 3–4 | **FR-RCP-005→007** (publish/unpublish, archive, xóa) | 3 FR | **Nguyễn Thành Minh** | — | FR-RCP-001→004 |
+| 3–4 | **FR-RCP-008→010** (ảnh, nguyên liệu, bước) | 3 FR | **Đặng Nam Huy** | — | FR-FILE, FR-RCP-001→004 |
+| 4 | **FR-SRCH** (full-text search, filter, sort, pagination) | 4 FR | **Trần Ngọc Bảo Phước** | Nguyễn Thành Minh | FR-RCP đã có data thật để test search |
+| 2–5 | **FR-OBS** (health check, structured logging, tracing) — làm song song, xuyên suốt | 3 FR | **Trịnh Trung Hiếu** | — | Scaffold (health check cơ bản đã có sẵn) |
+| 5 | **FR-JOB** (welcome email, resize ảnh, sitemap) | 3 FR | **Đặng Nam Huy** | Trịnh Trung Hiếu | FR-AUTH (trigger email), FR-RCP-008 (trigger resize), FR-CAT+RCP (sitemap) |
+| 6 | **NFR-SEO** hoàn thiện (JSON-LD Schema.org, meta/OG tags, sitemap route, slug redirect) | 4 NFR | **Trần Ngọc Bảo Phước, Nguyễn Thành Minh** | — | FR-RCP, FR-CAT hoàn thiện |
 | 6–7 | Hardening: NFR-SEC, NFR-PERF, test còn thiếu, viết tài liệu bảo vệ đồ án | — | Cả 4 người | — | Tất cả module |
 
 ## Ghi chú phụ thuộc quan trọng
