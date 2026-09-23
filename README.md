@@ -149,3 +149,4 @@ culinary-blog/
 - **Hangfire Dashboard (Quản lý Job):** `http://localhost:5000/hangfire` (Cần role Admin)
 - **MinIO Console (Quản lý File):** `http://localhost:9001` (User/Pass trong docker-compose)
 - **Seq Log Dashboard:** `http://localhost:5341`
+ 
