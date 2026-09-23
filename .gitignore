@@ -24,8 +24,9 @@ yarn-debug.log*
 *.env
 *.env.*
 !*.env.example
-# Nếu muốn ẩn connection string cá nhân thì bỏ comment dòng dưới:
-# appsettings.Development.json
+
+## Documents & Heavy binary files
+*.pdf
 
 ## OS files
 .DS_Store
