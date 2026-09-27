@@ -3,16 +3,6 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CulinaryBlog.Domain.Entities;
 
-public class Category : BaseEntity
-{
-    public string Name { get; set; } = string.Empty;
-    public string Slug { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? ImageUrl { get; set; }
-    public int OrderIndex { get; set; } = 0;
-
-    public ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
-}
 
 // Kế thừa IdentityUser (key mặc định là string) nhưng tuân thủ SPEC: DisplayName, Bio (không dùng FullName)
 // NOTE: dùng IdentityUser non-generic vì IdentityDbContext<TUser> trong .NET 10

@@ -42,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IFileStorageService, MinioFileStorageService>();
         services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         // Hangfire setup với PostgreSQL
         services.AddHangfire(h => h.UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));

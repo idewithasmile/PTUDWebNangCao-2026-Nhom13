@@ -58,6 +58,7 @@ public static class CulinaryBlogSeeder
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
     {
+        Randomizer.Seed = new Random(SEED);
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
