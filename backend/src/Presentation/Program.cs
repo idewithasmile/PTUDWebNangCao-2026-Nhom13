@@ -59,7 +59,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+});
 
 // CORS
 builder.Services.AddCors(options =>
@@ -113,3 +116,5 @@ v1.MapGroup("/recipes").MapRecipesEndpoints();
 app.MapHealthChecks();
 
 app.Run();
+
+public partial class Program { }
