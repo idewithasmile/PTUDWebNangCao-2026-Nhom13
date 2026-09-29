@@ -10,6 +10,11 @@ public class RecipeRepository(CulinaryBlogDbContext dbContext) : BaseRepository<
     public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         return Context.Recipes
+            .Include(r => r.Steps)
+            .Include(r => r.Ingredients)
+            .Include(r => r.Images)
+            .Include(r => r.Category)
+            .Include(r => r.Author)
             .FirstOrDefaultAsync(r => r.Slug == slug, ct);
     }
 
