@@ -165,20 +165,20 @@ graph TD
 
 ---
 
-### 8. FR-RCP-007: Xóa Vĩnh viễn Công thức [Author-Owner/Admin]
+### 8. FR-RCP-007: Xóa Công thức (Soft Delete) [Author-Owner/Admin]
 - **Mã yêu cầu:** `FR-RCP-007` | **Ưu tiên:** `Must Have` | **Tác nhân:** Tác giả sở hữu / Admin
 - **Mô tả hoạt động:**
-  - Xóa vĩnh viễn (Hard Delete) bản ghi công thức và tự động xóa lan truyền (Cascade Delete) các entity con (`RecipeStep`, `RecipeIngredient`, `RecipeImage`) trong PostgreSQL.
-  - **Xử lý bất đồng bộ file vật lý:** Các file ảnh đính kèm trên MinIO S3 được đưa vào hàng đợi Hangfire Background Job (`BackgroundJob.Enqueue<IFileStorageService>(...)`) để xóa ngầm, tránh gây treo HTTP request của người dùng.
+  - **Thực hiện Soft Delete** (theo SPEC.md Mâu thuẫn 1 — Phương án A): Khi xóa công thức, hệ thống chỉ cập nhật `IsDeleted = true` và `UpdatedAt = DateTime.UtcNow`. **Tuyệt đối không dùng `DbContext.Remove()`.**
+  - Các entity con (`RecipeStep`, `RecipeIngredient`, `RecipeImage`) giữ nguyên trong DB nhưng bị ẩn nhờ Global Query Filter `.Where(x => !x.IsDeleted)` của `Recipe`.
+  - Ảnh trên MinIO **không xóa ngay lập tức** — chỉ dọn dẹp khi có tác vụ Purge định kỳ (Background Job) hoặc giữ lại cho mục đích Audit.
 - **Luồng xử lý (Happy Path):**
   1. Client gửi `DELETE /api/v1/recipes/{id:guid}`.
   2. `DeleteRecipeCommand` dispatch qua MediatR.
   3. Kiểm tra Resource-Based Authorization.
-  4. Lấy danh sách `ImageUrl` từ các `RecipeImage`.
-  5. Gọi `_unitOfWork.Recipes.Remove(recipe)` và `SaveChangesAsync()`.
-  6. Enqueue Hangfire jobs xóa các file ảnh trên MinIO bất đồng bộ.
-  7. Invalidate cache tags `"recipes"` và `$"recipe:{recipe.Slug}"`.
-  8. Trả về `HTTP 204 No Content`.
+  4. Gọi domain method `recipe.SoftDelete()` (gán `IsDeleted = true`, `UpdatedAt = UtcNow`).
+  5. `SaveChangesAsync()` — cập nhật trạng thái IsDeleted trong DB.
+  6. Invalidate cache tags `"recipes"` và `$"recipe:{recipe.Slug}"`.
+  7. Trả về `HTTP 204 No Content`.
 - **Endpoint:** `DELETE /api/v1/recipes/{id:guid}`
 
 ---
@@ -243,7 +243,7 @@ timeline
 3. **Giai đoạn 3 — Tuần 3-4: Recipe Lifecycle (`FR-RCP-005` → `FR-RCP-006` → `FR-RCP-007`)**
    - **Bước 3.1 — FR-RCP-005 (Publish/Unpublish):** Kiểm tra điều kiện bắt buộc `Steps.Count > 0` trước khi chuyển trạng thái bài viết sang Published.
    - **Bước 3.2 — FR-RCP-006 (Archive Recipe):** Cài đặt chuyển trạng thái lưu trữ mềm.
-   - **Bước 3.3 — FR-RCP-007 (Delete Recipe):** Xóa vĩnh viễn dữ liệu DB và tích hợp Hangfire Background Job xóa ảnh MinIO.
+   - **Bước 3.3 — FR-RCP-007 (Delete Recipe):** Soft Delete công thức (`IsDeleted = true`) theo SPEC.md. Ảnh MinIO giữ lại, dọn dẹp bằng Background Job định kỳ.
 
 4. **Giai đoạn 4 — Tuần 4: Hỗ trợ Module Search (`FR-SRCH`)**
    - Phối hợp với Người B kiểm thử tính năng tìm kiếm Full-text search trên PostgreSQL dữ liệu Recipe đã tạo ra.
@@ -307,7 +307,7 @@ git commit -m "feat(recipe): xử lý kiểm tra RowVersion chống xung đột 
 git commit -m "feat(recipe): cài đặt logic bắt buộc phải có ít nhất 1 bước thực hiện trước khi Publish"
 
 # Nhánh FR-RCP-007:
-git commit -m "feat(recipe): tích hợp Hangfire Background Job xóa file ảnh trên MinIO bất đồng bộ khi xóa recipe"
+git commit -m "feat(recipe): cài đặt Soft Delete công thức (IsDeleted = true) theo SPEC.md thay vì Hard Delete"
 
 # Nhánh NFR-SEO:
 git commit -m "feat(seo): cấu hình JSON-LD Schema.org Recipe và thẻ Open Graph cho Next.js App Router"
