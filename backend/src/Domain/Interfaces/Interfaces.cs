@@ -11,6 +11,7 @@ public interface IRepository<T> where T : BaseEntity
     Task<T> AddAsync(T entity, CancellationToken ct = default);
     void Update(T entity);
     void SoftDelete(T entity); // Thay thế hoàn toàn Hard Delete theo SPEC.md
+    void SetOriginalRowVersion(T entity, byte[] rowVersion);
 }
 
 public interface IUnitOfWork

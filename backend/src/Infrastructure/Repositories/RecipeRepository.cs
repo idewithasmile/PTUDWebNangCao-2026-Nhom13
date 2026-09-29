@@ -9,18 +9,18 @@ public class RecipeRepository(CulinaryBlogDbContext dbContext) : BaseRepository<
 {
     public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
-        return _dbContext.Recipes
+        return Context.Recipes
             .FirstOrDefaultAsync(r => r.Slug == slug, ct);
     }
 
     public Task<bool> IsSlugUniqueAsync(string slug, CancellationToken ct = default)
     {
-        return _dbContext.Recipes
+        return Context.Recipes
             .AllAsync(r => r.Slug != slug, ct);
     }
 
     public IQueryable<Recipe> GetQueryable()
     {
-        return _dbContext.Recipes.AsQueryable();
+        return Context.Recipes.AsQueryable();
     }
 }
