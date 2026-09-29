@@ -20,8 +20,8 @@ public class RecipeDomainTests
             slug: "pho-bo-ha-noi",
             description: "Công thức gia truyền nấu phở bò đậm đà chuẩn vị.",
             instructions: "Hầm xương, luộc thịt, chần bánh phở...",
-            prepTime: 30,
-            cookTime: 120,
+            prepTimeMinutes: 30,
+            cookTimeMinutes: 120,
             servings: 4,
             difficulty: RecipeDifficulty.Medium,
             categoryId: _validCategoryId,
@@ -51,8 +51,8 @@ public class RecipeDomainTests
             slug: slug,
             description: description,
             instructions: "Instructions",
-            prepTime: 10,
-            cookTime: 20,
+            prepTimeMinutes: 10,
+            cookTimeMinutes: 20,
             servings: 2,
             difficulty: RecipeDifficulty.Easy,
             categoryId: _validCategoryId,
@@ -72,8 +72,8 @@ public class RecipeDomainTests
             slug: "bun-cha-ha-noi",
             description: "Món bún chả thơm ngon.",
             instructions: "Nướng thịt...",
-            prepTime: 20,
-            cookTime: 30,
+            prepTimeMinutes: 20,
+            cookTimeMinutes: 30,
             servings: 2,
             difficulty: RecipeDifficulty.Easy,
             categoryId: _validCategoryId,
@@ -95,8 +95,8 @@ public class RecipeDomainTests
             slug: "bun-cha-ha-noi",
             description: "Món bún chả thơm ngon.",
             instructions: "Nướng thịt...",
-            prepTime: 20,
-            cookTime: 30,
+            prepTimeMinutes: 20,
+            cookTimeMinutes: 30,
             servings: 2,
             difficulty: RecipeDifficulty.Easy,
             categoryId: _validCategoryId,
@@ -166,5 +166,77 @@ public class RecipeDomainTests
         // Assert
         Assert.False(image1.IsPrimary);
         Assert.True(image2.IsPrimary);
+    }
+    [Fact]
+    public void Update_WithValidData_ShouldUpdateFieldsAndTimestamp()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Cũ", "cu", "Mô tả cũ", "", 10, 20, 2, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId);
+        var oldUpdatedAt = recipe.UpdatedAt;
+
+        // Act
+        recipe.Update("Mới", "moi", "Mô tả mới", "HD mới", 15, 25, 4, RecipeDifficulty.Hard, _validCategoryId);
+
+        // Assert
+        Assert.Equal("Mới", recipe.Title);
+        Assert.Equal("moi", recipe.Slug);
+        Assert.Equal("Mô tả mới", recipe.Description);
+        Assert.Equal("HD mới", recipe.Instructions);
+        Assert.Equal(15, recipe.PrepTimeMinutes);
+        Assert.Equal(25, recipe.CookTimeMinutes);
+        Assert.Equal(4, recipe.Servings);
+        Assert.Equal(RecipeDifficulty.Hard, recipe.Difficulty);
+        Assert.NotEqual(oldUpdatedAt, recipe.UpdatedAt);
+    }
+
+    [Fact]
+    public void Archive_ShouldChangeStatusToArchived()
+    {
+        var recipe = Recipe.Create("T", "s", "d", "", 1, 1, 1, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId);
+        recipe.Archive();
+        Assert.Equal(RecipeStatus.Archived, recipe.Status);
+    }
+
+    [Fact]
+    public void Unpublish_ShouldRevertStatusToDraft()
+    {
+        var recipe = Recipe.Create("T", "s", "d", "", 1, 1, 1, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId);
+        recipe.AddStep("Step 1", "Desc");
+        recipe.Publish();
+        recipe.Unpublish();
+        Assert.Equal(RecipeStatus.Draft, recipe.Status);
+    }
+
+    [Fact]
+    public void AddIngredient_ShouldIncrementOrderIndexAutomatically()
+    {
+        var recipe = Recipe.Create("T", "s", "d", "", 1, 1, 1, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId);
+        var ing1 = recipe.AddIngredient("Đường");
+        var ing2 = recipe.AddIngredient("Muối");
+
+        Assert.Equal(1, ing1.OrderIndex);
+        Assert.Equal(2, ing2.OrderIndex);
+    }
+
+    [Fact]
+    public void RemoveImage_WhenPrimary_ShouldPromoteNextImageAsPrimary()
+    {
+        var recipe = Recipe.Create("T", "s", "d", "", 1, 1, 1, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId);
+        var img1 = recipe.AddImage("url1"); // IsPrimary = true
+        var img2 = recipe.AddImage("url2"); // IsPrimary = false
+
+        recipe.RemoveImage(img1.Id);
+
+        Assert.Single(recipe.Images);
+        Assert.True(recipe.Images.First().IsPrimary);
+    }
+
+    [Fact]
+    public void Create_WithZeroServings_ShouldThrowDomainException()
+    {
+        var ex = Assert.Throws<DomainException>(() => Recipe.Create(
+            "T", "s", "d", "", 10, 10, 0, RecipeDifficulty.Easy, _validCategoryId, _validAuthorId
+        ));
+        Assert.Equal("Khẩu phần ăn phải lớn hơn 0.", ex.Message);
     }
 }
