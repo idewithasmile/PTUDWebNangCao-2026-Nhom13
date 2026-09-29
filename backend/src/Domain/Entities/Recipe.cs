@@ -11,8 +11,8 @@ public class Recipe : BaseEntity
     public string Slug { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public string Instructions { get; private set; } = string.Empty;
-    public int PrepTime { get; private set; }
-    public int CookTime { get; private set; }
+    public int PrepTimeMinutes { get; private set; }
+    public int CookTimeMinutes { get; private set; }
     public int Servings { get; private set; }
     public RecipeDifficulty Difficulty { get; private set; } = RecipeDifficulty.Easy;
     public RecipeStatus Status { get; private set; } = RecipeStatus.Draft;
@@ -43,8 +43,8 @@ public class Recipe : BaseEntity
         string slug,
         string description,
         string instructions,
-        int prepTime,
-        int cookTime,
+        int prepTimeMinutes,
+        int cookTimeMinutes,
         int servings,
         RecipeDifficulty difficulty,
         Guid categoryId,
@@ -60,7 +60,7 @@ public class Recipe : BaseEntity
         if (string.IsNullOrWhiteSpace(description))
             throw new DomainException("Mô tả công thức không được để rỗng.");
 
-        if (prepTime < 0 || cookTime < 0)
+        if (prepTimeMinutes < 0 || cookTimeMinutes < 0)
             throw new DomainException("Thời gian chuẩn bị và nấu không được nhỏ hơn 0.");
 
         if (servings <= 0)
@@ -78,8 +78,8 @@ public class Recipe : BaseEntity
             Slug = slug.Trim().ToLowerInvariant(),
             Description = description.Trim(),
             Instructions = instructions?.Trim() ?? string.Empty,
-            PrepTime = prepTime,
-            CookTime = cookTime,
+            PrepTimeMinutes = prepTimeMinutes,
+            CookTimeMinutes = cookTimeMinutes,
             Servings = servings,
             Difficulty = difficulty,
             Status = RecipeStatus.Draft,
@@ -96,8 +96,8 @@ public class Recipe : BaseEntity
         string slug,
         string description,
         string instructions,
-        int prepTime,
-        int cookTime,
+        int prepTimeMinutes,
+        int cookTimeMinutes,
         int servings,
         RecipeDifficulty difficulty,
         Guid categoryId)
@@ -111,7 +111,7 @@ public class Recipe : BaseEntity
         if (string.IsNullOrWhiteSpace(description))
             throw new DomainException("Mô tả công thức không được để rỗng.");
 
-        if (prepTime < 0 || cookTime < 0)
+        if (prepTimeMinutes < 0 || cookTimeMinutes < 0)
             throw new DomainException("Thời gian chuẩn bị và nấu không được nhỏ hơn 0.");
 
         if (servings <= 0)
@@ -124,8 +124,8 @@ public class Recipe : BaseEntity
         Slug = slug.Trim().ToLowerInvariant();
         Description = description.Trim();
         Instructions = instructions?.Trim() ?? string.Empty;
-        PrepTime = prepTime;
-        CookTime = cookTime;
+        PrepTimeMinutes = prepTimeMinutes;
+        CookTimeMinutes = cookTimeMinutes;
         Servings = servings;
         Difficulty = difficulty;
         CategoryId = categoryId;
@@ -138,6 +138,10 @@ public class Recipe : BaseEntity
         {
             throw new DomainException("Recipe phải có ít nhất 1 bước thực hiện trước khi Publish.");
         }
+
+        if (Status == RecipeStatus.Published)
+            return;
+
 
         Status = RecipeStatus.Published;
         PublishedAt = DateTime.UtcNow;
