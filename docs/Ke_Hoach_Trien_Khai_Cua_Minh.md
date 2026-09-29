@@ -65,8 +65,9 @@ graph TD
   8. Trả về `HTTP 201 Created` kèm `RecipeDto` và header `Location`.
 - **Luồng ngoại lệ:**
   - `401 Unauthorized` / `403 Forbidden`: Chưa đăng nhập hoặc không đúng role.
+  - `400 Bad Request`: Validation thất bại (cú pháp, title rỗng/quá dài, prepTime < 0,...).
   - `409 Conflict`: Slug sinh ra bị trùng lặp.
-  - `422 Unprocessable Entity`: CategoryId không tồn tại hoặc validation thất bại.
+  - `422 Unprocessable Entity`: CategoryId không tồn tại (vi phạm quy tắc nghiệp vụ).
 - **Endpoint:** `POST /api/v1/recipes`
 
 ---
@@ -82,8 +83,8 @@ graph TD
   2. `GetRecipeBySlugQuery` dispatch qua MediatR.
   3. Handler thực hiện LINQ query `Include(Steps).Include(Ingredients).Include(Images).Include(Category).Include(Author).IncludeOwned(Nutrition)`.
   4. Kiểm tra quyền truy cập trạng thái Draft/Archived.
-  5. Map entity sang `RecipeDetailDto`.
-  6. Lưu Output Cache policy `"RecipeDetail"` (TTL 60 phút), tag `["recipes", $"recipe:{slug}"]`.
+  5. Map entity sang `RecipeDetailDto` (Lưu ý: Map thông tin Author sang trường `DisplayName`, tuyệt đối không dùng `FullName`).
+  6. Lưu Output Cache policy `"RecipeDetail"` (TTL 60 phút), tag `["recipes", $"recipe:{slug}"]` (Sử dụng Redis Backing Store).
   7. Trả về `HTTP 200 OK`.
 - **Luồng ngoại lệ:**
   - `404 Not Found`: Slug không tồn tại trong hệ thống.
@@ -107,9 +108,9 @@ graph TD
   4. Thực hiện `COUNT` tổng số bản ghi thỏa điều kiện.
   5. Áp dụng `SKIP ((page-1)*pageSize)` và `TAKE pageSize`.
   6. Map sang `PagedResult<RecipeSummaryDto>`.
-  7. Output Cache lưu kết quả policy `"RecipeList"` (TTL 15 phút, vary by query string). Trả về `HTTP 200 OK`.
+  7. Output Cache lưu kết quả policy `"RecipeList"` (TTL 15 phút, vary by query string) qua Redis Backing Store. Trả về `HTTP 200 OK`.
 - **Luồng ngoại lệ:**
-  - `422 Unprocessable Entity`: `page < 1` hoặc `pageSize` ngoài khoảng `[1, 50]`.
+  - `400 Bad Request`: Validation đầu vào sai (`page < 1` hoặc `pageSize` ngoài khoảng `[1, 50]`).
 - **Endpoint:** `GET /api/v1/recipes?page={n}&pageSize={n}&categoryId={guid}&difficulty={level}&maxCookTime={min}&sort={field}`
 
 ---
@@ -129,6 +130,7 @@ graph TD
   6. Invalidate Output Cache tags `"recipes"` và `$"recipe:{slug}"`.
   7. Trả về `HTTP 200 OK` kèm `RecipeDto` cập nhật.
 - **Luồng ngoại lệ:**
+  - `400 Bad Request`: Validation đầu vào không hợp lệ.
   - `403 Forbidden`: Người dùng không phải tác giả sở hữu hoặc Admin.
   - `404 Not Found`: ID công thức không tồn tại.
   - `409 Conflict`: Dữ liệu bị thay đổi bởi người khác (RowVersion mismatch).
@@ -187,7 +189,7 @@ graph TD
 - **Mã yêu cầu:** `NFR-SEO-001` → `NFR-SEO-004` | **Ưu tiên:** `High`
 - **Nội dung chi tiết:**
   1. **NFR-SEO-001 (Structured Data JSON-LD Schema.org):**  
-     Tại Next.js Frontend (SSR Page `/recipes/[slug]`), tự động tạo thẻ `<script type="application/ld+json">` chứa dữ liệu cấu trúc chuẩn Schema.org `Recipe` (`@type: "Recipe"`, `name`, `description`, `image`, `author`, `datePublished`, `prepTime`, `cookTime`, `recipeIngredient[]`, `recipeInstructions[]`, `nutrition`). Đảm bảo pass 100% trên **Google Rich Results Test**.
+     Tại Next.js 15 Frontend (SSR Page `/recipes/[slug]`, lưu ý xử lý async `params`), tự động tạo thẻ `<script type="application/ld+json">` chứa dữ liệu cấu trúc chuẩn Schema.org `Recipe` (`@type: "Recipe"`, `name`, `description`, `image`, `author` (dùng `DisplayName`), `datePublished`, `prepTime`, `cookTime`, `recipeIngredient[]`, `recipeInstructions[]`, `nutrition`). Đảm bảo pass 100% trên **Google Rich Results Test**.
   2. **NFR-SEO-002 (Meta Tags & Open Graph Protocol):**  
      Tự động tạo thẻ `<title>` (≤ 60 ký tự), `<meta name="description">` (150–160 ký tự), các thẻ Open Graph (`og:title`, `og:description`, `og:image` kích thước 1200×630px, `og:url`), Twitter Card (`summary_large_image`), Canonical URL chuẩn. Thẻ `robots`: `index, follow` cho Published và `noindex` cho Draft/Archived.
   3. **NFR-SEO-003 (Sitemap.xml & Robots.txt):**  
@@ -247,6 +249,7 @@ timeline
 
 4. **Giai đoạn 4 — Tuần 4: Hỗ trợ Module Search (`FR-SRCH`)**
    - Phối hợp với Người B kiểm thử tính năng tìm kiếm Full-text search trên PostgreSQL dữ liệu Recipe đã tạo ra.
+   - **Checklist quan trọng:** Kiểm tra bắt buộc việc `Author` tìm kiếm được bài viết **Draft của chính mình** (theo SPEC.md).
 
 5. **Giai đoạn 5 — Tuần 6: Tối ưu SEO (`NFR-SEO-001 → 004`)**
    - Triển khai SSR/ISR Metadata, JSON-LD Rich Snippet Schema.org, Open Graph trên Frontend Next.js khi giao diện và API đã ổn định.
