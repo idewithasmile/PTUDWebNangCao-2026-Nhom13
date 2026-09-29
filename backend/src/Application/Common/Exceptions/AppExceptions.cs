@@ -32,3 +32,8 @@ public class ConflictException : AppException
 {
     public ConflictException(string errorCode, string message) : base(errorCode, message, 409) { }
 }
+
+public class ForbiddenException : AppException
+{
+    public ForbiddenException(string errorCode, string message) : base(errorCode, message, 403) { }
+}

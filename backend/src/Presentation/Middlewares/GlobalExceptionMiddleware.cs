@@ -35,6 +35,13 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 Detail = valEx.Message,
                 Extensions = { ["errors"] = valEx.Errors }
             }),
+            CulinaryBlog.Domain.Exceptions.DomainException domainEx => (422, new ProblemDetails
+            {
+                Status = 422,
+                Type = "DOMAIN_ERROR",
+                Title = "Business Rule Violation",
+                Detail = domainEx.Message
+            }),
             AppException appEx => (appEx.StatusCode, new ProblemDetails
             {
                 Status = appEx.StatusCode,

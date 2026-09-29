@@ -15,6 +15,7 @@ public interface IRepository<T> where T : BaseEntity
 
 public interface IUnitOfWork
 {
+    IRecipeRepository Recipes { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 
