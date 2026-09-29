@@ -28,4 +28,18 @@ public class RecipeNutrition
         Fiber = fiber;
         Sodium = sodium;
     }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not RecipeNutrition other) return false;
+        return Calories == other.Calories
+            && Protein == other.Protein
+            && Carbohydrates == other.Carbohydrates
+            && Fat == other.Fat
+            && Fiber == other.Fiber
+            && Sodium == other.Sodium;
+    }
+
+    public override int GetHashCode()
+        => HashCode.Combine(Calories, Protein, Carbohydrates, Fat, Fiber, Sodium);
 }
