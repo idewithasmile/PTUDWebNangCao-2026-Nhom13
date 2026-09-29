@@ -24,16 +24,16 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             .IsUnique();
 
         builder.Property(r => r.Description)
-            .HasMaxLength(2000)
+            .HasColumnType("text")
             .IsRequired();
 
         builder.Property(r => r.Instructions)
             .IsRequired();
 
-        builder.Property(r => r.PrepTime)
+        builder.Property(r => r.PrepTimeMinutes)
             .IsRequired();
 
-        builder.Property(r => r.CookTime)
+        builder.Property(r => r.CookTimeMinutes)
             .IsRequired();
 
         builder.Property(r => r.Servings)
