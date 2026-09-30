@@ -85,7 +85,7 @@ public class CategoryHandlersTests
 
         // Act & Assert
         var act = () => handler.Handle(new GetCategoryBySlugQuery("khong-ton-tai"), CancellationToken.None);
-        var ex = await act.Should().ThrowAsync<NotFoundException>();
+        var ex = await act.Should().ThrowAsync<EntityNotFoundException>();
         ex.Which.ErrorCode.Should().Be("CATEGORY_NOT_FOUND");
     }
 
@@ -185,7 +185,7 @@ public class CategoryHandlersTests
 
         // Act & Assert
         var act = () => handler.Handle(command, CancellationToken.None);
-        var ex = await act.Should().ThrowAsync<ConflictException>();
+        var ex = await act.Should().ThrowAsync<ConcurrencyConflictException>();
         ex.Which.ErrorCode.Should().Be("CATEGORY_CONCURRENCY_CONFLICT");
     }
 
@@ -198,6 +198,8 @@ public class CategoryHandlersTests
 
         _categoryRepoMock.Setup(r => r.GetByIdAsync(catId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(category);
+        _categoryRepoMock.Setup(r => r.HasActiveRecipesAsync(catId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _categoryRepoMock.Setup(r => r.GetActiveRecipeCountAsync(catId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(4); // Có 4 công thức đang hoạt động
 
@@ -205,7 +207,7 @@ public class CategoryHandlersTests
 
         // Act & Assert
         var act = () => handler.Handle(new DeleteCategoryCommand(catId), CancellationToken.None);
-        var ex = await act.Should().ThrowAsync<ConflictException>();
+        var ex = await act.Should().ThrowAsync<CategoryNotEmptyException>();
         ex.Which.ErrorCode.Should().Be("CATEGORY_DELETE_HAS_RECIPES");
         _categoryRepoMock.Verify(r => r.SoftDelete(It.IsAny<Category>()), Times.Never);
     }
@@ -219,6 +221,8 @@ public class CategoryHandlersTests
 
         _categoryRepoMock.Setup(r => r.GetByIdAsync(catId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(category);
+        _categoryRepoMock.Setup(r => r.HasActiveRecipesAsync(catId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
         _categoryRepoMock.Setup(r => r.GetActiveRecipeCountAsync(catId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
 
