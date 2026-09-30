@@ -5,15 +5,23 @@ using CulinaryBlog.Application.Features.Categories.DTOs;
 using CulinaryBlog.Application.Features.Categories.Queries.GetCategories;
 using CulinaryBlog.Application.Features.Categories.Queries.GetCategoryBySlug;
 using MediatR;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 namespace CulinaryBlog.API.Endpoints;
 
 public static class CategoriesEndpoints
 {
-    public static RouteGroupBuilder MapCategoriesEndpoints(this RouteGroupBuilder group)
+    /// <summary>
+    /// Extension method đăng ký các endpoints cho phân hệ Quản lý Danh mục (FR-CAT).
+    /// </summary>
+    public static IEndpointRouteBuilder MapCategoriesEndpoints(this IEndpointRouteBuilder app)
     {
+        var group = app.MapGroup("/api/v1/categories")
+                       .WithTags("Categories");
+
         // 1. GET /api/v1/categories - Public, Redis cached (TTL 30m)
         group.MapGet("/", async (IMediator mediator, CancellationToken ct) =>
         {
@@ -25,7 +33,7 @@ public static class CategoriesEndpoints
         .WithDescription("Trả về danh sách danh mục sắp xếp theo thứ tự OrderIndex và Name, kèm theo số lượng công thức đang hoạt động.")
         .Produces<List<CategoryDto>>(StatusCodes.Status200OK);
 
-        // 2. GET /api/v1/categories/{slug} - Public, phân trang query params page, pageSize
+        // 2. GET /api/v1/categories/{slug} - Public, phân trang query params page, pageSize (max 50)
         group.MapGet("/{slug}", async (
             string slug,
             [FromQuery] int? page,
@@ -33,7 +41,9 @@ public static class CategoriesEndpoints
             IMediator mediator,
             CancellationToken ct) =>
         {
-            var query = new GetCategoryBySlugQuery(slug, page ?? 1, pageSize ?? 12);
+            var p = page ?? 1;
+            var ps = pageSize ?? 12;
+            var query = new GetCategoryBySlugQuery(slug, p, ps);
             var result = await mediator.Send(query, ct);
             return Results.Ok(result);
         })
@@ -116,7 +126,7 @@ public static class CategoriesEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict);
 
-        return group;
+        return app;
     }
 }
 

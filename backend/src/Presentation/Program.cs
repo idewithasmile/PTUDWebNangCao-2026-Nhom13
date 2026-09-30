@@ -110,8 +110,9 @@ app.UseHangfireDashboard("/hangfire");
 // Route Groups có tiền tố /api/v1/
 var v1 = app.MapGroup("/api/v1");
 v1.MapGroup("/auth").MapAuthEndpoints();
-v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/recipes").MapRecipesEndpoints();
+
+app.MapCategoriesEndpoints();
 
 app.MapHealthChecks();
 
