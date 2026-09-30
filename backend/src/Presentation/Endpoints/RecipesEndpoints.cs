@@ -18,6 +18,14 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapGet("/", GetRecipes)
+            .AllowAnonymous()
+            .CacheOutput(policy => policy
+                .Expire(TimeSpan.FromMinutes(5))
+                .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy")
+                .Tag("recipes"))
+            .Produces<CulinaryBlog.Application.Common.Models.PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
+
         group.MapGet("/{slug}", GetRecipeBySlug)
             .AllowAnonymous()
             .CacheOutput(policy => policy
@@ -43,6 +51,14 @@ public static class RecipesEndpoints
     {
         var result = await mediator.Send(command);
         return Results.Created($"/api/v1/recipes/{result.Slug}", result);
+    }
+
+    private static async Task<IResult> GetRecipes(
+        [Microsoft.AspNetCore.Mvc.AsParameters] CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes.GetRecipesQuery query,
+        IMediator mediator)
+    {
+        var result = await mediator.Send(query);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> GetRecipeBySlug(
