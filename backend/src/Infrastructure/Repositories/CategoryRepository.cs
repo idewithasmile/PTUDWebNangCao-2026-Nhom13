@@ -1,25 +1,44 @@
+using CulinaryBlog.Domain.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Enums;
-using CulinaryBlog.Domain.Interfaces;
 using CulinaryBlog.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Repositories;
 
-public class CategoryRepository(CulinaryBlogDbContext dbContext) : ICategoryRepository
+/// <summary>
+/// Hiện thực ICategoryRepository kế thừa BaseRepository và triển khai các nghiệp vụ LINQ chuyên sâu.
+/// </summary>
+public class CategoryRepository : BaseRepository<Category>, ICategoryRepository
 {
-    private readonly CulinaryBlogDbContext _dbContext = dbContext;
+    private readonly CulinaryBlogDbContext _dbContext;
 
-    public async Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public CategoryRepository(CulinaryBlogDbContext dbContext) : base(dbContext)
     {
-        return await _dbContext.Categories
-            .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted, ct);
+        _dbContext = dbContext;
     }
 
     public async Task<Category?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         return await _dbContext.Categories
             .FirstOrDefaultAsync(c => c.Slug == slug && !c.IsDeleted, ct);
+    }
+
+    public async Task<bool> HasActiveRecipesAsync(Guid categoryId, CancellationToken ct = default)
+    {
+        return await _dbContext.Recipes
+            .AnyAsync(r => r.CategoryId == categoryId && !r.IsDeleted, ct);
+    }
+
+    public async Task<IReadOnlyList<Category>> GetAllWithCountAsync(CancellationToken ct = default)
+    {
+        return await _dbContext.Categories
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted)
+            .Include(c => c.Recipes.Where(r => !r.IsDeleted && r.Status == RecipeStatus.Published))
+            .OrderBy(c => c.OrderIndex)
+            .ThenBy(c => c.Name)
+            .ToListAsync(ct);
     }
 
     public async Task<bool> ExistsByNameAsync(string name, Guid? excludeId = null, CancellationToken ct = default)
@@ -89,23 +108,5 @@ public class CategoryRepository(CulinaryBlogDbContext dbContext) : ICategoryRepo
     {
         return await _dbContext.Recipes
             .CountAsync(r => r.CategoryId == categoryId && !r.IsDeleted, ct);
-    }
-
-    public async Task<Category> AddAsync(Category category, CancellationToken ct = default)
-    {
-        await _dbContext.Categories.AddAsync(category, ct);
-        return category;
-    }
-
-    public void Update(Category category)
-    {
-        _dbContext.Categories.Update(category);
-    }
-
-    public void SoftDelete(Category category)
-    {
-        category.IsDeleted = true;
-        category.UpdatedAt = DateTime.UtcNow;
-        _dbContext.Categories.Update(category);
     }
 }
