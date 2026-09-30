@@ -27,6 +27,7 @@ yarn-debug.log*
 
 ## Documents & Heavy binary files
 *.pdf
+*.docx
 
 ## OS files
 .DS_Store

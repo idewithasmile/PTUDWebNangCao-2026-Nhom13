@@ -44,6 +44,19 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapPatch("/{id:guid}/publish", PublishRecipe)
+            .RequireAuthorization()
+            .Produces<RecipeDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapPatch("/{id:guid}/unpublish", UnpublishRecipe)
+            .RequireAuthorization()
+            .Produces<RecipeDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return group;
     }
 
@@ -54,7 +67,7 @@ public static class RecipesEndpoints
     }
 
     private static async Task<IResult> GetRecipes(
-        [Microsoft.AspNetCore.Mvc.AsParameters] CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes.GetRecipesQuery query,
+        [AsParameters] CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes.GetRecipesQuery query,
         IMediator mediator)
     {
         var result = await mediator.Send(query);
@@ -80,6 +93,28 @@ public static class RecipesEndpoints
         }
 
         var result = await mediator.Send(command);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> PublishRecipe(
+        Guid id,
+        IMediator mediator,
+        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.PublishRecipe.PublishRecipeCommand(id), ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> UnpublishRecipe(
+        Guid id,
+        IMediator mediator,
+        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.UnpublishRecipe.UnpublishRecipeCommand(id), ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
         return Results.Ok(result);
     }
 }
