@@ -1,7 +1,8 @@
 using System.Collections;
 using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Application.Features.Categories.DTOs;
-using CulinaryBlog.Domain.Interfaces;
+using CulinaryBlog.Domain.Common.Interfaces;
+using CulinaryBlog.Domain.Exceptions;
 using MediatR;
 
 namespace CulinaryBlog.Application.Features.Categories.Commands.UpdateCategory;
@@ -17,7 +18,7 @@ public class UpdateCategoryCommandHandler(
         var category = await categoryRepository.GetByIdAsync(request.Id, ct);
         if (category is null)
         {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", $"Danh mục với Id '{request.Id}' không tồn tại.");
+            throw new EntityNotFoundException("CATEGORY_NOT_FOUND", $"Danh mục với Id '{request.Id}' không tồn tại.");
         }
 
         // 2. Kiểm tra trùng Name với danh mục khác (case-insensitive)
@@ -31,7 +32,7 @@ public class UpdateCategoryCommandHandler(
         if (request.RowVersion.Length > 0 && category.RowVersion.Length > 0 &&
             !StructuralComparisons.StructuralEqualityComparer.Equals(category.RowVersion, request.RowVersion))
         {
-            throw new ConflictException(
+            throw new ConcurrencyConflictException(
                 "CATEGORY_CONCURRENCY_CONFLICT",
                 "Danh mục đã bị thay đổi bởi người dùng khác trong khi bạn đang thao tác. Vui lòng tải lại dữ liệu mới nhất.");
         }

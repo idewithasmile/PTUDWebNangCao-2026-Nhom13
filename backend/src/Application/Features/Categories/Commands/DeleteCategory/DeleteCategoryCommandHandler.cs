@@ -1,5 +1,6 @@
-using CulinaryBlog.Application.Common.Exceptions;
-using CulinaryBlog.Domain.Interfaces;
+using CulinaryBlog.Domain.Common.Interfaces;
+using CulinaryBlog.Domain.Entities;
+using CulinaryBlog.Domain.Exceptions;
 using MediatR;
 
 namespace CulinaryBlog.Application.Features.Categories.Commands.DeleteCategory;
@@ -15,16 +16,15 @@ public class DeleteCategoryCommandHandler(
         var category = await categoryRepository.GetByIdAsync(request.Id, ct);
         if (category is null)
         {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", $"Danh mục với Id '{request.Id}' không tồn tại.");
+            throw new EntityNotFoundException("CATEGORY_NOT_FOUND", $"Danh mục với Id '{request.Id}' không tồn tại.");
         }
 
         // 2. Ràng buộc toàn vẹn: Kiểm tra số lượng recipes đang hoạt động (!IsDeleted)
-        var activeRecipeCount = await categoryRepository.GetActiveRecipeCountAsync(request.Id, ct);
-        if (activeRecipeCount > 0)
+        var hasActiveRecipes = await categoryRepository.HasActiveRecipesAsync(request.Id, ct);
+        if (hasActiveRecipes)
         {
-            throw new ConflictException(
-                "CATEGORY_DELETE_HAS_RECIPES",
-                $"Không thể xóa danh mục '{category.Name}' vì vẫn còn {activeRecipeCount} công thức nấu ăn đang hoạt động. Vui lòng di chuyển hoặc xử lý các công thức trước.");
+            var activeRecipeCount = await categoryRepository.GetActiveRecipeCountAsync(request.Id, ct);
+            throw new CategoryNotEmptyException(category.Name, activeRecipeCount > 0 ? activeRecipeCount : 1);
         }
 
         // 3. Thực hiện Soft Delete theo FR-CAT-005 và SPEC.md Mâu thuẫn 8

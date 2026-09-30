@@ -1,7 +1,7 @@
-using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Categories.DTOs;
-using CulinaryBlog.Domain.Interfaces;
+using CulinaryBlog.Domain.Common.Interfaces;
+using CulinaryBlog.Domain.Exceptions;
 using MediatR;
 
 namespace CulinaryBlog.Application.Features.Categories.Queries.GetCategoryBySlug;
@@ -12,14 +12,14 @@ public class GetCategoryBySlugQueryHandler(ICategoryRepository categoryRepositor
     public async Task<CategoryDetailDto> Handle(GetCategoryBySlugQuery request, CancellationToken ct)
     {
         var page = request.Page < 1 ? 1 : request.Page;
-        var pageSize = request.PageSize < 1 ? 12 : request.PageSize;
+        var pageSize = request.PageSize < 1 ? 12 : Math.Min(request.PageSize, 50);
 
         var (category, recipes, totalCount) = await categoryRepository.GetBySlugWithRecipesAsync(
             request.Slug, page, pageSize, ct);
 
         if (category is null)
         {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", $"Category with slug '{request.Slug}' was not found.");
+            throw new EntityNotFoundException("CATEGORY_NOT_FOUND", $"Category with slug '{request.Slug}' was not found.");
         }
 
         var categoryDto = new CategoryDto(
