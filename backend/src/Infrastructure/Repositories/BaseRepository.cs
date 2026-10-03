@@ -48,4 +48,9 @@ public class BaseRepository<T>(CulinaryBlogDbContext dbContext) : IRepository<T>
         entity.SoftDelete();
         DbSet.Update(entity);
     }
+
+    public virtual void SetOriginalRowVersion(T entity, byte[] rowVersion)
+    {
+        Context.Entry(entity).Property(e => e.RowVersion).OriginalValue = rowVersion;
+    }
 }

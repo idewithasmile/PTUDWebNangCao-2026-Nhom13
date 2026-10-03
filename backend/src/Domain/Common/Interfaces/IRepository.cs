@@ -17,4 +17,5 @@ public interface IRepository<T> where T : BaseEntity
     void Update(T entity);
     void Delete(T entity);
     void SoftDelete(T entity);
+    void SetOriginalRowVersion(T entity, byte[] rowVersion);
 }
