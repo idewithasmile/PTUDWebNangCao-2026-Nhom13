@@ -17,11 +17,42 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Only postgres is needed: Api.Tests boot the real Program via
+      # WebApplicationFactory. Hangfire.PostgreSqlStorage connects eagerly at
+      # DI time (DependencyInjection.cs:63) and the dashboard (Program.cs:84),
+      # so the runner must have PostgreSQL on 5432. The app DB is replaced by
+      # InMemory in tests (AuthWebFactory); Redis/Seq/MinIO are lazy and never
+      # touched by the Auth flow, so they are not started here.
+      - name: Start PostgreSQL
+        run: docker compose -f infrastructure/docker-compose.yml up -d postgres
+
+      # Wait until Postgres really accepts connections (avoid race).
+      - name: Wait for PostgreSQL readiness
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec culinary_postgres pg_isready -U postgres -d culinary_blog; then
+              echo "PostgreSQL is ready."
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready in time."
+          docker compose -f infrastructure/docker-compose.yml logs postgres
+          exit 1
+
       - name: Restore dependencies
         run: dotnet restore backend/CulinaryBlog.slnx
 
       - name: Build
         run: dotnet build backend/CulinaryBlog.slnx --configuration Release --no-restore
 
+      # No `dotnet ef database update` needed: Program.cs does not auto-migrate,
+      # Api.Tests use InMemory for the app DB, and Hangfire auto-creates its
+      # schema ("Hangfire SQL objects installed") on first connection.
       - name: Test
         run: dotnet test backend/CulinaryBlog.slnx --configuration Release --no-build --verbosity normal
+
+      - name: Stop CI infrastructure
+        if: always()
+        run: docker compose -f infrastructure/docker-compose.yml down
