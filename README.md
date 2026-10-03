@@ -14,7 +14,7 @@ Hệ thống được thiết kế theo mô hình **API-Driven Architecture**, t
 - **Database:** PostgreSQL 16 (Entity Framework Core 10, Code-First)
 - **Cache:** Redis 7 (Distributed Cache & Redis Backed Output Cache)
 - **Object Storage:** MinIO (S3-Compatible)
-- **Background Jobs:** Hangfire
+- **Background Jobs:** Hangfire (in-process, PostgreSQL làm storage)
 - **Observability:** Serilog (Logging), OpenTelemetry (Tracing)
 
 ### Frontend

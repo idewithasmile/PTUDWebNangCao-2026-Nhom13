@@ -59,8 +59,10 @@ Handler → CacheInvalidationBehavior (chỉ Command làm thay đổi data)`.
 - Soft delete: mọi query mặc định phải lọc `IsDeleted == false` (chưa có Global Query Filter
   sẵn như EF Core — phải tự áp dụng nhất quán ở base repository, xem README.md gap #2).
 - Error type field trong RFC 7807 dùng mã lỗi dạng `MODULE_REASON` (vd `AUTH_EMAIL_EXISTS`,
-  `AUTH_INVALID_CREDENTIALS`, `AUTH_TOKEN_EXPIRED`) — không dùng message tự do để frontend
+  `AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_TOKEN_REVOKED`) — không dùng message tự do để frontend
   xử lý theo lỗi cụ thể được.
+- Refresh Token **chỉ** lưu/truyền qua `HttpOnly; Secure; SameSite=Strict` Cookie (chống XSS);
+  access token lưu in-memory phía client. Tuyệt đối không trả refresh token qua JSON body.
 - Naming: PascalCase cho class/property C#; camelCase cho JSON/TS.
 
 ## 5. Definition of Done — mọi task agent làm xong phải thỏa cả 6 mục
