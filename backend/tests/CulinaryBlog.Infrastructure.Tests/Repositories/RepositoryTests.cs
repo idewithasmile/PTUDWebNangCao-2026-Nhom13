@@ -171,14 +171,17 @@ public class RepositoryTests
         var category = new Category { Name = "Món kho", Slug = "mon-kho" };
         await repo.AddAsync(category);
 
-        var recipe = new Recipe
-        {
-            Title = "Thịt kho tàu",
-            Slug = "thit-kho-tau",
-            CategoryId = category.Id,
-            AuthorId = Guid.NewGuid().ToString(),
-            IsDeleted = false
-        };
+        var recipe = Recipe.Create(
+            "Thịt kho tàu",
+            "thit-kho-tau",
+            "Mô tả thịt kho tàu",
+            "Hướng dẫn nấu thịt kho tàu",
+            15,
+            30,
+            4,
+            RecipeDifficulty.Easy,
+            category.Id,
+            Guid.NewGuid().ToString());
         await db.Recipes.AddAsync(recipe);
         await db.SaveChangesAsync();
 
@@ -198,14 +201,18 @@ public class RepositoryTests
         var category = new Category { Name = "Món lẩu", Slug = "mon-lau" };
         await repo.AddAsync(category);
 
-        var softDeletedRecipe = new Recipe
-        {
-            Title = "Lẩu Thái chua cay",
-            Slug = "lau-thai-chua-cay",
-            CategoryId = category.Id,
-            AuthorId = Guid.NewGuid().ToString(),
-            IsDeleted = true // Đã bị soft delete
-        };
+        var softDeletedRecipe = Recipe.Create(
+            "Lẩu Thái chua cay",
+            "lau-thai-chua-cay",
+            "Mô tả lẩu Thái",
+            "Hướng dẫn nấu lẩu",
+            15,
+            30,
+            4,
+            RecipeDifficulty.Easy,
+            category.Id,
+            Guid.NewGuid().ToString());
+        softDeletedRecipe.SoftDelete();
         await db.Recipes.AddAsync(softDeletedRecipe);
         await db.SaveChangesAsync();
 
@@ -244,15 +251,19 @@ public class RepositoryTests
         await repo.AddAsync(cat1);
         await repo.AddAsync(cat2);
 
-        var recipe = new Recipe
-        {
-            Title = "Gà hấp lá chanh",
-            Slug = "ga-hap-la-chanh",
-            CategoryId = cat2.Id,
-            AuthorId = Guid.NewGuid().ToString(),
-            Status = RecipeStatus.Published,
-            IsDeleted = false
-        };
+        var recipe = Recipe.Create(
+            "Gà hấp lá chanh",
+            "ga-hap-la-chanh",
+            "Mô tả gà hấp",
+            "Hướng dẫn hấp gà",
+            15,
+            30,
+            4,
+            RecipeDifficulty.Easy,
+            cat2.Id,
+            Guid.NewGuid().ToString());
+        recipe.AddStep("Sơ chế", "Sơ chế gà sạch sẽ", 10);
+        recipe.Publish();
         await db.Recipes.AddAsync(recipe);
         await db.SaveChangesAsync();
 

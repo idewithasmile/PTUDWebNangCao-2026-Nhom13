@@ -56,7 +56,7 @@ public class CategoryHandlersTests
         var cat = new Category { Name = "Món hấp", Slug = "mon-hap", Description = "Mô tả", RowVersion = [1] };
         var recipes = new List<Recipe>
         {
-            new() { Title = "Gà hấp lá chanh", Slug = "ga-hap-la-chanh", Description = "Ngon tuyệt" }
+            Recipe.Create("Gà hấp lá chanh", "ga-hap-la-chanh", "Ngon tuyệt", "Hướng dẫn hấp", 10, 15, 2, CulinaryBlog.Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), Guid.NewGuid().ToString())
         };
 
         _categoryRepoMock.Setup(r => r.GetBySlugWithRecipesAsync("mon-hap", 1, 12, It.IsAny<CancellationToken>()))
