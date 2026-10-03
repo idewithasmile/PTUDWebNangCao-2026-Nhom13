@@ -7,4 +7,16 @@ public abstract class BaseEntity
     public DateTime? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; } = false;
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
+    public virtual void SoftDelete()
+    {
+        IsDeleted = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public virtual void Restore()
+    {
+        IsDeleted = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

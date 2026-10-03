@@ -20,7 +20,7 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
     {
         base.OnModelCreating(modelBuilder);
 
-        // Khai báo RecipeNutrition là Owned Entity (nhúng vào bảng Recipes)
+        // Khai báo RecipeNutrition là Owned Entity (nhúng vào bảng Recipes) — giữ từ main (Phước).
         modelBuilder.Entity<Recipe>()
             .OwnsOne(r => r.Nutrition, n =>
             {
@@ -31,6 +31,25 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
                 n.Property(x => x.Fiber).HasColumnName("Nutrition_Fiber");
                 n.Property(x => x.Sodium).HasColumnName("Nutrition_Sodium");
             });
+
+        // Global query filter cho Soft Delete + RowVersion trên tất cả BaseEntity — từ branch Recipe.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(BaseEntity.RowVersion))
+                    .IsRowVersion();
+
+                var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                var property = System.Linq.Expressions.Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
+                var falseConstant = System.Linq.Expressions.Expression.Constant(false);
+                var lambda = System.Linq.Expressions.Expression.Lambda(
+                    System.Linq.Expressions.Expression.Equal(property, falseConstant), parameter);
+
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            }
+        }
 
         // Cấu hình các EntityConfigurations khác nếu có
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CulinaryBlogDbContext).Assembly);

@@ -45,8 +45,7 @@ public class BaseRepository<T>(CulinaryBlogDbContext dbContext) : IRepository<T>
 
     public virtual void SoftDelete(T entity)
     {
-        entity.IsDeleted = true;
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.SoftDelete();
         DbSet.Update(entity);
     }
 }
