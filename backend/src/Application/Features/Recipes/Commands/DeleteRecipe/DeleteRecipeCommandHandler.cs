@@ -5,17 +5,18 @@ using MediatR;
 namespace CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipe;
 
 public class DeleteRecipeCommandHandler(
-    IUnitOfWork unitOfWork,
+    IRecipeRepository recipeRepository,
+    Domain.Common.Interfaces.IUnitOfWork unitOfWork,
     ICurrentUser currentUser)
     : IRequestHandler<DeleteRecipeCommand, Unit>
 {
     public async Task<Unit> Handle(DeleteRecipeCommand request, CancellationToken cancellationToken)
     {
         var recipe = await RecipeAuthorizationHelper.LoadAndAuthorize(
-            unitOfWork, currentUser, request.Id, cancellationToken);
-        
+            recipeRepository, currentUser, request.Id, cancellationToken);
+
         // Soft delete (IsDeleted = true)
-        unitOfWork.Recipes.SoftDelete(recipe);
+        recipeRepository.SoftDelete(recipe);
         
         await unitOfWork.SaveChangesAsync(cancellationToken);
         
