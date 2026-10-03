@@ -5,6 +5,7 @@ namespace CulinaryBlog.Infrastructure.Repositories;
 
 /// <summary>
 /// Hiện thực Unit of Work bọc lấy tiến trình lưu thay đổi của CulinaryBlogDbContext.
+/// Recipe handlers dùng IRecipeRepository + IUnitOfWork riêng (theo pattern Category).
 /// </summary>
 public class UnitOfWork : IUnitOfWork
 {

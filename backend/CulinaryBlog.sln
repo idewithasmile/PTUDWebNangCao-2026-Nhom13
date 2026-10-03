@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CFD5CC24
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CulinaryBlog.Domain.Tests", "tests\CulinaryBlog.Domain.Tests\CulinaryBlog.Domain.Tests.csproj", "{38823F9A-BA14-4B49-8869-92157997C2CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CulinaryBlog.Application.Tests", "tests\CulinaryBlog.Application.Tests\CulinaryBlog.Application.Tests.csproj", "{6BE18B80-9108-4989-88A7-9A1325DF1B3F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,10 @@ Global
 		{38823F9A-BA14-4B49-8869-92157997C2CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38823F9A-BA14-4B49-8869-92157997C2CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38823F9A-BA14-4B49-8869-92157997C2CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BE18B80-9108-4989-88A7-9A1325DF1B3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BE18B80-9108-4989-88A7-9A1325DF1B3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BE18B80-9108-4989-88A7-9A1325DF1B3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BE18B80-9108-4989-88A7-9A1325DF1B3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A0AFC444-2C65-4289-B660-9B374F4F6783} = {9EB760A9-D67C-432A-90D7-A8A522EBBF97}
@@ -53,5 +59,6 @@ Global
 		{0A042BD9-0B83-482C-A7BD-046A55E82DCC} = {9EB760A9-D67C-432A-90D7-A8A522EBBF97}
 		{6ECF6C7F-0C93-421C-92A1-85082349C11B} = {9EB760A9-D67C-432A-90D7-A8A522EBBF97}
 		{38823F9A-BA14-4B49-8869-92157997C2CC} = {CFD5CC24-6FAC-4653-9BE6-05282BD68E11}
+		{6BE18B80-9108-4989-88A7-9A1325DF1B3F} = {CFD5CC24-6FAC-4653-9BE6-05282BD68E11}
 	EndGlobalSection
 EndGlobal

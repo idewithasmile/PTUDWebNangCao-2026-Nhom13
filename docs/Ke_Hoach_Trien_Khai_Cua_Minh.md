@@ -65,8 +65,9 @@ graph TD
   8. Trả về `HTTP 201 Created` kèm `RecipeDto` và header `Location`.
 - **Luồng ngoại lệ:**
   - `401 Unauthorized` / `403 Forbidden`: Chưa đăng nhập hoặc không đúng role.
+  - `400 Bad Request`: Validation thất bại (cú pháp, title rỗng/quá dài, prepTime < 0,...).
   - `409 Conflict`: Slug sinh ra bị trùng lặp.
-  - `422 Unprocessable Entity`: CategoryId không tồn tại hoặc validation thất bại.
+  - `422 Unprocessable Entity`: CategoryId không tồn tại (vi phạm quy tắc nghiệp vụ).
 - **Endpoint:** `POST /api/v1/recipes`
 
 ---
@@ -82,8 +83,8 @@ graph TD
   2. `GetRecipeBySlugQuery` dispatch qua MediatR.
   3. Handler thực hiện LINQ query `Include(Steps).Include(Ingredients).Include(Images).Include(Category).Include(Author).IncludeOwned(Nutrition)`.
   4. Kiểm tra quyền truy cập trạng thái Draft/Archived.
-  5. Map entity sang `RecipeDetailDto`.
-  6. Lưu Output Cache policy `"RecipeDetail"` (TTL 60 phút), tag `["recipes", $"recipe:{slug}"]`.
+  5. Map entity sang `RecipeDetailDto` (Lưu ý: Map thông tin Author sang trường `DisplayName`, tuyệt đối không dùng `FullName`).
+  6. Lưu Output Cache policy `"RecipeDetail"` (TTL 60 phút), tag `["recipes", $"recipe:{slug}"]` (Sử dụng Redis Backing Store).
   7. Trả về `HTTP 200 OK`.
 - **Luồng ngoại lệ:**
   - `404 Not Found`: Slug không tồn tại trong hệ thống.
@@ -107,9 +108,9 @@ graph TD
   4. Thực hiện `COUNT` tổng số bản ghi thỏa điều kiện.
   5. Áp dụng `SKIP ((page-1)*pageSize)` và `TAKE pageSize`.
   6. Map sang `PagedResult<RecipeSummaryDto>`.
-  7. Output Cache lưu kết quả policy `"RecipeList"` (TTL 15 phút, vary by query string). Trả về `HTTP 200 OK`.
+  7. Output Cache lưu kết quả policy `"RecipeList"` (TTL 15 phút, vary by query string) qua Redis Backing Store. Trả về `HTTP 200 OK`.
 - **Luồng ngoại lệ:**
-  - `422 Unprocessable Entity`: `page < 1` hoặc `pageSize` ngoài khoảng `[1, 50]`.
+  - `400 Bad Request`: Validation đầu vào sai (`page < 1` hoặc `pageSize` ngoài khoảng `[1, 50]`).
 - **Endpoint:** `GET /api/v1/recipes?page={n}&pageSize={n}&categoryId={guid}&difficulty={level}&maxCookTime={min}&sort={field}`
 
 ---
@@ -129,6 +130,7 @@ graph TD
   6. Invalidate Output Cache tags `"recipes"` và `$"recipe:{slug}"`.
   7. Trả về `HTTP 200 OK` kèm `RecipeDto` cập nhật.
 - **Luồng ngoại lệ:**
+  - `400 Bad Request`: Validation đầu vào không hợp lệ.
   - `403 Forbidden`: Người dùng không phải tác giả sở hữu hoặc Admin.
   - `404 Not Found`: ID công thức không tồn tại.
   - `409 Conflict`: Dữ liệu bị thay đổi bởi người khác (RowVersion mismatch).
@@ -165,20 +167,20 @@ graph TD
 
 ---
 
-### 8. FR-RCP-007: Xóa Vĩnh viễn Công thức [Author-Owner/Admin]
+### 8. FR-RCP-007: Xóa Công thức (Soft Delete) [Author-Owner/Admin]
 - **Mã yêu cầu:** `FR-RCP-007` | **Ưu tiên:** `Must Have` | **Tác nhân:** Tác giả sở hữu / Admin
 - **Mô tả hoạt động:**
-  - Xóa vĩnh viễn (Hard Delete) bản ghi công thức và tự động xóa lan truyền (Cascade Delete) các entity con (`RecipeStep`, `RecipeIngredient`, `RecipeImage`) trong PostgreSQL.
-  - **Xử lý bất đồng bộ file vật lý:** Các file ảnh đính kèm trên MinIO S3 được đưa vào hàng đợi Hangfire Background Job (`BackgroundJob.Enqueue<IFileStorageService>(...)`) để xóa ngầm, tránh gây treo HTTP request của người dùng.
+  - **Thực hiện Soft Delete** (theo SPEC.md Mâu thuẫn 1 — Phương án A): Khi xóa công thức, hệ thống chỉ cập nhật `IsDeleted = true` và `UpdatedAt = DateTime.UtcNow`. **Tuyệt đối không dùng `DbContext.Remove()`.**
+  - Các entity con (`RecipeStep`, `RecipeIngredient`, `RecipeImage`) giữ nguyên trong DB nhưng bị ẩn nhờ Global Query Filter `.Where(x => !x.IsDeleted)` của `Recipe`.
+  - Ảnh trên MinIO **không xóa ngay lập tức** — chỉ dọn dẹp khi có tác vụ Purge định kỳ (Background Job) hoặc giữ lại cho mục đích Audit.
 - **Luồng xử lý (Happy Path):**
   1. Client gửi `DELETE /api/v1/recipes/{id:guid}`.
   2. `DeleteRecipeCommand` dispatch qua MediatR.
   3. Kiểm tra Resource-Based Authorization.
-  4. Lấy danh sách `ImageUrl` từ các `RecipeImage`.
-  5. Gọi `_unitOfWork.Recipes.Remove(recipe)` và `SaveChangesAsync()`.
-  6. Enqueue Hangfire jobs xóa các file ảnh trên MinIO bất đồng bộ.
-  7. Invalidate cache tags `"recipes"` và `$"recipe:{recipe.Slug}"`.
-  8. Trả về `HTTP 204 No Content`.
+  4. Gọi domain method `recipe.SoftDelete()` (gán `IsDeleted = true`, `UpdatedAt = UtcNow`).
+  5. `SaveChangesAsync()` — cập nhật trạng thái IsDeleted trong DB.
+  6. Invalidate cache tags `"recipes"` và `$"recipe:{recipe.Slug}"`.
+  7. Trả về `HTTP 204 No Content`.
 - **Endpoint:** `DELETE /api/v1/recipes/{id:guid}`
 
 ---
@@ -187,7 +189,7 @@ graph TD
 - **Mã yêu cầu:** `NFR-SEO-001` → `NFR-SEO-004` | **Ưu tiên:** `High`
 - **Nội dung chi tiết:**
   1. **NFR-SEO-001 (Structured Data JSON-LD Schema.org):**  
-     Tại Next.js Frontend (SSR Page `/recipes/[slug]`), tự động tạo thẻ `<script type="application/ld+json">` chứa dữ liệu cấu trúc chuẩn Schema.org `Recipe` (`@type: "Recipe"`, `name`, `description`, `image`, `author`, `datePublished`, `prepTime`, `cookTime`, `recipeIngredient[]`, `recipeInstructions[]`, `nutrition`). Đảm bảo pass 100% trên **Google Rich Results Test**.
+     Tại Next.js 15 Frontend (SSR Page `/recipes/[slug]`, lưu ý xử lý async `params`), tự động tạo thẻ `<script type="application/ld+json">` chứa dữ liệu cấu trúc chuẩn Schema.org `Recipe` (`@type: "Recipe"`, `name`, `description`, `image`, `author` (dùng `DisplayName`), `datePublished`, `prepTime`, `cookTime`, `recipeIngredient[]`, `recipeInstructions[]`, `nutrition`). Đảm bảo pass 100% trên **Google Rich Results Test**.
   2. **NFR-SEO-002 (Meta Tags & Open Graph Protocol):**  
      Tự động tạo thẻ `<title>` (≤ 60 ký tự), `<meta name="description">` (150–160 ký tự), các thẻ Open Graph (`og:title`, `og:description`, `og:image` kích thước 1200×630px, `og:url`), Twitter Card (`summary_large_image`), Canonical URL chuẩn. Thẻ `robots`: `index, follow` cho Published và `noindex` cho Draft/Archived.
   3. **NFR-SEO-003 (Sitemap.xml & Robots.txt):**  
@@ -243,10 +245,11 @@ timeline
 3. **Giai đoạn 3 — Tuần 3-4: Recipe Lifecycle (`FR-RCP-005` → `FR-RCP-006` → `FR-RCP-007`)**
    - **Bước 3.1 — FR-RCP-005 (Publish/Unpublish):** Kiểm tra điều kiện bắt buộc `Steps.Count > 0` trước khi chuyển trạng thái bài viết sang Published.
    - **Bước 3.2 — FR-RCP-006 (Archive Recipe):** Cài đặt chuyển trạng thái lưu trữ mềm.
-   - **Bước 3.3 — FR-RCP-007 (Delete Recipe):** Xóa vĩnh viễn dữ liệu DB và tích hợp Hangfire Background Job xóa ảnh MinIO.
+   - **Bước 3.3 — FR-RCP-007 (Delete Recipe):** Soft Delete công thức (`IsDeleted = true`) theo SPEC.md. Ảnh MinIO giữ lại, dọn dẹp bằng Background Job định kỳ.
 
 4. **Giai đoạn 4 — Tuần 4: Hỗ trợ Module Search (`FR-SRCH`)**
    - Phối hợp với Người B kiểm thử tính năng tìm kiếm Full-text search trên PostgreSQL dữ liệu Recipe đã tạo ra.
+   - **Checklist quan trọng:** Kiểm tra bắt buộc việc `Author` tìm kiếm được bài viết **Draft của chính mình** (theo SPEC.md).
 
 5. **Giai đoạn 5 — Tuần 6: Tối ưu SEO (`NFR-SEO-001 → 004`)**
    - Triển khai SSR/ISR Metadata, JSON-LD Rich Snippet Schema.org, Open Graph trên Frontend Next.js khi giao diện và API đã ổn định.
@@ -307,7 +310,7 @@ git commit -m "feat(recipe): xử lý kiểm tra RowVersion chống xung đột 
 git commit -m "feat(recipe): cài đặt logic bắt buộc phải có ít nhất 1 bước thực hiện trước khi Publish"
 
 # Nhánh FR-RCP-007:
-git commit -m "feat(recipe): tích hợp Hangfire Background Job xóa file ảnh trên MinIO bất đồng bộ khi xóa recipe"
+git commit -m "feat(recipe): cài đặt Soft Delete công thức (IsDeleted = true) theo SPEC.md thay vì Hard Delete"
 
 # Nhánh NFR-SEO:
 git commit -m "feat(seo): cấu hình JSON-LD Schema.org Recipe và thẻ Open Graph cho Next.js App Router"
