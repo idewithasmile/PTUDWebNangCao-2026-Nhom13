@@ -52,22 +52,23 @@ Dự án sử dụng Docker Compose để tự động dựng PostgreSQL, Redis,
 cd infrastructure
 
 # Khởi động các dịch vụ ngầm
-docker-compose up -d
+docker compose up -d
 ```
 *Các cổng dịch vụ mặc định:* PostgreSQL (5432), Redis (6379), MinIO (9000), MinIO Console (9001), Seq (5341).
 
 ### Bước 2: Chạy Backend API (.NET 10)
 ```bash
-# Di chuyển vào thư mục Backend
-cd backend/CulinaryBlog.API
+# Di chuyển vào thư mục Backend (project CulinaryBlog.API nằm ở src/Presentation)
+cd backend/src/Presentation
 
 # Khôi phục các packages
 dotnet restore
 
 # Chạy Entity Framework Migrations để tạo cấu trúc Database
-dotnet ef database update
+# (DbContext nằm ở project Infrastructure nên cần cờ -p; đã có migration InitialCreate)
+dotnet ef database update -p ../Infrastructure
 
-# Khởi chạy API
+# Khởi chạy API (mặc định http://localhost:5000 theo Properties/launchSettings.json)
 dotnet run
 ```
 *API sẽ chạy tại: `http://localhost:5000/api/v1`* (Giao diện Swagger/Scalar có tại `http://localhost:5000/scalar`).

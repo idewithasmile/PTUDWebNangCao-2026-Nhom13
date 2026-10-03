@@ -21,18 +21,22 @@ services:
     volumes:
       - redisdata:/data
 
-  minio:
-    image: minio/minio:latest
-    container_name: culinary_minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - miniodata:/data
+  # MinIO TẠM TẮT (2026): MinIO đã gỡ image khỏi Docker Hub và tắt pull ẩn danh
+  # trên quay.io (token actions=[] → 401). Chỉ cần cho FR-FILE/FR-RCP-008 (tuần 2-4).
+  # Cách bật lại: tạo tài khoản free tại https://quay.io → `docker login quay.io`
+  # → bỏ comment khối minio bên dưới → `docker compose up -d minio`.
+  # minio:
+  #   image: quay.io/minio/minio:latest
+  #   container_name: culinary_minio
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadminpassword
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - miniodata:/data
 
   seq:
     image: datalust/seq:latest

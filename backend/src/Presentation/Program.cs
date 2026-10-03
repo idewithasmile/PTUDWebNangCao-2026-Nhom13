@@ -92,3 +92,6 @@ v1.MapGroup("/recipes").MapRecipesEndpoints();
 app.MapHealthChecks();
 
 app.Run();
+
+// Public để WebApplicationFactory<Program> (integration tests FR-AUTH) truy cập.
+public partial class Program { }

@@ -12,4 +12,8 @@
   <Folder Name="/src/Presentation/">
     <Project Path="src/Presentation/CulinaryBlog.API.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CulinaryBlog.Application.Tests/CulinaryBlog.Application.Tests.csproj" />
+    <Project Path="tests/CulinaryBlog.Api.Tests/CulinaryBlog.Api.Tests.csproj" />
+  </Folder>
 </Solution>
