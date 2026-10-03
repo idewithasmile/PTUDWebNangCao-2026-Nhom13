@@ -3,21 +3,24 @@ using System;
 using CulinaryBlog.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CulinaryBlog.Infrastructure.Data.Migrations
+namespace CulinaryBlog.Infrastructure.Migrations
 {
     [DbContext(typeof(CulinaryBlogDbContext))]
-    partial class CulinaryBlogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003110543_SyncRecipeDomainModel")]
+    partial class SyncRecipeDomainModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -128,7 +131,9 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("Slug")
@@ -156,7 +161,7 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("CookTime")
+                    b.Property<int>("CookTimeMinutes")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -166,8 +171,10 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<short>("Difficulty")
-                        .HasColumnType("smallint");
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Instructions")
                         .IsRequired()
@@ -176,14 +183,16 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("PrepTime")
+                    b.Property<int>("PrepTimeMinutes")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<int>("Servings")
@@ -191,14 +200,18 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(220)
+                        .HasColumnType("character varying(220)");
 
-                    b.Property<short>("Status")
-                        .HasColumnType("smallint");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -209,7 +222,10 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Recipes");
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Recipes", (string)null);
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeImage", b =>
@@ -219,7 +235,8 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AltText")
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -231,24 +248,29 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("MediumUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
 
                     b.Property<string>("OriginalUrl")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("RecipeId")
                         .HasColumnType("uuid");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("ThumbnailUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -257,7 +279,7 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeImages");
+                    b.ToTable("RecipeImages", (string)null);
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeIngredient", b =>
@@ -274,26 +296,32 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("numeric");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
                     b.Property<Guid>("RecipeId")
                         .HasColumnType("uuid");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("Unit")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -302,7 +330,7 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeIngredients");
+                    b.ToTable("RecipeIngredients", (string)null);
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeStep", b =>
@@ -316,10 +344,12 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<string>("ImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -328,7 +358,9 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<int>("StepNumber")
@@ -339,7 +371,8 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -348,7 +381,7 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeSteps");
+                    b.ToTable("RecipeSteps", (string)null);
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RefreshToken", b =>
@@ -530,7 +563,7 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                     b.HasOne("CulinaryBlog.Domain.Entities.Category", "Category")
                         .WithMany("Recipes")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.OwnsOne("CulinaryBlog.Domain.ValueObjects.RecipeNutrition", "Nutrition", b1 =>
@@ -539,27 +572,33 @@ namespace CulinaryBlog.Infrastructure.Data.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<decimal?>("Calories")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Calories");
 
                             b1.Property<decimal?>("Carbohydrates")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Carbohydrates");
 
                             b1.Property<decimal?>("Fat")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Fat");
 
                             b1.Property<decimal?>("Fiber")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Fiber");
 
                             b1.Property<decimal?>("Protein")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Protein");
 
                             b1.Property<decimal?>("Sodium")
-                                .HasColumnType("numeric")
+                                .HasPrecision(8, 2)
+                                .HasColumnType("numeric(8,2)")
                                 .HasColumnName("Nutrition_Sodium");
 
                             b1.HasKey("RecipeId");
