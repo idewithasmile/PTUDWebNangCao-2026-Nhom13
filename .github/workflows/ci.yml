@@ -24,4 +24,4 @@ jobs:
         run: dotnet build backend/CulinaryBlog.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test backend/CulinaryBlog.slnx --no-build --verbosity normal
+        run: dotnet test backend/CulinaryBlog.slnx --configuration Release --no-build --verbosity normal
