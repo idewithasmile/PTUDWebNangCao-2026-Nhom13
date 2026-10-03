@@ -20,7 +20,7 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
     {
         base.OnModelCreating(modelBuilder);
 
-        // Khai báo RecipeNutrition là Owned Entity (nhúng vào bảng Recipes)
+        // Khai báo RecipeNutrition là Owned Entity (nhúng vào bảng Recipes) — giữ từ main (Phước).
         modelBuilder.Entity<Recipe>()
             .OwnsOne(r => r.Nutrition, n =>
             {
@@ -31,6 +31,30 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
                 n.Property(x => x.Fiber).HasColumnName("Nutrition_Fiber");
                 n.Property(x => x.Sodium).HasColumnName("Nutrition_Sodium");
             });
+
+        // Global query filter cho Soft Delete trên tất cả BaseEntity — từ branch Recipe.
+        // RowVersion là concurrency token tường minh trên cột bytea, giá trị do client
+        // quản lý (AuditInterceptor/seeder). ValueGeneratedNever để EF luôn gửi giá trị
+        // client trên INSERT (Npgsql không có default cho bytea, bỏ qua sẽ vi phạm
+        // NOT NULL constraint khi Seed trên PostgreSQL thật).
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(BaseEntity.RowVersion))
+                    .IsConcurrencyToken()
+                    .ValueGeneratedNever();
+
+                var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                var property = System.Linq.Expressions.Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
+                var falseConstant = System.Linq.Expressions.Expression.Constant(false);
+                var lambda = System.Linq.Expressions.Expression.Lambda(
+                    System.Linq.Expressions.Expression.Equal(property, falseConstant), parameter);
+
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            }
+        }
 
         // Cấu hình các EntityConfigurations khác nếu có
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CulinaryBlogDbContext).Assembly);

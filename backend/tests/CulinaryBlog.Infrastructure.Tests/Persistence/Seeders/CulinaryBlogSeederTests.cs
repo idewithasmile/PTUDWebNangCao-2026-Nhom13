@@ -165,14 +165,17 @@ public class CulinaryBlogSeederTests
         using (var setupScope = sp.CreateScope())
         {
             var db = setupScope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
-            var dummyRecipes = Enumerable.Range(1, 100).Select(i => new Recipe
-            {
-                Title = $"Pre-existing Recipe {i}",
-                Slug = $"pre-existing-recipe-{i}",
-                Description = "Mô tả",
-                Instructions = "Hướng dẫn",
-                RowVersion = new byte[8]
-            });
+            var dummyRecipes = Enumerable.Range(1, 100).Select(i => Recipe.Create(
+                $"Pre-existing Recipe {i}",
+                $"pre-existing-recipe-{i}",
+                "Mô tả",
+                "Hướng dẫn",
+                15,
+                20,
+                2,
+                RecipeDifficulty.Easy,
+                Guid.NewGuid(),
+                Guid.NewGuid().ToString()));
             await db.Recipes.AddRangeAsync(dummyRecipes);
             await db.SaveChangesAsync();
         }
@@ -492,11 +495,11 @@ public class CulinaryBlogSeederTests
                 $"Recipe '{recipe.Title}' phải liên kết với một AuthorId hợp lệ.");
 
             // Ràng buộc thời gian và khẩu phần
-            recipe.PrepTime.Should().BeGreaterThan(0, "PrepTime phải > 0");
-            recipe.PrepTime.Should().BeInRange(15, 60);
+            recipe.PrepTimeMinutes.Should().BeGreaterThan(0, "PrepTime phải > 0");
+            recipe.PrepTimeMinutes.Should().BeInRange(15, 60);
 
-            recipe.CookTime.Should().BeGreaterThanOrEqualTo(0, "CookTime phải >= 0");
-            recipe.CookTime.Should().BeInRange(20, 180);
+            recipe.CookTimeMinutes.Should().BeGreaterThanOrEqualTo(0, "CookTime phải >= 0");
+            recipe.CookTimeMinutes.Should().BeInRange(20, 180);
 
             recipe.Servings.Should().BeGreaterThan(0, "Servings phải > 0");
             recipe.Servings.Should().BeInRange(2, 8);
@@ -507,9 +510,9 @@ public class CulinaryBlogSeederTests
             recipe.Description.Should().NotBeNullOrWhiteSpace();
             recipe.Instructions.Should().NotBeNullOrWhiteSpace();
 
-            // RowVersion byte[8]
+            // RowVersion do AuditInterceptor sinh (Guid 16 bytes) khi dùng Rich Domain (Empty -> Guid).
             recipe.RowVersion.Should().NotBeNull();
-            recipe.RowVersion.Length.Should().Be(8);
+            recipe.RowVersion.Length.Should().Be(16);
         }
     }
 
@@ -580,20 +583,17 @@ public class CulinaryBlogSeederTests
             db.Categories.Add(category);
             await db.SaveChangesAsync();
 
-            var dummyRecipes = Enumerable.Range(1, preExistingCount).Select(i => new Recipe
-            {
-                Title = $"Dummy Recipe {i}",
-                Slug = $"dummy-recipe-{i}",
-                Description = "Mô tả công thức mẫu",
-                Instructions = "Hướng dẫn thực hiện mẫu",
-                CategoryId = category.Id,
-                AuthorId = author.Id,
-                PrepTime = 20,
-                CookTime = 30,
-                Servings = 4,
-                Status = RecipeStatus.Published,
-                RowVersion = new byte[8]
-            }).ToList();
+            var dummyRecipes = Enumerable.Range(1, preExistingCount).Select(i => Recipe.Create(
+                $"Dummy Recipe {i}",
+                $"dummy-recipe-{i}",
+                "Mô tả công thức mẫu",
+                "Hướng dẫn thực hiện mẫu",
+                20,
+                30,
+                4,
+                RecipeDifficulty.Easy,
+                category.Id,
+                author.Id)).ToList();
 
             await db.Recipes.AddRangeAsync(dummyRecipes);
             await db.SaveChangesAsync();
@@ -652,7 +652,7 @@ public class CulinaryBlogSeederTests
                 step.Description.Should().NotBeNullOrWhiteSpace();
                 step.TimerMinutes.Should().BeInRange(5, 35);
                 step.RowVersion.Should().NotBeNull();
-                step.RowVersion.Length.Should().Be(8);
+                step.RowVersion.Length.Should().Be(16);
             }
         }
     }
@@ -704,7 +704,7 @@ public class CulinaryBlogSeederTests
                 ingr.Unit.Should().NotBeNullOrWhiteSpace();
                 validUnits.Should().Contain(ingr.Unit!);
                 ingr.RowVersion.Should().NotBeNull();
-                ingr.RowVersion.Length.Should().Be(8);
+                ingr.RowVersion.Length.Should().Be(16);
             }
         }
     }
@@ -770,8 +770,8 @@ public class CulinaryBlogSeederTests
         // Kiểm tra các thuộc tính chính của Recipes được sinh tất định từ Faker
         recipes1.Select(r => r.Title).Should().Equal(recipes2.Select(r => r.Title));
         recipes1.Select(r => r.Slug).Should().Equal(recipes2.Select(r => r.Slug));
-        recipes1.Select(r => r.PrepTime).Should().Equal(recipes2.Select(r => r.PrepTime));
-        recipes1.Select(r => r.CookTime).Should().Equal(recipes2.Select(r => r.CookTime));
+        recipes1.Select(r => r.PrepTimeMinutes).Should().Equal(recipes2.Select(r => r.PrepTimeMinutes));
+        recipes1.Select(r => r.CookTimeMinutes).Should().Equal(recipes2.Select(r => r.CookTimeMinutes));
         recipes1.Select(r => r.Servings).Should().Equal(recipes2.Select(r => r.Servings));
         recipes1.Select(r => r.Difficulty).Should().Equal(recipes2.Select(r => r.Difficulty));
         recipes1.Select(r => r.Status).Should().Equal(recipes2.Select(r => r.Status));

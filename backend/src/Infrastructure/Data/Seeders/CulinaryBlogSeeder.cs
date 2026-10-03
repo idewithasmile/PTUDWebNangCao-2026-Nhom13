@@ -144,26 +144,22 @@ public static class CulinaryBlogSeeder
                 var title = $"{baseTitle} {f.Random.Int(1, 999)}";
                 var slug = f.Lorem.Slug() + "-" + f.Random.Guid().ToString()[..8];
 
-                return new Recipe
-                {
-                    Title = title,
-                    Slug = slug,
-                    Description = f.Lorem.Paragraph(2),
-                    Instructions = "Hướng dẫn chi tiết theo các bước thực hiện bên dưới.",
-                    CategoryId = f.PickRandom(categoryIds),
-                    AuthorId = f.PickRandom(authors).Id,
-                    PrepTime = f.Random.Int(15, 60),
-                    CookTime = f.Random.Int(20, 180),
-                    Servings = f.Random.Int(2, 8),
-                    Difficulty = f.PickRandom<RecipeDifficulty>(),
-                    Status = RecipeStatus.Published,
-                    RowVersion = new byte[8]
-                };
+                return Recipe.Create(
+                    title,
+                    slug,
+                    f.Lorem.Paragraph(2),
+                    "Hướng dẫn chi tiết theo các bước thực hiện bên dưới.",
+                    f.Random.Int(15, 60),
+                    f.Random.Int(20, 180),
+                    f.Random.Int(2, 8),
+                    f.PickRandom<RecipeDifficulty>(),
+                    f.PickRandom(categoryIds),
+                    f.PickRandom(authors).Id);
             });
 
         var recipes = recipeFaker.UseSeed(SEED).Generate(recipesNeeded);
 
-        // 4. Tạo Steps (5-8 bước) và Ingredients (10-15 nguyên liệu)
+        // 4. Tạo Steps (5-8 bước) và Ingredients (10-15 nguyên liệu) qua Rich Domain API.
         var stepFaker = new Faker("vi");
         var ingrFaker = new Faker("vi");
 
@@ -172,14 +168,10 @@ public static class CulinaryBlogSeeder
             int stepCount = stepFaker.Random.Int(5, 8);
             for (int s = 1; s <= stepCount; s++)
             {
-                recipe.Steps.Add(new RecipeStep
-                {
-                    StepNumber = s,
-                    Title = $"Bước {s}: Tiến hành chế biến",
-                    Description = stepFaker.PickRandom(StepDescriptions),
-                    TimerMinutes = stepFaker.Random.Int(5, 35),
-                    RowVersion = new byte[8]
-                });
+                recipe.AddStep(
+                    $"Bước {s}: Tiến hành chế biến",
+                    stepFaker.PickRandom(StepDescriptions),
+                    stepFaker.Random.Int(5, 35));
             }
 
             int ingrCount = ingrFaker.Random.Int(10, 15);
@@ -187,16 +179,15 @@ public static class CulinaryBlogSeeder
 
             for (int i = 0; i < selectedIngredients.Count; i++)
             {
-                recipe.Ingredients.Add(new RecipeIngredient
-                {
-                    Name = selectedIngredients[i],
-                    Quantity = ingrFaker.Random.Decimal(5, 500),
-                    Unit = ingrFaker.PickRandom("gram", "ml", "thìa canh", "quả", "củ", "nhánh"),
-                    Notes = ingrFaker.Random.Bool(0.3f) ? "Ưu tiên chọn loại tươi ngon" : null,
-                    OrderIndex = i + 1,
-                    RowVersion = new byte[8]
-                });
+                recipe.AddIngredient(
+                    selectedIngredients[i],
+                    ingrFaker.Random.Decimal(5, 500),
+                    ingrFaker.PickRandom("gram", "ml", "thìa canh", "quả", "củ", "nhánh"),
+                    ingrFaker.Random.Bool(0.3f) ? "Ưu tiên chọn loại tươi ngon" : null);
             }
+
+            // Seeder tạo dữ liệu Published (cần ít nhất 1 step — đã có ở trên).
+            recipe.Publish();
         }
 
         await db.Recipes.AddRangeAsync(recipes);

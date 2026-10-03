@@ -63,24 +63,30 @@ public class CategoryEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             await db.SaveChangesAsync();
 
             // Thêm 2 recipes cho catB (1 Published, 1 Draft)
-            var recipe1 = new Recipe
-            {
-                Title = "Canh chua cá lóc",
-                Slug = "canh-chua-ca-loc",
-                CategoryId = catB.Id,
-                AuthorId = author.Id,
-                Status = RecipeStatus.Published,
-                IsDeleted = false
-            };
-            var recipe2 = new Recipe
-            {
-                Title = "Canh bí đỏ",
-                Slug = "canh-bi-do",
-                CategoryId = catB.Id,
-                AuthorId = author.Id,
-                Status = RecipeStatus.Draft, // Chưa published -> không đếm
-                IsDeleted = false
-            };
+            var recipe1 = Recipe.Create(
+                "Canh chua cá lóc",
+                "canh-chua-ca-loc",
+                "Mô tả canh chua",
+                "Hướng dẫn nấu canh chua",
+                15,
+                20,
+                4,
+                RecipeDifficulty.Easy,
+                catB.Id,
+                author.Id);
+            recipe1.AddStep("Sơ chế", "Sơ chế cá", 10);
+            recipe1.Publish();
+            var recipe2 = Recipe.Create(
+                "Canh bí đỏ",
+                "canh-bi-do",
+                "Mô tả canh bí đỏ",
+                "Hướng dẫn nấu canh bí đỏ",
+                10,
+                15,
+                2,
+                RecipeDifficulty.Easy,
+                catB.Id,
+                author.Id); // Chưa published -> không đếm
             db.Recipes.AddRange(recipe1, recipe2);
             await db.SaveChangesAsync();
         }
@@ -171,15 +177,19 @@ public class CategoryEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             await db.SaveChangesAsync();
             catId = cat.Id;
 
-            var recipe = new Recipe
-            {
-                Title = "Bún bò Huế chuẩn vị",
-                Slug = "bun-bo-hue-chuan-vi",
-                CategoryId = catId,
-                AuthorId = author.Id,
-                Status = RecipeStatus.Published,
-                IsDeleted = false
-            };
+            var recipe = Recipe.Create(
+                "Bún bò Huế chuẩn vị",
+                "bun-bo-hue-chuan-vi",
+                "Mô tả bún bò Huế",
+                "Hướng dẫn nấu bún bò Huế",
+                20,
+                30,
+                4,
+                RecipeDifficulty.Medium,
+                catId,
+                author.Id);
+            recipe.AddStep("Sơ chế", "Sơ chế nguyên liệu", 10);
+            recipe.Publish();
             db.Recipes.Add(recipe);
             await db.SaveChangesAsync();
         }
@@ -219,14 +229,22 @@ public class CategoryEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             db.Categories.Add(cat);
             await db.SaveChangesAsync();
 
-            var recipes = Enumerable.Range(1, 12).Select(i => new Recipe
+            var recipes = Enumerable.Range(1, 12).Select(i =>
             {
-                Title = $"Món chiên số {i}",
-                Slug = $"mon-chien-{i}",
-                CategoryId = cat.Id,
-                AuthorId = author.Id,
-                Status = RecipeStatus.Published,
-                IsDeleted = false
+                var r = Recipe.Create(
+                    $"Món chiên số {i}",
+                    $"mon-chien-{i}",
+                    "Mô tả món chiên",
+                    "Hướng dẫn chiên",
+                    10,
+                    15,
+                    2,
+                    RecipeDifficulty.Easy,
+                    cat.Id,
+                    author.Id);
+                r.AddStep("Chiên", "Chiên giòn", 10);
+                r.Publish();
+                return r;
             });
             db.Recipes.AddRange(recipes);
             await db.SaveChangesAsync();

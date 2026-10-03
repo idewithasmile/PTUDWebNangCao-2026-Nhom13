@@ -34,7 +34,7 @@ public class AuditInterceptor : SaveChangesInterceptor
             }
             else if (entry.State == EntityState.Modified)
             {
-                entry.Entity.UpdatedAt = now;
+                entry.Property(e => e.UpdatedAt).CurrentValue = now;
             }
         }
     }

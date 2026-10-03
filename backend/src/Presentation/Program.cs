@@ -71,6 +71,14 @@ builder.Services.AddAuthorization(options =>
     }
 });
 
+// Output Caching vá»›i Redis
+builder.Services.AddStackExchangeRedisOutputCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "CulinaryBlog_";
+});
+builder.Services.AddOutputCache();
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -93,6 +101,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseCors("FrontendPolicy");
+app.UseOutputCache();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -125,4 +134,5 @@ app.MapHealthChecks();
 
 app.Run();
 
+// Public để WebApplicationFactory<Program> (integration tests FR-AUTH) truy cập.
 public partial class Program { }

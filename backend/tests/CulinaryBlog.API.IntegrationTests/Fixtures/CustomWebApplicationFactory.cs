@@ -66,6 +66,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddDistributedMemoryCache();
             services.AddScoped<ICacheService, RedisCacheService>();
 
+            // OutputCaching Redis (Program.cs) cần IOutputCacheStore — thay bằng in-memory cho tests.
+            services.AddOutputCache();
+
             // 3. Xóa toàn bộ cấu hình Hangfire cũ (PostgreSQL Storage & Server)
             static bool IsHangfire(Type? type)
             {
