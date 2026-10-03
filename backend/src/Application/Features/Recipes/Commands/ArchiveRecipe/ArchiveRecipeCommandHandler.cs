@@ -6,14 +6,15 @@ using MediatR;
 namespace CulinaryBlog.Application.Features.Recipes.Commands.ArchiveRecipe;
 
 public class ArchiveRecipeCommandHandler(
-    IUnitOfWork unitOfWork,
+    IRecipeRepository recipeRepository,
+    Domain.Common.Interfaces.IUnitOfWork unitOfWork,
     ICurrentUser currentUser)
     : IRequestHandler<ArchiveRecipeCommand, RecipeDto>
 {
     public async Task<RecipeDto> Handle(ArchiveRecipeCommand request, CancellationToken cancellationToken)
     {
         var recipe = await RecipeAuthorizationHelper.LoadAndAuthorize(
-            unitOfWork, currentUser, request.Id, cancellationToken);
+            recipeRepository, currentUser, request.Id, cancellationToken);
         
         recipe.Archive();
         
