@@ -57,6 +57,12 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        group.MapPatch("/{id:guid}/archive", ArchiveRecipe)
+            .RequireAuthorization()
+            .Produces<RecipeDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return group;
     }
 
@@ -114,6 +120,17 @@ public static class RecipesEndpoints
         CancellationToken ct)
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.UnpublishRecipe.UnpublishRecipeCommand(id), ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> ArchiveRecipe(
+        Guid id,
+        IMediator mediator,
+        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.ArchiveRecipe.ArchiveRecipeCommand(id), ct);
         await cacheStore.EvictByTagAsync("recipes", ct);
         return Results.Ok(result);
     }
