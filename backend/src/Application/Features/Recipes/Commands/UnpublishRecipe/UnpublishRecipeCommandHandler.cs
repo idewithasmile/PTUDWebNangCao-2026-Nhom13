@@ -6,14 +6,15 @@ using MediatR;
 namespace CulinaryBlog.Application.Features.Recipes.Commands.UnpublishRecipe;
 
 public class UnpublishRecipeCommandHandler(
-    IUnitOfWork unitOfWork,
+    IRecipeRepository recipeRepository,
+    Domain.Common.Interfaces.IUnitOfWork unitOfWork,
     ICurrentUser currentUser)
     : IRequestHandler<UnpublishRecipeCommand, RecipeDto>
 {
     public async Task<RecipeDto> Handle(UnpublishRecipeCommand request, CancellationToken cancellationToken)
     {
         var recipe = await RecipeAuthorizationHelper.LoadAndAuthorize(
-            unitOfWork, currentUser, request.Id, cancellationToken);
+            recipeRepository, currentUser, request.Id, cancellationToken);
         
         recipe.Unpublish();
         

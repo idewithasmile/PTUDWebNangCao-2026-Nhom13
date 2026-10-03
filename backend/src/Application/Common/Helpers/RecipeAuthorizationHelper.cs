@@ -7,12 +7,12 @@ namespace CulinaryBlog.Application.Common.Helpers;
 public static class RecipeAuthorizationHelper
 {
     public static async Task<Recipe> LoadAndAuthorize(
-        IUnitOfWork unitOfWork,
+        IRecipeRepository recipeRepository,
         ICurrentUser currentUser,
         Guid recipeId,
         CancellationToken ct)
     {
-        var recipe = await unitOfWork.Recipes.GetByIdAsync(recipeId, ct)
+        var recipe = await recipeRepository.GetByIdAsync(recipeId, ct)
             ?? throw new NotFoundException("RECIPE_NOT_FOUND", $"Không tìm thấy công thức với Id {recipeId}");
         
         if (!currentUser.IsAuthenticated)

@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Application.Features.Recipes.Commands.PublishRecipe;
+using CulinaryBlog.Domain.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Enums;
 using CulinaryBlog.Domain.Exceptions;
@@ -22,9 +23,7 @@ public class PublishRecipeCommandHandlerTests
         _mockRecipeRepo = new Mock<IRecipeRepository>();
         _mockCurrentUser = new Mock<ICurrentUser>();
 
-        _mockUnitOfWork.Setup(u => u.Recipes).Returns(_mockRecipeRepo.Object);
-
-        _handler = new PublishRecipeCommandHandler(_mockUnitOfWork.Object, _mockCurrentUser.Object);
+        _handler = new PublishRecipeCommandHandler(_mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object);
     }
 
     [Fact]
