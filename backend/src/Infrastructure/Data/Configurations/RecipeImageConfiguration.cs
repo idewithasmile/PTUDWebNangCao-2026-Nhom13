@@ -31,8 +31,11 @@ public class RecipeImageConfiguration : IEntityTypeConfiguration<RecipeImage>
         builder.Property(img => img.OrderIndex)
             .IsRequired();
 
+        // Concurrency token tường minh, giá trị do client quản lý (xem chú thích
+        // tương tự trong RecipeConfiguration — KHÔNG dùng IsRowVersion()).
         builder.Property(img => img.RowVersion)
-            .IsRowVersion();
+            .IsConcurrencyToken()
+            .ValueGeneratedNever();
 
         builder.HasOne(img => img.Recipe)
             .WithMany(r => r.Images)

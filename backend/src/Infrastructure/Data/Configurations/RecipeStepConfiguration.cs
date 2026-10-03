@@ -25,8 +25,11 @@ public class RecipeStepConfiguration : IEntityTypeConfiguration<RecipeStep>
         builder.Property(s => s.ImageUrl)
             .HasMaxLength(500);
 
+        // Concurrency token tường minh, giá trị do client quản lý (xem chú thích
+        // tương tự trong RecipeConfiguration — KHÔNG dùng IsRowVersion()).
         builder.Property(s => s.RowVersion)
-            .IsRowVersion();
+            .IsConcurrencyToken()
+            .ValueGeneratedNever();
 
         builder.HasOne(s => s.Recipe)
             .WithMany(r => r.Steps)

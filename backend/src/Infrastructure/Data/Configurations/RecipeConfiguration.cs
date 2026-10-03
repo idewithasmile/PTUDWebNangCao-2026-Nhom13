@@ -49,8 +49,13 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             .HasMaxLength(20)
             .IsRequired();
 
+        // Concurrency token tường minh trên cột bytea, giá trị do client quản lý
+        // (AuditInterceptor/seeder). ValueGeneratedNever để EF luôn gửi giá trị
+        // client trên INSERT (Npgsql không có default cho bytea, bỏ qua sẽ
+        // vi phạm NOT NULL constraint khi Seed trên PostgreSQL thật).
         builder.Property(r => r.RowVersion)
-            .IsRowVersion();
+            .IsConcurrencyToken()
+            .ValueGeneratedNever();
 
         // Foreign keys
         builder.HasOne(r => r.Category)

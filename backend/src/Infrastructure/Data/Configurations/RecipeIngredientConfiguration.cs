@@ -28,8 +28,11 @@ public class RecipeIngredientConfiguration : IEntityTypeConfiguration<RecipeIngr
         builder.Property(i => i.OrderIndex)
             .IsRequired();
 
+        // Concurrency token tường minh, giá trị do client quản lý (xem chú thích
+        // tương tự trong RecipeConfiguration — KHÔNG dùng IsRowVersion()).
         builder.Property(i => i.RowVersion)
-            .IsRowVersion();
+            .IsConcurrencyToken()
+            .ValueGeneratedNever();
 
         builder.HasOne(i => i.Recipe)
             .WithMany(r => r.Ingredients)
