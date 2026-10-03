@@ -1,5 +1,6 @@
 import './globals.css';
 import Providers from './providers';
+import SiteHeader from '@/components/site-header';
 
 export const metadata = {
   title: 'Culinary Blog',
@@ -11,9 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi">
       <body>
         <Providers>
-          <header className="p-4 border-b">
-            <h1 className="text-xl font-bold">🍳 Culinary Blog</h1>
-          </header>
+          <SiteHeader />
           <main className="p-4">{children}</main>
         </Providers>
       </body>

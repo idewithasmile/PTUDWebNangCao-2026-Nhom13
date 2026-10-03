@@ -2,16 +2,28 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { loginSchema, type LoginForm } from '@/features/auth/schemas';
 import { useLogin, toErrorMessage } from '@/features/auth/hooks';
+import { consumeSessionRevokedFlag } from '@/lib/api-client';
 import GoogleButton from '@/features/auth/google-button';
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useLogin();
   const [serverError, setServerError] = useState<string | null>(null);
+  // FR-AUTH-004: api-client đá về /login?reason=revoked khi phát hiện reuse
+  // refresh token → hiện cảnh báo "phiên không hợp lệ / bị xâm phạm" đúng 1 lần.
+  const [revokedWarning, setRevokedWarning] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reason') === 'revoked' || consumeSessionRevokedFlag() !== null) {
+      setRevokedWarning(true);
+      // Dọn query param cho sạch URL (không reload trang).
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
   const {
     register,
     handleSubmit,
@@ -38,6 +50,11 @@ export default function LoginPage() {
   return (
     <main className="mx-auto max-w-md py-8">
       <h1 className="text-2xl font-bold">Đăng nhập</h1>
+      {revokedWarning && (
+        <p role="alert" className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          Phiên đăng nhập không hợp lệ hoặc bị xâm phạm. Vui lòng đăng nhập lại.
+        </p>
+      )}
       <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
         <div>
           <label htmlFor="email" className="block text-sm font-medium">Email</label>

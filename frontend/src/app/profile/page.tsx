@@ -13,7 +13,8 @@ import { updateProfileSchema, type UpdateProfileForm } from '@/features/auth/sch
 import { hasSession } from '@/features/auth/api';
 
 // FR-AUTH-006 (GET /auth/me) + FR-AUTH-007 (PATCH /auth/me).
-// email/userName chỉ hiển thị read-only — backend cấm đổi 2 field này.
+// email/userName là input DISABLED read-only — backend cấm đổi 2 field này,
+// payload PATCH chỉ gồm { displayName, bio, avatarUrl }.
 export default function ProfilePage() {
   const router = useRouter();
   const logout = useLogout();
@@ -31,6 +32,7 @@ export default function ProfilePage() {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<UpdateProfileForm>();
 
@@ -47,8 +49,16 @@ export default function ProfilePage() {
   const onSubmit = (values: UpdateProfileForm) => {
     setServerError(null);
     setSaved(false);
+    // Validate client bằng Zod (mirror backend FluentValidation), map lỗi
+    // vào từng field thay vì nuốt im như trước.
     const parsed = updateProfileSchema.safeParse(values);
-    if (!parsed.success) return;
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as keyof UpdateProfileForm | undefined;
+        if (field) setError(field, { message: issue.message });
+      }
+      return;
+    }
     update.mutate(parsed.data, {
       onSuccess: () => setSaved(true),
       onError: (e) => setServerError(toErrorMessage(e, 'Cập nhật thất bại.')),
@@ -56,8 +66,10 @@ export default function ProfilePage() {
   };
 
   const onLogout = () => {
+    // FR-AUTH-005: dù API lỗi vẫn về /login (đừng kẹt lại trang profile).
     logout.mutate(undefined, {
       onSuccess: () => router.push('/login'),
+      onError: () => router.push('/login'),
     });
   };
 
@@ -102,13 +114,33 @@ export default function ProfilePage() {
     <main className="mx-auto max-w-md py-8">
       <h1 className="text-2xl font-bold">Hồ sơ cá nhân</h1>
 
-      <div className="mt-4 rounded border p-3 text-sm">
-        <p><span className="font-medium">Email:</span> {user.email}</p>
-        <p><span className="font-medium">Tên đăng nhập:</span> {user.userName}</p>
-        <p><span className="font-medium">Vai trò:</span> {user.roles.join(', ') || '—'}</p>
-      </div>
-
       <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium">Email (không thể thay đổi)</label>
+          <input
+            id="email"
+            type="email"
+            value={user.email}
+            disabled
+            readOnly
+            aria-disabled="true"
+            title="Email không thể thay đổi"
+            className="mt-1 w-full cursor-not-allowed rounded border bg-gray-100 p-2 text-gray-600"
+          />
+        </div>
+        <div>
+          <label htmlFor="userName" className="block text-sm font-medium">Tên đăng nhập (không thể thay đổi)</label>
+          <input
+            id="userName"
+            type="text"
+            value={user.userName}
+            disabled
+            readOnly
+            aria-disabled="true"
+            title="Tên đăng nhập không thể thay đổi"
+            className="mt-1 w-full cursor-not-allowed rounded border bg-gray-100 p-2 text-gray-600"
+          />
+        </div>
         <div>
           <label htmlFor="displayName" className="block text-sm font-medium">Tên hiển thị</label>
           <input
