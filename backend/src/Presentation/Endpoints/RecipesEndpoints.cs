@@ -18,6 +18,15 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapGet("/{slug}", GetRecipeBySlug)
+            .AllowAnonymous()
+            .CacheOutput(policy => policy
+                .Expire(TimeSpan.FromMinutes(60))
+                .Tag("recipes"))
+            .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         group.MapPut("/{id:guid}", UpdateRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status200OK)
@@ -34,6 +43,14 @@ public static class RecipesEndpoints
     {
         var result = await mediator.Send(command);
         return Results.Created($"/api/v1/recipes/{result.Slug}", result);
+    }
+
+    private static async Task<IResult> GetRecipeBySlug(
+        string slug,
+        IMediator mediator)
+    {
+        var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Queries.GetRecipeBySlug.GetRecipeBySlugQuery(slug));
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> UpdateRecipe(
