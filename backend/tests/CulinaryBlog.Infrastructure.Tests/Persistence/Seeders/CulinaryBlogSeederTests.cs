@@ -510,9 +510,9 @@ public class CulinaryBlogSeederTests
             recipe.Description.Should().NotBeNullOrWhiteSpace();
             recipe.Instructions.Should().NotBeNullOrWhiteSpace();
 
-            // RowVersion byte[8]
+            // RowVersion do AuditInterceptor sinh (Guid 16 bytes) khi dùng Rich Domain (Empty -> Guid).
             recipe.RowVersion.Should().NotBeNull();
-            recipe.RowVersion.Length.Should().Be(8);
+            recipe.RowVersion.Length.Should().Be(16);
         }
     }
 
@@ -652,7 +652,7 @@ public class CulinaryBlogSeederTests
                 step.Description.Should().NotBeNullOrWhiteSpace();
                 step.TimerMinutes.Should().BeInRange(5, 35);
                 step.RowVersion.Should().NotBeNull();
-                step.RowVersion.Length.Should().Be(8);
+                step.RowVersion.Length.Should().Be(16);
             }
         }
     }
@@ -704,7 +704,7 @@ public class CulinaryBlogSeederTests
                 ingr.Unit.Should().NotBeNullOrWhiteSpace();
                 validUnits.Should().Contain(ingr.Unit!);
                 ingr.RowVersion.Should().NotBeNull();
-                ingr.RowVersion.Length.Should().Be(8);
+                ingr.RowVersion.Length.Should().Be(16);
             }
         }
     }

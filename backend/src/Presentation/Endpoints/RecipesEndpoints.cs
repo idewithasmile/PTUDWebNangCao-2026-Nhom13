@@ -3,6 +3,7 @@ using CulinaryBlog.Application.Features.Recipes.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 namespace CulinaryBlog.API.Endpoints;
@@ -111,7 +112,7 @@ public static class RecipesEndpoints
     private static async Task<IResult> PublishRecipe(
         Guid id,
         IMediator mediator,
-        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
         CancellationToken ct)
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.PublishRecipe.PublishRecipeCommand(id), ct);
@@ -122,7 +123,7 @@ public static class RecipesEndpoints
     private static async Task<IResult> UnpublishRecipe(
         Guid id,
         IMediator mediator,
-        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
         CancellationToken ct)
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.UnpublishRecipe.UnpublishRecipeCommand(id), ct);
@@ -133,7 +134,7 @@ public static class RecipesEndpoints
     private static async Task<IResult> ArchiveRecipe(
         Guid id,
         IMediator mediator,
-        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
         CancellationToken ct)
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.ArchiveRecipe.ArchiveRecipeCommand(id), ct);
@@ -144,7 +145,7 @@ public static class RecipesEndpoints
     private static async Task<IResult> DeleteRecipe(
         Guid id,
         IMediator mediator,
-        Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
         CancellationToken ct)
     {
         await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipe.DeleteRecipeCommand(id), ct);
