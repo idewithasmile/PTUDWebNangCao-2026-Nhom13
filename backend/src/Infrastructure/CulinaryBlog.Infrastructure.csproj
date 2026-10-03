@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <!-- Database & Identity -->
+    <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">

@@ -1,22 +1,7 @@
-using System.Linq.Expressions;
-using CulinaryBlog.Domain.Common;
+global using CulinaryBlog.Domain.Common.Interfaces;
+global using CulinaryBlog.Domain.Exceptions;
 
 namespace CulinaryBlog.Domain.Interfaces;
-
-public interface IRepository<T> where T : BaseEntity
-{
-    Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<T>> ListAllAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default);
-    Task<T> AddAsync(T entity, CancellationToken ct = default);
-    void Update(T entity);
-    void SoftDelete(T entity); // Thay thế hoàn toàn Hard Delete theo SPEC.md
-}
-
-public interface IUnitOfWork
-{
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
-}
 
 public interface ICurrentUser
 {

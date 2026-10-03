@@ -15,5 +15,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/CulinaryBlog.Application.Tests/CulinaryBlog.Application.Tests.csproj" />
     <Project Path="tests/CulinaryBlog.Api.Tests/CulinaryBlog.Api.Tests.csproj" />
+    <Project Path="tests/CulinaryBlog.Infrastructure.Tests/CulinaryBlog.Infrastructure.Tests.csproj" />
+    <Project Path="tests/CulinaryBlog.UnitTests/CulinaryBlog.UnitTests.csproj" />
+    <Project Path="tests/CulinaryBlog.API.IntegrationTests/CulinaryBlog.API.IntegrationTests.csproj" />
   </Folder>
 </Solution>

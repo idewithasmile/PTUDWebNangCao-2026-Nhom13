@@ -58,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<IWelcomeEmailDispatcher, WelcomeEmailDispatcher>();
 
         services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         // Hangfire setup với PostgreSQL
         services.AddHangfire(h => h.UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));

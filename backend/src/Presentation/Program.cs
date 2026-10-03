@@ -4,14 +4,18 @@ using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.Application;
 using CulinaryBlog.Infrastructure;
+using CulinaryBlog.Infrastructure.Data;
+using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cấu hình Serilog Structured Logging (CONS-010)
+// Cấu hình Serilog Structured Logging
 builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration)
     .Enrich.FromLogContext()
@@ -22,7 +26,10 @@ builder.Host.UseSerilog((ctx, lc) => lc
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Rate Limiting Skeleton (NFR-SEC-003)
+// Đăng ký OpenAPI native (.NET 10)
+builder.Services.AddOpenApi();
+
+// Rate Limiting Skeleton
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -36,7 +43,7 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// Authentication với JWT Bearer (CONS-004)
+// Authentication với JWT Bearer
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -52,7 +59,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+});
 
 // CORS
 builder.Services.AddCors(options =>
@@ -80,14 +90,29 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// OpenAPI & Scalar Documentation + Tự động Migration và Seed Data
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+
+    // Tự động Apply Migration & Seed dữ liệu mẫu khi start app
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+    await db.Database.MigrateAsync();
+
+    await CulinaryBlogSeeder.SeedAsync(app.Services);
+}
+
 // Hangfire Dashboard (Dev & Admin)
 app.UseHangfireDashboard("/hangfire");
 
-// Route Groups rỗng có tiền tố /api/v1/ (CONS-005)
+// Route Groups có tiền tố /api/v1/
 var v1 = app.MapGroup("/api/v1");
 v1.MapGroup("/auth").MapAuthEndpoints();
-v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/recipes").MapRecipesEndpoints();
+
+app.MapCategoriesEndpoints();
 
 app.MapHealthChecks();
 

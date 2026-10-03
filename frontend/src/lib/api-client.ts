@@ -1,4 +1,5 @@
 import { setAccessToken } from '@/features/auth/token-store';
+import type { ProblemDetails } from './types/category';
 
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
 
@@ -70,8 +71,36 @@ function handleSessionRevoked(method: string, url: string): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// FR-CAT — ApiError tương thích RFC 7807 cho module Category.
+// Giữ đồng thời contract Auth (throw object có `type/status/detail/errors` để
+// `toErrorMessage`/`applyServerFieldErrors` trong features/auth/hooks.ts hoạt
+// động) và contract Category (`err instanceof ApiError ? err.data : err` trong
+// DeleteCategoryModal). ApiError expose cả field top-level lẫn `.data`.
+// ---------------------------------------------------------------------------
+
+export class ApiError extends Error {
+  status: number;
+  type?: string;
+  title?: string;
+  detail?: string;
+  errors?: Record<string, string[]>;
+  data: ProblemDetails;
+
+  constructor(status: number, data: ProblemDetails) {
+    super(data.detail || data.title || 'An API error occurred');
+    this.name = 'ApiError';
+    this.status = status;
+    this.type = data.type;
+    this.title = data.title;
+    this.detail = data.detail;
+    this.errors = data.errors;
+    this.data = data;
+  }
+}
+
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
   const method = (options.method ?? 'GET').toUpperCase();
 
   let res: Response;
@@ -86,12 +115,12 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     });
   } catch (err) {
     // FR-AUTH: Backend chưa chạy / sai cổng (5000 vs 5001) → fetch ném TypeError
-    // (Failed to fetch / ECONNREFUSED), KHÔNG có Response. Ném RFC 7807 giả lập
+    // (Failed to fetch / ECONNREFUSED), KHÔNG có Response. Ném ApiError giả lập
     // để hooks `toErrorMessage` hiện câu tiếng Việt cụ thể thay vì "Đăng ký thất bại".
     if (process.env.NODE_ENV !== 'production') {
       console.error(`[api-client] NETWORK ${method} ${url}`, err);
     }
-    throw {
+    throw new ApiError(0, {
       type: 'NETWORK_ERROR',
       title: 'Network Error',
       status: 0,
@@ -99,7 +128,7 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
         `Không kết nối được tới Backend (${BASE_URL}). ` +
         `Kiểm tra Backend đã chạy ở cổng 5001 chưa ` +
         `(dotnet run --urls "http://localhost:5001").`,
-    };
+    });
   }
 
   if (!res.ok) {
@@ -115,10 +144,10 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     if (res.status === 401 && errorData.type === SESSION_REVOKED_TYPE) {
       handleSessionRevoked(method, url);
     }
-    throw errorData;
+    throw new ApiError(res.status, errorData as unknown as ProblemDetails);
   }
 
-  // 204 No Content (vd FR-AUTH-005 logout) không có body JSON.
+  // 204 No Content (vd FR-AUTH-005 logout, FR-CAT-005 delete) không có body JSON.
   if (res.status === 204) return undefined as T;
 
   // 200 OK nhưng body rỗng (phòng thủ) → tránh res.json() ném SyntaxError.
