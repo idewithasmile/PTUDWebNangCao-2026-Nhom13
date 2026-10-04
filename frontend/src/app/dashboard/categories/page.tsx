@@ -14,7 +14,6 @@ import {
   Trash2,
   ChefHat,
   Loader2,
-  RefreshCw,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +36,7 @@ export default function DashboardCategoriesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  // State Toasts
+  // State Toasts thông báo người dùng
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'warning', title: string, message?: string) => {
@@ -49,13 +48,13 @@ export default function DashboardCategoriesPage() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // 1. TanStack Query: Lấy danh sách Categories
+  // 1. TanStack Query: Lấy danh sách Categories tự động đồng bộ cache
+  // Lưu ý: Không cần nút Refresh thủ công vì TanStack Query tự động invalidate queries khi có mutation
   const {
     data: categories = [],
     isLoading,
     isError,
     refetch,
-    isRefetching,
   } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoryService.getCategories(),
@@ -168,18 +167,8 @@ export default function DashboardCategoriesPage() {
           </p>
         </div>
 
+        {/* Nút hành động chính: Thêm danh mục mới (đã loại bỏ nút làm mới thủ công gây render lặp dữ liệu) */}
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm"
-            title="Làm mới dữ liệu"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Làm mới</span>
-          </button>
-
           <button
             type="button"
             onClick={handleOpenCreate}
