@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CulinaryBlog.Application.Features.Categories.Commands.CreateCategory;
 using CulinaryBlog.Application.Features.Categories.Commands.DeleteCategory;
 using CulinaryBlog.Application.Features.Categories.Commands.UpdateCategory;
@@ -16,42 +17,55 @@ public static class CategoriesEndpoints
 {
     /// <summary>
     /// Extension method đăng ký các endpoints cho phân hệ Quản lý Danh mục (FR-CAT).
+    /// Tuân thủ kiến trúc Minimal API trong .NET 10 với tài liệu OpenAPI/Scalar đầy đủ.
     /// </summary>
     public static IEndpointRouteBuilder MapCategoriesEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/categories")
                        .WithTags("Categories");
 
-        // 1. GET /api/v1/categories - Public, Redis cached (TTL 30m)
+        // 1. GET /api/v1/categories - Public, Redis cached (TTL 60m theo FR-CAT-001)
         group.MapGet("/", async (IMediator mediator, CancellationToken ct) =>
         {
             var result = await mediator.Send(new GetCategoriesQuery(), ct);
             return Results.Ok(result);
         })
         .WithName("GetCategories")
-        .WithSummary("Lấy danh sách tất cả danh mục kèm số lượng bài viết (Cached Redis 30m)")
-        .WithDescription("Trả về danh sách danh mục sắp xếp theo thứ tự OrderIndex và Name, kèm theo số lượng công thức đang hoạt động.")
-        .Produces<List<CategoryDto>>(StatusCodes.Status200OK);
+        .WithSummary("Lấy danh sách tất cả danh mục kèm số lượng bài viết đã xuất bản (Cached Redis 60m)")
+        .WithDescription("Trả về toàn bộ danh sách các danh mục món ăn đang hoạt động (!IsDeleted), kèm theo số lượng công thức đã xuất bản (Status == Published). Dữ liệu được đệm trong Redis Distributed Cache với khóa 'categories:all' và TTL 60 phút để đảm bảo Backend hoàn toàn phi trạng thái (Stateless).")
+        .Produces<List<CategoryDto>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
 
-        // 2. GET /api/v1/categories/{slug} - Public, phân trang query params page, pageSize (max 50)
+        // 2. GET /api/v1/categories/{slug} - Public, phân trang query params page, pageSize (max 50) kèm trích xuất JWT Claims (FR-CAT-002)
         group.MapGet("/{slug}", async (
             string slug,
             [FromQuery] int? page,
             [FromQuery] int? pageSize,
+            ClaimsPrincipal user,
             IMediator mediator,
             CancellationToken ct) =>
         {
             var p = page ?? 1;
             var ps = pageSize ?? 12;
-            var query = new GetCategoryBySlugQuery(slug, p, ps);
+
+            // Tự động trích xuất mã định danh UserId và quyền Quản trị viên (Admin) từ JWT Claims
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? user.FindFirst("sub")?.Value;
+            var isAdmin = user.IsInRole("Admin")
+                          || user.FindFirst(ClaimTypes.Role)?.Value == "Admin"
+                          || user.FindFirst("role")?.Value == "Admin";
+
+            var query = new GetCategoryBySlugQuery(slug, p, ps, userId, isAdmin);
             var result = await mediator.Send(query, ct);
             return Results.Ok(result);
         })
         .WithName("GetCategoryBySlug")
-        .WithSummary("Lấy thông tin chi tiết danh mục theo Slug kèm danh sách công thức phân trang")
-        .WithDescription("Trả về thông tin chi tiết của danh mục và danh sách công thức nấu ăn đã xuất bản thuộc danh mục này.")
-        .Produces<CategoryDetailDto>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .WithSummary("Xem thông tin chi tiết danh mục theo Slug kèm danh sách công thức phân trang (FR-CAT-002)")
+        .WithDescription("Trả về thông tin chi tiết danh mục theo Slug kèm danh sách công thức phân trang. Tự động áp dụng phân quyền hiển thị theo tác nhân: Khách vãng lai chỉ thấy bài Published; Tác giả thấy bài Published chung và bài Draft của mình; Admin thấy toàn bộ bài viết.")
+        .Produces<CategoryDetailResponseDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         // 3. POST /api/v1/categories - Admin only
         group.MapPost("/", async (
