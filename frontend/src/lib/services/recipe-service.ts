@@ -9,11 +9,12 @@ import type {
 } from '@/lib/types/recipe';
 import type { RecipeSummaryDto, PagedResult } from '@/lib/types/category';
 
-function withAuth(init: { method?: string; body?: string } = {}): RequestInit {
+function withAuth(init: RequestInit = {}): RequestInit {
   return {
     ...init,
     headers: {
       ...authHeaders(),
+      ...init.headers,
     },
   };
 }
@@ -40,8 +41,8 @@ export const recipeService = {
   /**
    * FR-RCP-002: GET /recipes/{slug} — Lấy chi tiết công thức theo Slug
    */
-  async getRecipeBySlug(slug: string): Promise<RecipeDetailDto> {
-    return apiClient<RecipeDetailDto>(`/recipes/${encodeURIComponent(slug)}`);
+  async getRecipeBySlug(slug: string, init?: RequestInit): Promise<RecipeDetailDto> {
+    return apiClient<RecipeDetailDto>(`/recipes/${encodeURIComponent(slug)}`, withAuth(init));
   },
 
   /**

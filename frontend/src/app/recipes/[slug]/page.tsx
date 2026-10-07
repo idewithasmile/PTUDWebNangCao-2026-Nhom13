@@ -10,7 +10,9 @@ interface RecipePageProps {
 export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const recipe = await recipeService.getRecipeBySlug(slug);
+    const recipe = await recipeService.getRecipeBySlug(slug, {
+      suppressLogError: true,
+    } as RequestInit);
     const primaryImage =
       recipe.images.find((img) => img.isPrimary)?.originalUrl ||
       recipe.images[0]?.originalUrl;
@@ -42,7 +44,9 @@ export default async function RecipeDetailPage({ params }: RecipePageProps) {
   // Lấy trước dữ liệu ở server side để render JSON-LD Schema.org Recipe cho Google SEO
   let jsonLd = null;
   try {
-    const recipe = await recipeService.getRecipeBySlug(slug);
+    const recipe = await recipeService.getRecipeBySlug(slug, {
+      suppressLogError: true,
+    } as RequestInit);
     const primaryImage =
       recipe.images.find((img) => img.isPrimary)?.originalUrl ||
       recipe.images[0]?.originalUrl;
