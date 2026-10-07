@@ -104,6 +104,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
       protein: formData.protein,
       carbs: formData.carbs,
       fat: formData.fat,
+      rowVersionBase64: recipe.rowVersionBase64 || '',
     };
 
     updateMutation.mutate(payload, {

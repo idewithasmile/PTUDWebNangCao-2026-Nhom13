@@ -59,6 +59,7 @@ export interface RecipeDetailDto {
   steps: RecipeStepDto[];
   ingredients: RecipeIngredientDto[];
   images: RecipeImageDto[];
+  rowVersionBase64?: string | null;
 }
 
 // --- RecipeDto (trả về từ Backend sau khi Create/Update/Publish/Unpublish/Archive) ---
@@ -88,7 +89,7 @@ export interface CreateRecipeRequest {
 
 export interface UpdateRecipeRequest extends CreateRecipeRequest {
   id: string;
-  rowVersion?: string; // Base64 concurrency token nếu có
+  rowVersionBase64?: string; // Base64 concurrency token
 }
 
 // --- Query params ---

@@ -23,7 +23,8 @@ public record RecipeDetailDto(
     RecipeNutritionDto Nutrition,
     List<RecipeStepDto> Steps,
     List<RecipeIngredientDto> Ingredients,
-    List<RecipeImageDto> Images
+    List<RecipeImageDto> Images,
+    string? RowVersionBase64 = null
 );
 
 public record RecipeNutritionDto(
