@@ -14,7 +14,7 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 };
 
 export default function RecipeCard({ recipe }: RecipeCardProps) {
-  const totalTime = recipe.prepTime + recipe.cookTime;
+  const totalTime = recipe.totalTimeMinutes;
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
 
   return (
