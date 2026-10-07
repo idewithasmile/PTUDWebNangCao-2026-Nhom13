@@ -1,4 +1,5 @@
 import type { RecipeDifficulty, RecipeStatus } from './category';
+export type { RecipeDifficulty, RecipeStatus };
 
 // --- Detail DTOs ---
 export interface RecipeNutritionDto {
