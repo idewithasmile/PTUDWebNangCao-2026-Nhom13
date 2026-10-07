@@ -26,8 +26,8 @@ builder.Host.UseSerilog((ctx, lc) => lc
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Đăng ký OpenAPI native (.NET 10)
-builder.Services.AddOpenApi();
+// Đăng ký OpenAPI / API Explorer
+builder.Services.AddEndpointsApiExplorer();
 
 // Rate Limiting Skeleton
 builder.Services.AddRateLimiter(options =>
@@ -102,7 +102,6 @@ app.UseAuthorization();
 // OpenAPI & Scalar Documentation + Tự động Migration và Seed Data
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
     app.MapScalarApiReference();
 
     // Tự động Apply Migration & Seed dữ liệu mẫu khi start app
