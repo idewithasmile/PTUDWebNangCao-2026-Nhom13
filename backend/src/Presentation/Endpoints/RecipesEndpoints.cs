@@ -1,5 +1,8 @@
+using System.Security.Claims;
+using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipe;
 using CulinaryBlog.Application.Features.Recipes.DTOs;
+using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -26,6 +29,14 @@ public static class RecipesEndpoints
                 .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy")
                 .Tag("recipes"))
             .Produces<CulinaryBlog.Application.Common.Models.PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
+
+        group.MapGet("/search", SearchRecipes)
+            .AllowAnonymous()
+            .WithName("SearchRecipes")
+            .WithSummary("Tìm kiếm toàn văn bản công thức (Full-Text Search) hỗ trợ tiếng Việt không dấu (FR-SRCH-001)")
+            .WithDescription("Tìm kiếm công thức nấu ăn bằng PostgreSQL tsvector, unaccent và ts_rank. Hỗ trợ tìm kiếm tiếng Việt không dấu, phân quyền theo tác nhân và phân trang dữ liệu.")
+            .Produces<PaginatedResult<RecipeSummaryDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapGet("/{slug}", GetRecipeBySlug)
             .AllowAnonymous()
@@ -152,4 +163,47 @@ public static class RecipesEndpoints
         await cacheStore.EvictByTagAsync("recipes", ct);
         return Results.NoContent();
     }
+
+    private static async Task<IResult> SearchRecipes(
+        [FromQuery] string? q,
+        [FromQuery] string? searchTerm,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        [FromQuery] Guid? categoryId,
+        [FromQuery] CulinaryBlog.Domain.Enums.RecipeDifficulty? difficulty,
+        ClaimsPrincipal user,
+        IMediator mediator,
+        CancellationToken ct)
+    {
+        var queryTerm = q ?? searchTerm;
+        if (string.IsNullOrWhiteSpace(queryTerm) || queryTerm.Trim().Length < 2)
+        {
+            return Results.UnprocessableEntity(new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Type = "INVALID_SEARCH_TERM",
+                Title = "Tham số tìm kiếm không hợp lệ",
+                Detail = "Từ khóa tìm kiếm phải có tối thiểu 2 ký tự (FR-SRCH-001)."
+            });
+        }
+
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? user.FindFirst("sub")?.Value;
+        var isAdmin = user.IsInRole("Admin")
+                      || user.FindFirst(ClaimTypes.Role)?.Value == "Admin"
+                      || user.FindFirst("role")?.Value == "Admin";
+
+        var query = new SearchRecipesQuery(
+            queryTerm.Trim(),
+            page ?? 1,
+            pageSize ?? 10,
+            categoryId,
+            difficulty,
+            userId,
+            isAdmin);
+
+        var result = await mediator.Send(query, ct);
+        return Results.Ok(result);
+    }
 }
+
