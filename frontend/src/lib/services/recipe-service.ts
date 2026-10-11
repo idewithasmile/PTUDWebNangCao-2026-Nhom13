@@ -30,12 +30,14 @@ export const recipeService = {
     if (params.difficulty) qs.set('difficulty', String(params.difficulty));
     if (params.maxTotalTimeMinutes) qs.set('maxTotalTimeMinutes', String(params.maxTotalTimeMinutes));
     if (params.sortBy) qs.set('sortBy', params.sortBy);
+    if (params.onlyMine) qs.set('onlyMine', 'true');
+    if (params.status !== undefined) qs.set('status', String(params.status));
     qs.set('page', String(params.page ?? 1));
     qs.set('pageSize', String(params.pageSize ?? 12));
 
     const queryString = qs.toString();
     const endpoint = queryString ? `/recipes?${queryString}` : '/recipes';
-    return apiClient<PagedResult<RecipeSummaryDto>>(endpoint);
+    return apiClient<PagedResult<RecipeSummaryDto>>(endpoint, withAuth());
   },
 
   /**

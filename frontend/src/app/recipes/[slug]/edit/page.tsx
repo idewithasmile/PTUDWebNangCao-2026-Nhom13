@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import RecipeForm from '@/components/recipes/RecipeForm';
@@ -29,11 +29,14 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
   const { data: recipe, isLoading, isError, error } = useRecipeDetail(slug);
   const updateMutation = useUpdateRecipe(recipe?.id ?? '');
 
-  // 1. Kiểm tra đăng nhập
-  if (!isLoggedIn) {
-    if (typeof window !== 'undefined') {
+  // 1. Kiểm tra đăng nhập sau khi mount
+  useEffect(() => {
+    if (!isLoggedIn) {
       router.push('/login');
     }
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) {
     return null;
   }
 
@@ -105,6 +108,9 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
       carbs: formData.carbs,
       fat: formData.fat,
       rowVersionBase64: recipe.rowVersionBase64 || '',
+      steps: formData.steps,
+      ingredients: formData.ingredients,
+      primaryImageUrl: formData.primaryImageUrl,
     };
 
     updateMutation.mutate(payload, {
@@ -122,6 +128,10 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
     });
   };
 
+  const primaryImage =
+    recipe.images?.find((img) => img.isPrimary)?.originalUrl ||
+    recipe.images?.[0]?.originalUrl;
+
   const initialValues: Partial<RecipeFormData> = {
     title: recipe.title,
     description: recipe.description,
@@ -135,6 +145,19 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
     protein: recipe.nutrition?.protein ?? 0,
     carbs: recipe.nutrition?.carbohydrates ?? 0,
     fat: recipe.nutrition?.fat ?? 0,
+    primaryImageUrl: primaryImage ?? '',
+    steps: recipe.steps?.map((s) => ({
+      title: s.title,
+      description: s.description,
+      timerMinutes: s.timerMinutes,
+      imageUrl: s.imageUrl,
+    })),
+    ingredients: recipe.ingredients?.map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      unit: i.unit,
+      notes: i.notes,
+    })),
   };
 
   return (

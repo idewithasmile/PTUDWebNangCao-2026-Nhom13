@@ -71,6 +71,21 @@ export interface RecipeDto {
   createdAt: string;
 }
 
+// --- DTOs cho Step & Ingredient khi tạo / sửa ---
+export interface CreateRecipeStepDto {
+  title?: string;
+  description: string;
+  timerMinutes?: number | null;
+  imageUrl?: string | null;
+}
+
+export interface CreateRecipeIngredientDto {
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+}
+
 // --- Request types (gửi lên Backend) ---
 export interface CreateRecipeRequest {
   title: string;
@@ -85,6 +100,9 @@ export interface CreateRecipeRequest {
   protein: number;
   carbs: number;
   fat: number;
+  steps?: CreateRecipeStepDto[];
+  ingredients?: CreateRecipeIngredientDto[];
+  primaryImageUrl?: string;
 }
 
 export interface UpdateRecipeRequest extends CreateRecipeRequest {
@@ -101,4 +119,6 @@ export interface GetRecipesParams {
   sortBy?: 'newest' | 'oldest' | 'time_asc' | 'time_desc';
   page?: number;
   pageSize?: number;
+  onlyMine?: boolean;
+  status?: RecipeStatus;
 }

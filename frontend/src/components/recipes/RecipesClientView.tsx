@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
-import { UtensilsCrossed, AlertCircle, Loader2 } from 'lucide-react';
+import { UtensilsCrossed, AlertCircle, Loader2, Plus, ChefHat, BookOpen } from 'lucide-react';
 import { useRecipes } from '@/features/recipes/hooks';
+import { hasSession } from '@/features/auth/api';
 import type { GetRecipesParams, RecipeDifficulty } from '@/lib/types/recipe';
 import RecipeCard from '@/components/recipes/RecipeCard';
 import RecipesFilterBar from '@/components/recipes/RecipesFilterBar';
@@ -14,6 +16,7 @@ export default function RecipesClientView() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isLoggedIn = hasSession();
 
   // Đọc params từ URL searchParams
   const filters = useMemo<GetRecipesParams>(() => {
@@ -24,6 +27,7 @@ export default function RecipesClientView() {
     const sort = searchParams.get('sortBy') as GetRecipesParams['sortBy'];
     const p = searchParams.get('page');
     const ps = searchParams.get('pageSize');
+    const onlyMine = searchParams.get('onlyMine') === 'true';
 
     return {
       searchTerm: term,
@@ -33,6 +37,7 @@ export default function RecipesClientView() {
       sortBy: sort || 'newest',
       page: p ? Number(p) : 1,
       pageSize: ps ? Number(ps) : 12,
+      onlyMine: onlyMine ? true : undefined,
     };
   }, [searchParams]);
 
@@ -52,6 +57,7 @@ export default function RecipesClientView() {
         params.set('maxTotalTimeMinutes', String(merged.maxTotalTimeMinutes));
       if (merged.sortBy && merged.sortBy !== 'newest')
         params.set('sortBy', merged.sortBy);
+      if (merged.onlyMine) params.set('onlyMine', 'true');
 
       if (merged.page && merged.page > 1) params.set('page', String(merged.page));
       if (merged.pageSize && merged.pageSize !== 12)
@@ -72,15 +78,57 @@ export default function RecipesClientView() {
 
   return (
     <div className="space-y-6">
-      {/* Header tiêu đề */}
-      <div className="flex flex-col gap-1 border-b border-gray-100 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Công thức Nấu ăn
-        </h1>
-        <p className="text-sm text-gray-500">
-          Khám phá hàng ngàn công thức nấu ăn phong phú, dễ làm và hấp dẫn từ cộng đồng.
-        </p>
+      {/* Header tiêu đề & Nút tạo mới */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            {filters.onlyMine ? 'Công thức Của tôi' : 'Công thức Nấu ăn'}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {filters.onlyMine
+              ? 'Quản lý, chỉnh sửa và xuất bản các công thức nấu ăn do chính bạn sáng tạo.'
+              : 'Khám phá hàng ngàn công thức nấu ăn phong phú, dễ làm và hấp dẫn từ cộng đồng.'}
+          </p>
+        </div>
+        <Link
+          href="/recipes/create"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-600 active:scale-95 whitespace-nowrap"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Viết công thức mới</span>
+        </Link>
       </div>
+
+      {/* Tabs chuyển đổi giữa Tất cả và Công thức của tôi (khi đã login) */}
+      {isLoggedIn && (
+        <div className="flex border-b border-gray-200">
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ onlyMine: undefined, page: 1 })}
+            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors ${
+              !filters.onlyMine
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Khám phá cộng đồng</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ onlyMine: true, page: 1 })}
+            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors ${
+              filters.onlyMine
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <ChefHat className="h-4 w-4" />
+            <span>Công thức của tôi (Quản lý)</span>
+          </button>
+        </div>
+      )}
 
       {/* Thanh lọc & Sắp xếp */}
       <RecipesFilterBar

@@ -1,6 +1,20 @@
 import { z } from 'zod';
 import type { RecipeDifficulty } from '@/lib/types/category';
 
+export const stepItemSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().min(1, 'Mô tả bước không được để trống.'),
+  timerMinutes: z.coerce.number().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+});
+
+export const ingredientItemSchema = z.object({
+  name: z.string().min(1, 'Tên nguyên liệu không được để trống.'),
+  quantity: z.coerce.number().optional().nullable(),
+  unit: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
 export const recipeFormSchema = z.object({
   title: z
     .string()
@@ -12,7 +26,10 @@ export const recipeFormSchema = z.object({
     .max(2000, 'Mô tả ngắn tối đa 2000 ký tự.'),
   instructions: z
     .string()
-    .min(10, 'Hướng dẫn chung tối thiểu 10 ký tự.'),
+    .min(5, 'Hướng dẫn chung tối thiểu 5 ký tự.'),
+  primaryImageUrl: z
+    .string()
+    .optional(),
   categoryId: z
     .string()
     .min(1, 'Vui lòng chọn danh mục cho công thức.'),
@@ -41,6 +58,10 @@ export const recipeFormSchema = z.object({
   fat: z.coerce
     .number()
     .min(0, 'Lượng Chất béo không được âm.'),
+  steps: z.array(stepItemSchema).optional(),
+  ingredients: z.array(ingredientItemSchema).optional(),
 });
 
 export type RecipeFormData = z.infer<typeof recipeFormSchema>;
+export type StepItemData = z.infer<typeof stepItemSchema>;
+export type IngredientItemData = z.infer<typeof ingredientItemSchema>;

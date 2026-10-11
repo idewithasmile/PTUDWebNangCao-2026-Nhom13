@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RecipeForm from '@/components/recipes/RecipeForm';
 import { useCreateRecipe } from '@/features/recipes/hooks';
@@ -18,11 +18,14 @@ export default function CreateRecipePage() {
 
   const createMutation = useCreateRecipe();
 
-  // Kiểm tra quyền đăng nhập
-  if (!isLoggedIn) {
-    if (typeof window !== 'undefined') {
+  // Kiểm tra quyền đăng nhập sau khi mount để tránh lỗi update component khi render
+  useEffect(() => {
+    if (!isLoggedIn) {
       router.push('/login');
     }
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) {
     return null;
   }
 
@@ -42,6 +45,9 @@ export default function CreateRecipePage() {
       protein: formData.protein,
       carbs: formData.carbs,
       fat: formData.fat,
+      steps: formData.steps,
+      ingredients: formData.ingredients,
+      primaryImageUrl: formData.primaryImageUrl,
     };
 
     createMutation.mutate(payload, {

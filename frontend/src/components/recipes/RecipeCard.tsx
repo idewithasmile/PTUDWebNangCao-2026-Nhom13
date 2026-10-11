@@ -39,6 +39,22 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
           </div>
         )}
 
+        {/* Badge trạng thái cho Bản nháp hoặc Lưu trữ */}
+        {(recipe.status === 'Draft' || (recipe.status as unknown) === 0) && (
+          <div className="absolute top-3 left-3">
+            <span className="rounded-full bg-amber-500 text-white font-bold px-2.5 py-0.5 text-[11px] shadow-sm backdrop-blur">
+              Bản nháp
+            </span>
+          </div>
+        )}
+        {(recipe.status === 'Archived' || (recipe.status as unknown) === 2) && (
+          <div className="absolute top-3 left-3">
+            <span className="rounded-full bg-slate-600 text-white font-bold px-2.5 py-0.5 text-[11px] shadow-sm backdrop-blur">
+              Đã lưu trữ
+            </span>
+          </div>
+        )}
+
         <div className="absolute top-3 right-3">
           <span
             className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold backdrop-blur bg-white/90 ${diff.color}`}

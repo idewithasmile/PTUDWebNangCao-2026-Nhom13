@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Search, X, SlidersHorizontal, Plus, RotateCcw } from 'lucide-react';
+import { Search, X, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { categoryService } from '@/lib/services/category-service';
 import type { CategoryDto, RecipeDifficulty } from '@/lib/types/category';
 import type { GetRecipesParams } from '@/lib/types/recipe';
-import { hasSession } from '@/features/auth/api';
 
 interface RecipesFilterBarProps {
   filters: GetRecipesParams;
@@ -56,18 +54,16 @@ export default function RecipesFilterBar({
       (filters.sortBy && filters.sortBy !== 'newest')
   );
 
-  const isLoggedIn = hasSession();
-
   return (
     <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      {/* Hàng 1: Ô tìm kiếm + Nút Tạo công thức mới */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1">
+      {/* Hàng 1: Ô tìm kiếm toàn bộ chiều rộng */}
+      <div className="w-full">
+        <form onSubmit={handleSearchSubmit} className="relative w-full">
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Tìm kiếm công thức nấu ăn..."
+            placeholder="Tìm kiếm công thức nấu ăn theo tên hoặc mô tả..."
             className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-10 text-sm outline-none transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
           />
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -85,16 +81,6 @@ export default function RecipesFilterBar({
             </button>
           )}
         </form>
-
-        {isLoggedIn && (
-          <Link
-            href="/recipes/create"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-95"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tạo công thức mới</span>
-          </Link>
-        )}
       </div>
 
       {/* Hàng 2: Bộ lọc linh hoạt & Sắp xếp */}
