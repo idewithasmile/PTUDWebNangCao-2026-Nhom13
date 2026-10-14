@@ -9,18 +9,23 @@ export interface CategoryDto {
   rowVersion?: string; // Base64 concurrency token
 }
 
+export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
+export type RecipeDifficulty = 1 | 2 | 3 | 4; // 1=Easy, 2=Medium, 3=Hard, 4=Expert
+
 export interface RecipeSummaryDto {
   id: string;
   title: string;
   slug: string;
   description: string;
-  prepTime: number;
-  cookTime: number;
+  totalTimeMinutes: number;
   servings: number;
-  difficulty: number; // 1=Easy, 2=Medium, 3=Hard, 4=Expert
+  difficulty: RecipeDifficulty;
+  status: RecipeStatus;
+  categoryName: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
   thumbnailUrl: string | null;
-  authorName: string | null;
-  publishedAt: string | null;
 }
 
 export interface PagedResult<T> {

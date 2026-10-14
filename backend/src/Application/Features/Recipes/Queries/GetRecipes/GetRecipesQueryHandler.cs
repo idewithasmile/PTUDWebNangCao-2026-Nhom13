@@ -20,18 +20,38 @@ public class GetRecipesQueryHandler(
             .Include(r => r.Images)
             .AsNoTracking();
 
-        // 1. Authorization Filter
+        // 1. Authorization & Ownership Filter
         var userId = currentUser.UserId;
-        if (string.IsNullOrEmpty(userId))
+        if (request.OnlyMine == true)
         {
-            // Guest chỉ thấy bài Published
-            queryable = queryable.Where(r => r.Status == RecipeStatus.Published);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Chưa đăng nhập mà yêu cầu OnlyMine -> trả về rỗng
+                queryable = queryable.Where(r => false);
+            }
+            else
+            {
+                // Chỉ lấy bài của chính user này
+                queryable = queryable.Where(r => r.AuthorId == userId);
+            }
         }
         else
         {
-            // Author thấy bài Published của mọi người VÀ mọi bài của chính mình (Draft, Archived)
-            // TODO: Nâng cấp check Admin role nếu cần (vd: currentUser.Roles.Contains("Admin") -> cho qua hết)
-            queryable = queryable.Where(r => r.Status == RecipeStatus.Published || r.AuthorId == userId);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Guest chỉ thấy bài Published
+                queryable = queryable.Where(r => r.Status == RecipeStatus.Published);
+            }
+            else
+            {
+                // Author thấy bài Published của mọi người VÀ mọi bài của chính mình (Draft, Archived)
+                queryable = queryable.Where(r => r.Status == RecipeStatus.Published || r.AuthorId == userId);
+            }
+        }
+
+        if (request.Status.HasValue)
+        {
+            queryable = queryable.Where(r => r.Status == request.Status.Value);
         }
 
         // 2. Filters

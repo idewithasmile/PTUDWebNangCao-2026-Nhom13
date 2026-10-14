@@ -7,6 +7,13 @@ namespace CulinaryBlog.Infrastructure.Repositories;
 
 public class RecipeRepository(CulinaryBlogDbContext dbContext) : BaseRepository<Recipe>(dbContext), IRecipeRepository
 {
+    public override Task<Recipe?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return Context.Recipes
+            .Include(r => r.Steps)
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, ct);
+    }
+
     public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         return Context.Recipes

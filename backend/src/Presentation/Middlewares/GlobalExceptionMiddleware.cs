@@ -75,6 +75,15 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 Instance = context.Request.Path
             }),
 
+            DbUpdateException dbUpdateEx => (StatusCodes.Status400BadRequest, new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Type = "DATABASE_UPDATE_ERROR",
+                Title = "Database Constraint Violation",
+                Detail = dbUpdateEx.InnerException?.Message ?? dbUpdateEx.Message,
+                Instance = context.Request.Path
+            }),
+
             ValidationException valEx => (StatusCodes.Status400BadRequest, new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
@@ -124,6 +133,24 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 Type = appEx.ErrorCode,
                 Title = "Application Error",
                 Detail = appEx.Message,
+                Instance = context.Request.Path
+            }),
+
+            BadHttpRequestException badReqEx => (StatusCodes.Status400BadRequest, new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Type = "BAD_REQUEST",
+                Title = "Invalid Request Parameter",
+                Detail = badReqEx.Message,
+                Instance = context.Request.Path
+            }),
+
+            FormatException formatEx => (StatusCodes.Status400BadRequest, new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Type = "BAD_REQUEST",
+                Title = "Invalid Parameter Format",
+                Detail = formatEx.Message,
                 Instance = context.Request.Path
             }),
 

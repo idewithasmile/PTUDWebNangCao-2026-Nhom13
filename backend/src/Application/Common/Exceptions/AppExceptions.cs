@@ -1,3 +1,5 @@
+using CulinaryBlog.Domain.Exceptions;
+
 namespace CulinaryBlog.Application.Common.Exceptions;
 
 public class AppException : Exception
@@ -23,9 +25,15 @@ public class ValidationException : AppException
     }
 }
 
-public class NotFoundException : AppException
+/// <summary>
+/// Ngoại lệ ném ra khi không tìm thấy tài nguyên.
+/// Kế thừa EntityNotFoundException để đảm bảo tính tương thích với cả tầng Domain và Application.
+/// </summary>
+public class NotFoundException : EntityNotFoundException
 {
-    public NotFoundException(string errorCode, string message) : base(errorCode, message, 404) { }
+    public int StatusCode => 404;
+
+    public NotFoundException(string errorCode, string message) : base(errorCode, message) { }
 }
 
 public class ConflictException : AppException

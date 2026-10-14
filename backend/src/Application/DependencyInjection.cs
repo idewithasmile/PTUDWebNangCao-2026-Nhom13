@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Behaviors;
+using CulinaryBlog.Application.Features.Categories.Mappings;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,9 @@ public static class DependencyInjection
     {
         var assembly = typeof(DependencyInjection).Assembly;
         services.AddValidatorsFromAssembly(assembly);
+
+        // Đăng ký quy tắc ánh xạ Mapster cho các phân hệ
+        CategoryMappingConfig.RegisterMappings();
 
         services.AddMediatR(cfg =>
         {

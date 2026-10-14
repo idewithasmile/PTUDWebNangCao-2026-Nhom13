@@ -137,7 +137,7 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     if (!('status' in errorData)) {
       errorData.status = res.status;
     }
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production' && !(options as { suppressLogError?: boolean }).suppressLogError) {
       console.error(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
     }
     // FR-AUTH-004: reuse token cũ → force logout + redirect, KHÔNG để UI tự quyết.

@@ -59,7 +59,9 @@ public class UpdateRecipeCommandHandler(
         byte[] rowVersion;
         try
         {
-            rowVersion = Convert.FromBase64String(request.RowVersionBase64);
+            rowVersion = !string.IsNullOrEmpty(request.RowVersionBase64)
+                ? Convert.FromBase64String(request.RowVersionBase64)
+                : (recipe.RowVersion ?? new byte[8]);
         }
         catch (FormatException)
         {
