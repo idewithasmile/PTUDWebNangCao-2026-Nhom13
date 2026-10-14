@@ -26,7 +26,7 @@ public static class RecipesEndpoints
             .AllowAnonymous()
             .CacheOutput(policy => policy
                 .Expire(TimeSpan.FromMinutes(5))
-                .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy")
+                .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy", "onlyMine", "status")
                 .Tag("recipes"))
             .Produces<CulinaryBlog.Application.Common.Models.PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
 

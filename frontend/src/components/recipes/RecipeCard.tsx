@@ -14,7 +14,7 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 };
 
 export default function RecipeCard({ recipe }: RecipeCardProps) {
-  const totalTime = recipe.prepTime + recipe.cookTime;
+  const totalTime = recipe.totalTimeMinutes;
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
 
   return (
@@ -36,6 +36,22 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
             <UtensilsCrossed className="h-12 w-12 text-orange-300" />
+          </div>
+        )}
+
+        {/* Badge trạng thái cho Bản nháp hoặc Lưu trữ */}
+        {(recipe.status === 'Draft' || (recipe.status as unknown) === 0) && (
+          <div className="absolute top-3 left-3">
+            <span className="rounded-full bg-amber-500 text-white font-bold px-2.5 py-0.5 text-[11px] shadow-sm backdrop-blur">
+              Bản nháp
+            </span>
+          </div>
+        )}
+        {(recipe.status === 'Archived' || (recipe.status as unknown) === 2) && (
+          <div className="absolute top-3 left-3">
+            <span className="rounded-full bg-slate-600 text-white font-bold px-2.5 py-0.5 text-[11px] shadow-sm backdrop-blur">
+              Đã lưu trữ
+            </span>
           </div>
         )}
 

@@ -12,5 +12,7 @@ public record GetRecipesQuery(
     int? MaxTotalTimeMinutes = null,
     string? SortBy = null, // "newest", "oldest", "time_asc", "time_desc"
     int Page = 1,
-    int PageSize = 10
+    int PageSize = 10,
+    bool? OnlyMine = false,
+    RecipeStatus? Status = null
 ) : IRequest<PagedResult<RecipeSummaryDto>>;

@@ -28,8 +28,5 @@ public class UpdateRecipeCommandValidator : AbstractValidator<UpdateRecipeComman
 
         RuleFor(v => v.CategoryId)
             .NotEmpty().WithMessage("Danh mục công thức là bắt buộc.");
-
-        RuleFor(v => v.RowVersionBase64)
-            .NotEmpty().WithMessage("RowVersion là bắt buộc để cập nhật.");
     }
 }

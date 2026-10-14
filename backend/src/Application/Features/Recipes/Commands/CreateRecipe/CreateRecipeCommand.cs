@@ -16,4 +16,7 @@ public record CreateRecipeCommand(
     decimal Calories,
     decimal Protein,
     decimal Carbs,
-    decimal Fat) : IRequest<RecipeDto>;
+    decimal Fat,
+    List<CreateRecipeStepDto>? Steps = null,
+    List<CreateRecipeIngredientDto>? Ingredients = null,
+    string? PrimaryImageUrl = null) : IRequest<RecipeDto>;
