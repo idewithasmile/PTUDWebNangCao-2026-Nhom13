@@ -29,8 +29,25 @@ public class MinioFileStorageService : IFileStorageService
         // Kiểm tra Magic Bytes chống mã độc
         ValidateMagicBytes(stream, contentType);
 
-        var ext = Path.GetExtension(fileName);
-        var objectName = $"uploads/{Guid.NewGuid()}{ext}";
+        // FR-FILE-001 / FR-RCP-008: cho phép caller truyền object path đầy đủ
+        // dạng "recipes/{recipeId}/{uuid}.{ext}". Sanitize để ngăn path traversal.
+        // Fallback cũ "uploads/{guid}{ext}" khi chỉ truyền tên file đơn lẻ.
+        var objectName = ResolveObjectName(fileName);
+
+        // Đảm bảo bucket tồn tại (idempotent, best-effort cho local dev).
+        try
+        {
+            var bucketExistsArgs = new BucketExistsArgs().WithBucket(_bucket);
+            if (!await _client.BucketExistsAsync(bucketExistsArgs, ct))
+            {
+                await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_bucket), ct);
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi kiểm tra bucket ở đây — PutObject sẽ ném lỗi thật
+            // và handler map thành 503 (MinIO không khả dụng).
+        }
 
         var putObjectArgs = new PutObjectArgs()
             .WithBucket(_bucket)
@@ -45,9 +62,59 @@ public class MinioFileStorageService : IFileStorageService
 
     public async Task DeleteAsync(string fileUrl, CancellationToken ct = default)
     {
-        var objectName = fileUrl.Replace($"/{_bucket}/", "");
-        var removeArgs = new RemoveObjectArgs().WithBucket(_bucket).WithObject(objectName);
-        await _client.RemoveObjectAsync(removeArgs, ct);
+        // FR-FILE-002: idempotent — object không tồn tại cũng không throw.
+        var objectName = ExtractObjectName(fileUrl);
+        try
+        {
+            var removeArgs = new RemoveObjectArgs().WithBucket(_bucket).WithObject(objectName);
+            await _client.RemoveObjectAsync(removeArgs, ct);
+        }
+        catch (Exception ex) when (ex.Message.Contains("not exist", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("NoSuchKey", StringComparison.OrdinalIgnoreCase))
+        {
+            // Idempotent delete: bỏ qua khi object đã không còn trên MinIO.
+        }
+    }
+
+    private static string ResolveObjectName(string fileName)
+    {
+        var sanitized = (fileName ?? string.Empty).Trim().Replace('\\', '/').TrimStart('/');
+        // Ngăn path traversal: loại bỏ mọi segment "..".
+        var segments = sanitized.Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Where(s => s != ".." && s != ".")
+            .ToArray();
+
+        if (segments.Length >= 2 && segments[0].Equals("recipes", StringComparison.OrdinalIgnoreCase))
+        {
+            // Giữ nguyên path recipes/{id}/{file} — chỉ giữ ký tự an toàn ở filename.
+            var folder = string.Join('/', segments[..^1]);
+            var safeFile = SanitizeFileName(segments[^1]);
+            return $"{folder}/{safeFile}";
+        }
+
+        var ext = Path.GetExtension(sanitized);
+        return $"uploads/{Guid.NewGuid()}{ext}";
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(name.Where(c => !invalid.Contains(c)).ToArray());
+        return string.IsNullOrWhiteSpace(cleaned) ? $"{Guid.NewGuid()}.bin" : cleaned;
+    }
+
+    private string ExtractObjectName(string fileUrl)
+    {
+        if (string.IsNullOrWhiteSpace(fileUrl)) return string.Empty;
+        var trimmed = fileUrl.Trim();
+        // Hỗ trợ cả absolute URL (http://minio:9000/bucket/object),
+        // relative URL (/bucket/object) và raw object name.
+        var prefix = $"/{_bucket}/";
+        var idx = trimmed.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0) return trimmed[(idx + prefix.Length)..].TrimStart('/');
+        if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return trimmed[prefix.Length..];
+        return trimmed.TrimStart('/');
     }
 
     private static void ValidateMagicBytes(Stream stream, string contentType)
