@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SESSION_REVOKED_EVENT } from '@/lib/api-client';
 import { authKeys, toErrorMessage, useLogout, useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
-import { PlusCircle, Menu, X, Utensils, BookOpen, Layers, ChefHat } from 'lucide-react';
+import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard } from 'lucide-react';
 
 export default function SiteHeader() {
   const router = useRouter();
@@ -51,6 +51,8 @@ export default function SiteHeader() {
     { href: '/categories', label: 'Danh mục', active: pathname.startsWith('/categories') },
   ];
 
+  const isAdmin = user?.roles?.includes('Admin');
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -83,6 +85,28 @@ export default function SiteHeader() {
 
         {/* Right Action / Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
+          {/* Lối tắt Admin / Dashboard */}
+          {user && (
+            isAdmin ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-orange-100 px-3 py-1.5 text-xs font-bold text-orange-800 shadow-sm transition hover:bg-orange-200"
+                title="Bảng điều khiển Quản Trị Viên"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-orange-700" />
+                <span>Quản Trị Viên</span>
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5 text-gray-500" />
+                <span>Dashboard</span>
+              </Link>
+            )
+          )}
+
           {/* Nút Xem bài viết của tôi & Nút Tạo công thức mới (dành cho User đã đăng nhập) */}
           {user && (
             <div className="flex items-center gap-2">
@@ -186,6 +210,27 @@ export default function SiteHeader() {
                   <div className="px-3 py-1 text-xs text-gray-500">
                     Đăng nhập bởi: <span className="font-semibold text-gray-900">{user.displayName}</span>
                   </div>
+
+                  {isAdmin ? (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-orange-100 py-2 text-sm font-bold text-orange-800"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-orange-700" />
+                      <span>Quản Trị Viên (Dashboard)</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700"
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-gray-500" />
+                      <span>Dashboard</span>
+                    </Link>
+                  )}
+
                   <Link
                     href="/recipes?onlyMine=true"
                     onClick={() => setMobileMenuOpen(false)}
@@ -194,19 +239,24 @@ export default function SiteHeader() {
                     <ChefHat className="h-4 w-4 text-orange-600" />
                     <span>Bài viết của tôi</span>
                   </Link>
+
                   <Link
                     href="/recipes/create"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm"
                   >
                     <PlusCircle className="h-4 w-4" />
                     <span>Đăng công thức mới</span>
                   </Link>
+
                   <Link
                     href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700"
                   >
                     Hồ sơ cá nhân
                   </Link>
+
                   <button
                     type="button"
                     onClick={onLogout}
@@ -220,12 +270,14 @@ export default function SiteHeader() {
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center rounded-xl border border-gray-200 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                   >
                     Đăng nhập
                   </Link>
                   <Link
                     href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center rounded-xl bg-gray-900 py-2 text-sm font-semibold text-white hover:bg-black"
                   >
                     Đăng ký
