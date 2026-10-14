@@ -57,6 +57,10 @@ public static class DependencyInjection
         services.AddScoped<AuthWelcomeEmailJob>();
         services.AddScoped<IWelcomeEmailDispatcher, WelcomeEmailDispatcher>();
 
+        // FR-RCP-008 (Thành viên D): cleanup file ảnh MinIO qua Hangfire (FR-FILE-002).
+        services.AddScoped<RecipeImageDeleteJob>();
+        services.AddScoped<CulinaryBlog.Application.Features.Recipes.Services.IRecipeImageCleanupService, RecipeImageCleanupService>();
+
         services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
