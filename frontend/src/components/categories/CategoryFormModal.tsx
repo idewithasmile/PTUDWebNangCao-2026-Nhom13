@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { CategoryDto, CreateCategoryInput, UpdateCategoryInput } from '@/lib/types/category';
 import { X, Loader2, Sparkles, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import ImageUpload from '@/components/common/ImageUpload';
 
 const categorySchema = z.object({
   name: z
@@ -58,6 +59,7 @@ export default function CategoryFormModal({
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -217,44 +219,34 @@ export default function CategoryFormModal({
             )}
           </div>
 
-          {/* URL Ảnh & Preview */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
-              Đường dẫn hình ảnh (URL)
-            </label>
-            <input
-              type="url"
-              placeholder="https://example.com/images/category.jpg"
-              {...register('imageUrl')}
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm transition focus:outline-none focus:ring-2 ${
-                errors.imageUrl
-                  ? 'border-rose-300 focus:ring-rose-200'
-                  : 'border-gray-200 focus:border-orange-500 focus:ring-orange-100'
-              }`}
+          {/* Tải ảnh lên MinIO S3 hoặc nhập URL */}
+          <div className="space-y-3">
+            <ImageUpload
+              value={previewImageUrl}
+              onChange={(url) => setValue('imageUrl', url, { shouldValidate: true })}
+              folder="categories"
+              label="Ảnh minh họa danh mục (MinIO S3)"
+              disabled={isSubmitting}
             />
-            {errors.imageUrl && (
-              <p className="mt-1 text-xs text-rose-500">{errors.imageUrl.message}</p>
-            )}
 
-            {previewImageUrl && !errors.imageUrl && (
-              <div className="mt-2 flex items-center gap-3 p-2 rounded-xl border border-gray-100 bg-gray-50">
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewImageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center -z-10">
-                    <ImageIcon className="w-5 h-5 text-gray-400" />
-                  </div>
-                </div>
-                <span className="text-xs text-gray-500 truncate">Ảnh xem trước hợp lệ</span>
-              </div>
-            )}
+            <div>
+              <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                Hoặc nhập đường dẫn ảnh trực tiếp (URL)
+              </label>
+              <input
+                type="url"
+                placeholder="https://example.com/images/category.jpg"
+                {...register('imageUrl')}
+                className={`w-full rounded-xl border px-3 py-2 text-xs transition focus:outline-none focus:ring-2 ${
+                  errors.imageUrl
+                    ? 'border-rose-300 focus:ring-rose-200'
+                    : 'border-gray-200 focus:border-orange-500 focus:ring-orange-100'
+                }`}
+              />
+              {errors.imageUrl && (
+                <p className="mt-1 text-xs text-rose-500">{errors.imageUrl.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Thứ tự hiển thị */}

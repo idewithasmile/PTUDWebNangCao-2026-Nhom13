@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { RecipeSummaryDto } from '@/lib/types/category';
 import { Clock, Users, UtensilsCrossed } from 'lucide-react';

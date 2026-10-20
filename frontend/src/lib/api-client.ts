@@ -105,13 +105,25 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
 
   let res: Response;
   try {
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const requestHeaders = new Headers(options.headers);
+    if (!isFormData && !requestHeaders.has('Content-Type')) {
+      requestHeaders.set('Content-Type', 'application/json');
+    }
+
+    // Thiết lập timeout 2.5 giây khi gọi fetch để tránh treo build SSG khi Backend chưa khởi chạy
+    const timeoutSignal =
+      options.signal && typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(2500)])
+        : typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+          ? AbortSignal.timeout(2500)
+          : options.signal;
+
     res = await fetch(url, {
       ...options,
+      signal: timeoutSignal,
       credentials: 'include', // Bắt buộc để gửi/nhận HttpOnly Refresh Token Cookie (SPEC.md)
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers: requestHeaders,
     });
   } catch (err) {
     // FR-AUTH: Backend chưa chạy / sai cổng (5000 vs 5001) → fetch ném TypeError

@@ -7,3 +7,4 @@ export * from './common';
 export * from './category';
 export * from './recipe';
 export * from './auth';
+export * from './file';

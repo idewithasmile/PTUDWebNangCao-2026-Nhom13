@@ -45,9 +45,12 @@ export interface RecipeIngredientDto {
 export interface RecipeImageDto {
   id?: string;
   originalUrl: string;
+  mediumUrl?: string | null;
   thumbnailUrl?: string | null;
+  altText?: string | null;
   caption?: string | null;
   isPrimary: boolean;
+  orderIndex?: number;
 }
 
 export interface RecipeAuthorSummaryDto {
@@ -75,7 +78,7 @@ export interface RecipeSummaryDto {
   author?: RecipeAuthorSummaryDto | null;
   categoryId?: string;
   categoryName?: string | null;
-  publishedAt: string | null;
+  publishedAt?: string | null;
   createdAt?: string;
 }
 
