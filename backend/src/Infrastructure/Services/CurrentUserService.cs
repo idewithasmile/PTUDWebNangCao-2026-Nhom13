@@ -9,4 +9,7 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
     public string? UserId => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
     public string? Email => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
     public bool IsAuthenticated => httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+    public bool IsAdmin => (httpContextAccessor.HttpContext?.User?.IsInRole("Admin") ?? false)
+                           || httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Role) == "Admin"
+                           || httpContextAccessor.HttpContext?.User?.FindFirstValue("role") == "Admin";
 }

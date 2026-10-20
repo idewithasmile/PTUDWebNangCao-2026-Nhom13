@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipe;
+using CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipeImage;
+using CulinaryBlog.Application.Features.Recipes.Commands.SetPrimaryRecipeImage;
+using CulinaryBlog.Application.Features.Recipes.Commands.UploadRecipeImage;
 using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
 using MediatR;
@@ -77,6 +80,35 @@ public static class RecipesEndpoints
 
         group.MapDelete("/{id:guid}", DeleteRecipe)
             .RequireAuthorization()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        // FR-RCP-008 & FR-FILE: Quản lý ảnh công thức (Upload ảnh qua MinIO, Đặt ảnh chính, Xóa ảnh)
+        group.MapPost("/{id:guid}/images", UploadRecipeImage)
+            .RequireAuthorization()
+            .DisableAntiforgery()
+            .WithName("UploadRecipeImage")
+            .WithSummary("Tải ảnh công thức lên qua Proxy MinIO (FR-RCP-008 & FR-FILE-001)")
+            .WithDescription("Tiếp nhận multipart/form-data qua backend proxy, kiểm tra dung lượng <= 5MB và Magic Bytes (JPEG/PNG/WebP/AVIF), lưu trữ vào MinIO bucket culinary-blog.")
+            .Produces<RecipeImageDto>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        group.MapPatch("/{id:guid}/images/{imageId:guid}/primary", SetPrimaryRecipeImage)
+            .RequireAuthorization()
+            .WithName("SetPrimaryRecipeImage")
+            .WithSummary("Đặt ảnh đại diện chính cho công thức (FR-RCP-008)")
+            .Produces<RecipeImageDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{id:guid}/images/{imageId:guid}", DeleteRecipeImage)
+            .RequireAuthorization()
+            .WithName("DeleteRecipeImage")
+            .WithSummary("Xóa ảnh công thức và dọn dẹp vật lý trên MinIO (FR-RCP-008 & FR-FILE-002)")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -204,6 +236,56 @@ public static class RecipesEndpoints
 
         var result = await mediator.Send(query, ct);
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> UploadRecipeImage(
+        Guid id,
+        IFormFile? file,
+        [FromForm] string? altText,
+        IMediator mediator,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Type = "FILE_EMPTY",
+                Title = "Tệp tin rỗng",
+                Detail = "Vui lòng chọn một tệp ảnh hợp lệ để tải lên."
+            });
+        }
+
+        using var stream = file.OpenReadStream();
+        var command = new UploadRecipeImageCommand(id, stream, file.FileName, file.ContentType, altText);
+        var result = await mediator.Send(command, ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
+        return Results.Created($"/api/v1/recipes/{id}/images/{result.Id}", result);
+    }
+
+    private static async Task<IResult> SetPrimaryRecipeImage(
+        Guid id,
+        Guid imageId,
+        IMediator mediator,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        var result = await mediator.Send(new SetPrimaryRecipeImageCommand(id, imageId), ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> DeleteRecipeImage(
+        Guid id,
+        Guid imageId,
+        IMediator mediator,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore cacheStore,
+        CancellationToken ct)
+    {
+        await mediator.Send(new DeleteRecipeImageCommand(id, imageId), ct);
+        await cacheStore.EvictByTagAsync("recipes", ct);
+        return Results.NoContent();
     }
 }
 

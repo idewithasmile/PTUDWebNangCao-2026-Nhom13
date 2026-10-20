@@ -18,7 +18,26 @@ public static class RecipeAuthorizationHelper
         if (!currentUser.IsAuthenticated)
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập.");
         
-        if (recipe.AuthorId.ToString() != currentUser.UserId)
+        if (recipe.AuthorId.ToString() != currentUser.UserId && !currentUser.IsAdmin)
+            throw new ForbiddenException("RECIPE_FORBIDDEN", 
+                "Bạn không có quyền thực hiện thao tác này trên công thức của người khác.");
+        
+        return recipe;
+    }
+
+    public static async Task<Recipe> LoadAndAuthorizeWithImages(
+        IRecipeRepository recipeRepository,
+        ICurrentUser currentUser,
+        Guid recipeId,
+        CancellationToken ct)
+    {
+        var recipe = await recipeRepository.GetByIdWithImagesAsync(recipeId, ct)
+            ?? throw new NotFoundException("RECIPE_NOT_FOUND", $"Không tìm thấy công thức với Id {recipeId}");
+        
+        if (!currentUser.IsAuthenticated)
+            throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập.");
+        
+        if (recipe.AuthorId.ToString() != currentUser.UserId && !currentUser.IsAdmin)
             throw new ForbiddenException("RECIPE_FORBIDDEN", 
                 "Bạn không có quyền thực hiện thao tác này trên công thức của người khác.");
         

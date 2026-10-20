@@ -24,6 +24,14 @@ public class AuditInterceptor : SaveChangesInterceptor
         var now = DateTime.UtcNow;
         foreach (var entry in context.ChangeTracker.Entries<BaseEntity>())
         {
+            // Thực thể mới được thêm qua navigation collection (ví dụ recipe.AddImage)
+            // nhưng do BaseEntity đã gán sẵn Id != Guid.Empty nên EF Core mặc định gán nhầm State = Modified.
+            // Nếu RowVersion chưa từng được gán (rỗng), đây là thực thể mới cần INSERT.
+            if (entry.State == EntityState.Modified && (entry.Entity.RowVersion == null || entry.Entity.RowVersion.Length == 0))
+            {
+                entry.State = EntityState.Added;
+            }
+
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CreatedAt = now;
@@ -35,6 +43,7 @@ public class AuditInterceptor : SaveChangesInterceptor
             else if (entry.State == EntityState.Modified)
             {
                 entry.Property(e => e.UpdatedAt).CurrentValue = now;
+                entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
             }
         }
     }

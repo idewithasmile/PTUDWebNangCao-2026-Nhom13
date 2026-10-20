@@ -75,6 +75,19 @@ builder.Services.AddRateLimiter(options =>
                 });
         }
 
+        // Nhóm tải tệp tin (/images, /files): 5 requests/phút/IP (NFR-SEC-003)
+        if (path.Contains("/images", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/api/v1/files", StringComparison.OrdinalIgnoreCase))
+        {
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: $"upload_{ip}",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                });
+        }
+
         // Toàn bộ API chung: 100 requests/phút/IP (Fixed Window theo NFR-SEC-003)
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: $"general_{ip}",
@@ -178,6 +191,7 @@ var v1 = app.MapGroup("/api/v1");
 v1.MapGroup("/auth").MapAuthEndpoints();
 v1.MapGroup("/recipes").MapRecipesEndpoints();
 v1.MapGroup("/categories").MapCategoriesEndpoints();
+v1.MapGroup("/files").MapFilesEndpoints();
 
 app.MapHealthChecks();
 
