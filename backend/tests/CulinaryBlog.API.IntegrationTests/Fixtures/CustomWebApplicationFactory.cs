@@ -50,10 +50,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 .AddEntityFrameworkInMemoryDatabase()
                 .BuildServiceProvider();
 
-            services.AddDbContext<CulinaryBlogDbContext>(options =>
+            services.AddDbContext<CulinaryBlogDbContext>((sp, options) =>
             {
                 options.UseInMemoryDatabase(_dbName);
                 options.UseInternalServiceProvider(inMemoryServiceProvider);
+                options.AddInterceptors(sp.GetRequiredService<CulinaryBlog.Infrastructure.Data.Interceptors.AuditInterceptor>());
             });
 
             // 2. Thay thế Redis bằng DistributedMemoryCache
@@ -102,7 +103,33 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             // Đăng ký lại Hangfire hoàn toàn dùng MemoryStorage
             services.AddHangfire(h => h.UseMemoryStorage());
+
+            // 4. Thay thế IFileStorageService bằng fake cho tests
+            var fileStorageDescriptors = services.Where(d => d.ServiceType == typeof(CulinaryBlog.Domain.Interfaces.IFileStorageService)).ToList();
+            foreach (var d in fileStorageDescriptors) services.Remove(d);
+            services.AddSingleton<CulinaryBlog.Domain.Interfaces.IFileStorageService, FakeFileStorageService>();
+
+            // 5. Vô hiệu hoá Rate Limiter cho môi trường testing để tránh 429 khi chạy test suite
+            services.Configure<Microsoft.AspNetCore.RateLimiting.RateLimiterOptions>(options =>
+            {
+                options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(_ =>
+                    System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("testing"));
+            });
         });
+    }
+
+    public class FakeFileStorageService : CulinaryBlog.Domain.Interfaces.IFileStorageService
+    {
+        public Task<string> UploadAsync(Stream stream, string fileName, string contentType, string? folder = null, CancellationToken ct = default)
+        {
+            var targetFolder = string.IsNullOrWhiteSpace(folder) ? "uploads" : folder.Trim().Trim('/');
+            return Task.FromResult($"/culinary-blog/{targetFolder}/{Guid.NewGuid()}_{fileName}");
+        }
+
+        public Task DeleteAsync(string fileUrl, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     public async Task ResetDatabaseAsync()

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { CategoryDto } from '@/lib/types/category';
 import { ChefHat, BookOpen } from 'lucide-react';

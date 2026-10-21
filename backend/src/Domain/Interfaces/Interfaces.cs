@@ -8,6 +8,7 @@ public interface ICurrentUser
     string? UserId { get; }
     string? Email { get; }
     bool IsAuthenticated { get; }
+    bool IsAdmin { get; }
 }
 
 public interface ICacheable
@@ -30,6 +31,6 @@ public interface IJwtService
 
 public interface IFileStorageService
 {
-    Task<string> UploadAsync(Stream stream, string fileName, string contentType, CancellationToken ct = default);
+    Task<string> UploadAsync(Stream stream, string fileName, string contentType, string? folder = null, CancellationToken ct = default);
     Task DeleteAsync(string fileUrl, CancellationToken ct = default);
 }

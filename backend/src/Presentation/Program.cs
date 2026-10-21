@@ -95,18 +95,83 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Đăng ký OpenAPI native (.NET 10)
 builder.Services.AddOpenApi();
 
-// Rate Limiting Skeleton
+// Rate Limiting (NFR-SEC-003: Two-Tier Rate Limiting & RFC 7807)
 builder.Services.AddRateLimiter(options =>
 {
+    // Môi trường Testing: tắt giới hạn để test suite gọi auth liên tục không bị 429.
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+            RateLimitPartition.GetNoLimiter("testing"));
+        return;
+    }
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        var retryAfterSeconds = 60;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retrySpan))
+        {
+            retryAfterSeconds = Math.Max(1, (int)retrySpan.TotalSeconds);
+        }
+        context.HttpContext.Response.Headers.RetryAfter = retryAfterSeconds.ToString();
+
+        var problem = new Microsoft.AspNetCore.Mvc.ProblemDetails
+        {
+            Status = StatusCodes.Status429TooManyRequests,
+            Title = "Too Many Requests",
+            Type = "RATE_LIMIT_EXCEEDED",
+            Detail = $"Tần suất yêu cầu vượt quá giới hạn cho phép. Vui lòng thử lại sau {retryAfterSeconds} giây.",
+            Instance = context.HttpContext.Request.Path
+        };
+        await context.HttpContext.Response.WriteAsJsonAsync(problem, cancellationToken: token);
+    };
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var path = httpContext.Request.Path.Value ?? string.Empty;
+
+        // Nhóm xác thực (/api/v1/auth/*): 10 requests/phút/IP (Sliding Window chống Brute Force - NFR-SEC-003)
+        if (path.StartsWith("/api/v1/auth", StringComparison.OrdinalIgnoreCase))
+        {
+            return RateLimitPartition.GetSlidingWindowLimiter(
+                partitionKey: $"auth_{ip}",
+                factory: _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6,
+                    QueueLimit = 0
+                });
+        }
+
+        // Nhóm tải tệp tin (/images, /files): 5 requests/phút/IP (NFR-SEC-003)
+        if (path.Contains("/images", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/api/v1/files", StringComparison.OrdinalIgnoreCase))
+        {
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: $"upload_{ip}",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                });
+        }
+
+        // Toàn bộ API chung: 100 requests/phút/IP (Fixed Window theo NFR-SEC-003)
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"general_{ip}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 100,
-                Window = TimeSpan.FromMinutes(1)
-            }));
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
 });
 
 // Authentication với JWT Bearer
@@ -135,6 +200,7 @@ builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
     }
+    options.AddPolicy("AuthorPolicy", policy => policy.RequireRole("Author", "Admin"));
 });
 
 // Output Caching với Redis
@@ -145,14 +211,19 @@ builder.Services.AddStackExchangeRedisOutputCache(options =>
 });
 builder.Services.AddOutputCache();
 
-// CORS
+// CORS tuân thủ nghiêm ngặt NFR-SEC-005
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?
+        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        ?? ["http://localhost:3000"];
+
     options.AddPolicy("FrontendPolicy", p =>
-        p.WithOrigins(builder.Configuration["Cors:AllowedOrigins"]?.Split(';') ?? ["http://localhost:3000"])
+        p.WithOrigins(allowedOrigins)
          .AllowAnyHeader()
-         .AllowAnyMethod()
-         .AllowCredentials());
+         .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+         .AllowCredentials()
+         .WithExposedHeaders("X-Correlation-ID", "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"));
 });
 
 // Health Checks (FR-OBS-001, NFR-REL-001)
@@ -214,12 +285,12 @@ if (app.Environment.IsDevelopment())
 // Hangfire Dashboard (Dev & Admin)
 app.UseHangfireDashboard("/hangfire");
 
-// Route Groups có tiền tố /api/v1/
+// Route Groups có tiền tố /api/v1/ (API Versioning v1)
 var v1 = app.MapGroup("/api/v1");
 v1.MapGroup("/auth").MapAuthEndpoints();
 v1.MapGroup("/recipes").MapRecipesEndpoints();
-
-app.MapCategoriesEndpoints();
+v1.MapGroup("/categories").MapCategoriesEndpoints();
+v1.MapGroup("/files").MapFilesEndpoints();
 
 // Health Check Endpoints (/health, /health/live, /health/ready)
 app.MapHealthChecks();

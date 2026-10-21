@@ -1,725 +1,391 @@
 # 🗺️ BẢN ĐỒ TRA CỨU MÃ NGUỒN & VỊ TRÍ CHỨC NĂNG (DEV CODE MAP)
-> **Nhánh làm việc:** `2312719-Phuoc/Tuan-4`  
+> **Dự án:** Culinary Blog — Nền tảng chia sẻ công thức nấu ăn (API-Driven Architecture)  
+> **Nhánh làm việc:** `2312719-Phuoc/Tuan-6`  
 > **Người thực hiện:** Trần Ngọc Bảo Phước (MSSV: 2312719)  
 > **Vai trò:** Technical Lead & Core Developer  
-> **Cập nhật lần cuối:** 06/10/2026  
+> **Cập nhật mốc:** Tuần 6 — Hoàn thiện Phân hệ Quản lý Tệp tin MinIO S3 (FR-FILE) & Quản lý Ảnh Công thức (FR-RCP-008)  
 
 ---
 
 ## 1. Mốc trạng thái hiện tại (Current Checkpoint)
 
 - **Đã hoàn thành 100%:**
-  - [x] **Cấu hình `.gitignore` tiêu chuẩn:** Lọc sạch rác nhị phân .NET (`bin/`, `obj/`, `.vs/`) và artifact của Node/Next.js (`node_modules/`, `.next/`, `dist/`).
-  - [x] **Module Khởi tạo Dữ liệu Tự động ([CulinaryBlogSeeder.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Seeders/CulinaryBlogSeeder.cs)):**
-    - Sinh 3 Roles chuẩn hệ sinh thái (`Admin`, `Author`, `Reader`).
-    - Sinh 10 Authors với mật khẩu băm PBKDF2 (`UserManager.CreateAsync`).
-    - Sinh 25 Categories ẩm thực thực tế (Việt Nam + Quốc tế) kèm Slug SEO.
-    - Sinh 100 Recipes (`Status = Published`) phân bổ ngẫu nhiên có kiểm soát vào Categories và Authors.
-    - Sinh quan hệ 1-N lồng ghép: 5–8 `RecipeSteps` (thứ tự tăng dần `StepNumber`) và 10–15 `RecipeIngredients` không trùng tên trên cùng một công thức (Unique Pool Strategy).
-    - Sinh Owned Entity `RecipeNutrition` (Calories, Fat, Carbs, Protein) và liên kết `RecipeImage`.
-    - Cơ chế tất định: `SEED = 42` bảo đảm kết quả giống hệt nhau trên mọi máy trạm và môi trường CI/CD.
-    - Tính Idempotent: Kiểm tra `CountAsync() >= 100` và `RoleExistsAsync` trước khi sinh.
-  - [x] **Tích hợp Seeder & EF Core Migration vào vòng đời API:** Đăng ký trong [Program.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Program.cs), tự động kích hoạt `Database.MigrateAsync()` và Seeder trong môi trường Development qua một `IServiceScope` cô lập.
-  - [x] **Đồng bộ hóa Domain Model & Cơ sở dữ liệu vật lý (PostgreSQL):**
-    - Cấu hình Entity Configuration: [RecipeConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeConfiguration.cs), [RecipeStepConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeStepConfiguration.cs), [RecipeIngredientConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeIngredientConfiguration.cs), [RecipeImageConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeImageConfiguration.cs).
-    - Bộ chặn kiểm toán dữ liệu [AuditInterceptor.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Interceptors/AuditInterceptor.cs) tự động điền `CreatedAt`, `UpdatedAt`.
-    - Áp dụng thành công các bản di chuyển EF Core: `20260930112628_InitialCreate` và `20261003110543_SyncRecipeDomainModel`.
-  - [x] **Domain Exceptions & Application Exceptions chuẩn hóa:** Cài đặt [DomainException.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Exceptions/DomainException.cs), [EntityNotFoundException.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Exceptions/EntityNotFoundException.cs), [CategoryNotEmptyException.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Exceptions/CategoryNotEmptyException.cs), [ConcurrencyConflictException.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Exceptions/ConcurrencyConflictException.cs), [BusinessRuleValidationException.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Exceptions/BusinessRuleValidationException.cs) và [AppExceptions.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Exceptions/AppExceptions.cs) kế thừa chuẩn hóa (CONS-001).
-  - [x] **Hạ tầng Repository & Unit of Work:** Định nghĩa [IRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Common/Interfaces/IRepository.cs), [ICategoryRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Common/Interfaces/ICategoryRepository.cs), [IRecipeRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Interfaces/IRecipeRepository.cs), [IUnitOfWork.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Common/Interfaces/IUnitOfWork.cs) tại Domain và hiện thực [BaseRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/BaseRepository.cs), [CategoryRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/CategoryRepository.cs), [RecipeRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/RecipeRepository.cs), [UnitOfWork.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/UnitOfWork.cs) tại Infrastructure, đăng ký Scoped DI.
-  - [x] **Phân hệ Quản lý Danh mục Nâng cao (FR-CAT - 5 Endpoints Minimal APIs):**
-    - `GET /api/v1/categories`: Công khai, tích hợp [GetCategoriesQuery](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategories/GetCategoriesQuery.cs) hiện thực `ICacheable` với Redis distributed cache TTL 60 phút (`categories:all`), trả về danh sách kèm số lượng công thức đã xuất bản (`Status == Published && !IsDeleted`).
-    - `GET /api/v1/categories/{slug}`: Công khai, tích hợp [GetCategoryBySlugQuery](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategoryBySlug/GetCategoryBySlugQuery.cs) hỗ trợ phân quyền hiển thị theo 3 cấp tác nhân (Khách chỉ xem Published; Tác giả xem Published + bài Draft của mình; Admin xem toàn bộ bài viết); phân trang chuẩn Mapster `ProjectToType<RecipeSummaryDto>()`, trả về [CategoryDetailResponseDto](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/DTOs/CategoryDetailResponseDto.cs). Tự động trích xuất JWT Claims (`NameIdentifier`, `Role`).
-    - `POST /api/v1/categories`: Quyền Admin, sinh Slug SEO chuẩn tiếng Việt, tự động xóa cache Redis (`categories:all`) qua `ICacheInvalidator`.
-    - `PUT /api/v1/categories/{id}`: Quyền Admin, kiểm tra Optimistic Concurrency qua `RowVersion`, bảo toàn Slug tuyệt đối, xóa cache.
-    - `DELETE /api/v1/categories/{id}`: Quyền Admin, xóa mềm, chặn mã lỗi 409 Conflict (`CATEGORY_DELETE_HAS_RECIPES`) nếu còn bài viết.
-  - [x] **Phân hệ Tìm kiếm Toàn văn bản Tiếng Việt Không Dấu (FR-SRCH-001 - Minimal APIs):**
-    - `GET /api/v1/recipes/search`: Tuyến tìm kiếm FTS chuyên biệt tích hợp [SearchRecipesQuery](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQuery.cs) và [SearchRecipesQueryValidator](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQueryValidator.cs).
-    - Kiểm thực đầu vào nghiêm ngặt: Từ khóa tìm kiếm tối thiểu 2 ký tự, nếu vi phạm trả về HTTP 422 Unprocessable Entity (`INVALID_SEARCH_TERM`) chuẩn RFC 7807.
-    - PostgreSQL FTS Native: Ứng dụng `Npgsql.EntityFrameworkCore.PostgreSQL`, `tsvector`, PostgreSQL extension `unaccent`, `EF.Functions.PlainToTsQuery("simple", unaccentedTerm)`, `EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(...)).Matches(...)`, và xếp hạng bằng `ts_rank` (`Rank(...)`).
-    - Cơ chế Fallback In-Memory: Hỗ trợ tìm kiếm tiếng Việt không dấu cho môi trường Unit Tests / In-Memory Database qua thuật toán `RemoveDiacritics`.
-    - Ma trận phân quyền 3 cấp (Guest / Author / Admin) kết hợp lọc theo `CategoryId`, `Difficulty` và phân trang [PaginatedResult&lt;RecipeSummaryDto&gt;](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Models/PaginatedResult.cs).
-  - [x] **Phân hệ Quản lý Công thức (FR-RCP - 8 Endpoints Minimal APIs):**
-    - `POST /api/v1/recipes`: Tạo mới công thức (bước, nguyên liệu, thông số dinh dưỡng).
-    - `GET /api/v1/recipes`: Tìm kiếm & lọc đa tiêu chí tổng quát, Output Cache 5 phút (`SetVaryByQuery`).
-    - `GET /api/v1/recipes/{slug}`: Chi tiết công thức, Output Cache 60 phút (gắn tag `"recipes"`).
-    - `PUT /api/v1/recipes/{id}`: Cập nhật công thức toàn diện (bước, nguyên liệu, dinh dưỡng, ảnh).
-    - `PATCH /api/v1/recipes/{id}/publish`: Xuất bản công thức, kích hoạt xóa cache theo tag `"recipes"`.
-    - `PATCH /api/v1/recipes/{id}/unpublish`: Đưa công thức về trạng thái Draft, xóa cache tag.
-    - `PATCH /api/v1/recipes/{id}/archive`: Lưu trữ công thức (Archive), xóa cache tag.
-    - `DELETE /api/v1/recipes/{id}`: Xóa mềm công thức (`IsDeleted = true`), xóa cache tag.
-  - [x] **Chiến lược Bộ nhớ đệm Đa tầng (Redis Distributed Cache & ASP.NET Output Caching):**
-    - **MediatR Pipeline Caching:** `CachingBehavior<,>` và `CacheInvalidationBehavior<,>` quản lý bộ nhớ đệm phân tán Redis qua [ICacheService](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Interfaces/ICacheService.cs) cho các CQRS queries/commands (`categories:all`, TTL 60m).
-    - **ASP.NET Core Output Caching:** Quản lý response caching cấp HTTP cho Recipes, hỗ trợ phân tách tham số query (`SetVaryByQuery`) và xóa cache đồng loạt theo Tag (`"recipes"`).
-  - [x] **Ánh xạ Dữ liệu Hiệu năng cao với Mapster:**
-    - Cấu hình [CategoryMappingConfig.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Mappings/CategoryMappingConfig.cs) ánh xạ tự động `Recipe` sang `RecipeSummaryDto` với logic ưu tiên ảnh Thumbnail/Primary URL.
-    - Đăng ký tự động trong [DependencyInjection.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/DependencyInjection.cs) của tầng Application.
-  - [x] **Phân hệ Xác thực & Người dùng (FR-AUTH - 7 Endpoints Minimal APIs):**
-    - `POST /api/v1/auth/register`: Đăng ký tài khoản, tự động đăng nhập, trả JWT Bearer và gán HttpOnly Cookie refresh token.
-    - `POST /api/v1/auth/login`: Đăng nhập bằng Email/Password, xử lý lockout (423) và ban (403).
-    - `POST /api/v1/auth/google`: Đăng nhập / đăng ký qua Google OAuth ID Token.
-    - `POST /api/v1/auth/refresh`: Cấp mới JWT từ HttpOnly Cookie refresh token.
-    - `POST /api/v1/auth/logout`: Đăng xuất idempotent, thu hồi refresh token và xóa cookie.
-    - `GET /api/v1/auth/me`: Lấy thông tin tài khoản hiện tại.
-    - `PATCH /api/v1/auth/me`: Cập nhật DisplayName, AvatarUrl, Bio (chặn đổi Email/UserName).
-  - [x] **Global Middlewares & Bảo mật chuẩn Enterprise:**
-    - [GlobalExceptionMiddleware.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Middlewares/GlobalExceptionMiddleware.cs): Xử lý tập trung các lỗi 400, 401, 403, 404, 409, 422, 500 theo chuẩn RFC 7807 (`application/problem+json`).
-    - [CorrelationIdMiddleware.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Middlewares/CorrelationIdMiddleware.cs): Đính kèm `X-Correlation-ID` xuyên suốt luồng gọi API và Serilog.
-    - Fixed Window Rate Limiter: 100 requests/phút trên từng IP.
-    - Scalar API Reference (`/scalar/v1`) và OpenAPI document native (.NET 10).
-  - [x] **Giao diện Client Next.js 15 (App Router + TailwindCSS + TanStack Query v5):**
-    - Chuẩn hóa hiển thị Tiếng Việt: Tích hợp Google Font `Inter` với subsets `['latin', 'vietnamese']` trong [layout.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/layout.tsx), giải quyết triệt để lỗi vỡ font và dấu hỏi (`Qu?n Tr? Vi?n`).
-    - Site Header & Điều hướng người dùng: [site-header.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/site-header.tsx) hiển thị huy hiệu và lối tắt "Quản Trị Viên" (nếu có role Admin), menu "Danh Mục", "Công Thức", "Hồ sơ cá nhân", "Đăng xuất".
-    - Admin Hub Dashboard: [dashboard/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/page.tsx) cung cấp các thẻ điều hướng nhanh đến Quản lý Danh mục (FR-CAT), Quản lý Công thức (FR-RCP), Hồ sơ cá nhân (FR-AUTH).
-    - Quản lý Danh mục Admin: [dashboard/categories/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/categories/page.tsx) hoàn thiện bảng quản trị CRUD danh mục, tự động đồng bộ cache qua React Query mutation invalidation (loại bỏ nút reload thừa).
-    - Public UI: Trang danh sách danh mục ([categories/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/page.tsx)), Trang chi tiết danh mục kèm bài viết ([categories/[slug]/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/%5Bslug%5D/page.tsx)).
-    - Recipe Shell: Trang danh sách công thức ([recipes/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/recipes/page.tsx)), chi tiết công thức ([recipes/[slug]/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/recipes/%5Bslug%5D/page.tsx)).
-    - Auth UI: Đăng nhập ([login/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/login/page.tsx)), Đăng ký ([register/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/register/page.tsx)), Hồ sơ cá nhân ([profile/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/profile/page.tsx)).
-  - [x] **Hạ tầng Container hóa ([docker-compose.yml](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/infrastructure/docker-compose.yml)):**
-    - PostgreSQL 16 (Port 5432) kèm kịch bản [init-db.sql](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/infrastructure/init-db.sql) kích hoạt extension `unaccent` và `uuid-ossp`.
-    - Redis 7 Alpine (Port 6379, AOF persistence).
-    - Seq Log Collector (Port 5341).
-    - MailHog Mock SMTP (Port 1025, Web UI 8025).
-  - [x] **Bộ Kiểm Thử Tự Động Toàn Diện (177/177 Tests Passed - 100% Green):**
+  - [x] **Cài đặt & Cấu hình Bảo mật Toàn diện (Tuần 5):**
+    - **CORS (NFR-SEC-005):** Cấu hình chính sách nghiêm ngặt qua `Cors:AllowedOrigins` (`http://localhost:3000`), kích hoạt `AllowCredentials` truyền nhận Cookie an toàn giữa Next.js và .NET API, giới hạn phương thức (`GET, POST, PUT, PATCH, DELETE, OPTIONS`), phơi bày response headers an toàn (`X-Correlation-ID`, `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`).
+    - **Kiến trúc Giới hạn Tần suất Yêu cầu Hai Tầng (Two-Tier Rate Limiting - NFR-SEC-003):** 
+      - Tầng ứng dụng ASP.NET Core phân vùng thông minh theo IP và Endpoint path:
+        - Nhóm xác thực (`/api/v1/auth/*`): Tối đa **10 requests/phút/IP** (Sliding Window chống Brute Force).
+        - Nhóm upload tệp tin (`/images`, `/files`): Tối đa **5 requests/phút/IP** (Fixed Window).
+        - Toàn bộ API chung: Tối đa **100 requests/phút/IP** (Fixed Window).
+      - Cơ chế `OnRejected` chuẩn hóa: Thiết lập mã `HTTP 429 Too Many Requests`, tự động tính toán Header `Retry-After`, trả về nội dung lỗi theo chuẩn **RFC 7807 Problem Details** (`type: "RATE_LIMIT_EXCEEDED"`).
+    - **Xác thực & Phân quyền (Authentication & Authorization - CONS-004, NFR-SEC-006):**
+      - Access Token JWT stateless thời hạn 15 phút, khóa bí mật đối xứng `SymmetricSecurityKey`, kiểm tra Lifetime, Issuer, Audience.
+      - Refresh Token lưu trữ an toàn trong `HttpOnly; Secure; SameSite=Strict` Cookie với đường dẫn giới hạn `Path=/api/v1/auth`, thời hạn 7 ngày, cơ chế Refresh Token Rotation (RTR) và Reuse Detection.
+      - Phân quyền theo vai trò (Role-based Authorization): `AdminPolicy` (`RequireRole("Admin")`), `AuthorPolicy` (`RequireRole("Author", "Admin")`).
+      - Kiểm soát quyền sở hữu tài nguyên (Resource Ownership): Tác giả chỉ được thao tác bài viết của chính mình, Admin có toàn quyền.
+  - [x] **Sinh Tài liệu Đặc tả API & Phiên bản hóa API (API Versioning - Tuần 5):**
+    - **API Versioning (CONS-005):** Toàn bộ endpoint được định tuyến cố định theo tiền tố phiên bản `/api/v1/` (`/api/v1/auth`, `/api/v1/categories`, `/api/v1/recipes`, `/api/v1/files`).
+    - **Đặc tả API Tự động:** Tích hợp OpenAPI native trong .NET 10 (`Microsoft.AspNetCore.OpenApi`) và giao diện tài liệu tương tác Scalar API Reference (`Scalar.AspNetCore`) tại tuyến `/scalar/v1` và `/openapi/v1.json`.
+  - [x] **Module Quản lý Danh mục Ẩm thực (FR-CAT - 5 Endpoints Minimal APIs - Tuần 5):**
+    - `GET /api/v1/categories` (FR-CAT-001): Công khai, Redis Distributed Cache 60 phút (`categories:all`), trả về danh sách kèm số lượng công thức đã xuất bản.
+    - `GET /api/v1/categories/{slug}` (FR-CAT-002): Công khai, phân trang `page` & `pageSize`, ma trận phân quyền 3 cấp (Guest, Author, Admin).
+    - `POST /api/v1/categories` (FR-CAT-003): Quyền Admin, sinh Slug SEO tiếng Việt không dấu, kiểm tra trùng tên (409 Conflict), xóa cache Redis `categories:all`.
+    - `PUT /api/v1/categories/{id}` (FR-CAT-004): Quyền Admin, kiểm tra Optimistic Concurrency qua `RowVersion` (409 Conflict), bảo toàn `Slug`, xóa cache Redis.
+    - `DELETE /api/v1/categories/{id}` (FR-CAT-005): Quyền Admin, xóa mềm (`IsDeleted = true`), chặn 409 Conflict nếu danh mục còn công thức hoạt động, xóa cache Redis.
+  - [x] **Phân hệ Quản lý Tệp tin MinIO S3 Object Storage (FR-FILE - MỚI Tuần 6):**
+    - **MinioFileStorageService (FR-FILE-001):** Triển khai `IFileStorageService`, upload file proxy qua Backend, giới hạn $\le 5$ MB (`FILE_SIZE_EXCEEDED`), kiểm tra Magic Bytes nhị phân 4 định dạng JPEG, PNG, WebP, AVIF (`FILE_MIME_INVALID`), chống Path Traversal (`{folder}/{Guid.NewGuid()}{ext}`), tự động khởi tạo bucket `culinary-blog` kèm Public Read Policy.
+    - **Xóa Tệp Idempotent & Retry (FR-FILE-002):** Xóa file trên MinIO với cơ chế Idempotent (không báo lỗi nếu file đã xóa), tự động thử lại 3 lần với Exponential Backoff.
+    - **Minimal APIs Endpoints:** `POST /api/v1/files/upload` (201 Created kèm `FileUploadResponse`) và `DELETE /api/v1/files` (204 NoContent).
+  - [x] **Quản lý Ảnh Công thức Nấu ăn (FR-RCP-008 - MỚI Tuần 6):**
+    - `POST /api/v1/recipes/{id}/images`: Tải ảnh công thức, tự động gán `IsPrimary = true` cho ảnh đầu tiên.
+    - `PATCH /api/v1/recipes/{id}/images/{imageId}/primary`: Đặt ảnh làm đại diện chính.
+    - `DELETE /api/v1/recipes/{id}/images/{imageId}`: Xóa ảnh công thức; nếu xóa ảnh chính, tự động gán ảnh đầu tiên còn lại làm primary.
+    - Phân quyền: Chỉ Chủ sở hữu (`Owner`) hoặc Quản trị viên (`Admin`) mới được thao tác.
+    - Xóa Output Cache thẻ `"recipes"` tự động khi có biến động ảnh.
+  - [x] **Tối ưu Kỹ thuật EF Core AuditInterceptor (MỚI Tuần 6):**
+    - Khắc phục xung đột EF Core ChangeTracker gán nhầm trạng thái `Modified` cho thực thể con mới tạo qua Aggregate Root do `BaseEntity.Id != Guid.Empty`.
+    - Tự động chuyển đổi `EntityState.Modified` thành `EntityState.Added` khi `RowVersion` rỗng.
+  - [x] **Frontend Client Integration (MỚI Tuần 6):**
+    - Bổ sung `frontend/src/types/file.ts` (`FileUploadResponse`), cập nhật `RecipeImageDto` trong `recipe.ts`, export qua `index.ts`.
+    - Cập nhật `frontend/src/lib/api-client.ts`: Tự động nhận diện `FormData` để không ghi đè `Content-Type: application/json`.
+    - Cài đặt `frontend/src/lib/services/file-service.ts`: Cung cấp 5 methods gọi API (`uploadFile`, `deleteFile`, `uploadRecipeImage`, `setPrimaryRecipeImage`, `deleteRecipeImage`).
+    - `npm run build` Next.js 15 đạt 100% (0 lỗi TypeScript / lint).
+  - [x] **Đồng bộ Solution & Bộ Kiểm thử Tự động (198/198 Tests Passed - 100% Green):**
     - `CulinaryBlog.Domain.Tests`: **16/16 tests passed**.
-    - `CulinaryBlog.Application.Tests`: **72/72 tests passed**.
+    - `CulinaryBlog.Application.Tests`: **78/78 tests passed** (+6 test cases mới cho Recipe Image Handlers).
     - `CulinaryBlog.Infrastructure.Tests`: **29/29 tests passed**.
-    - `CulinaryBlog.UnitTests`: **55/55 tests passed** (Bổ sung kiểm thử đơn vị cho `GetCategoriesQuery` Redis Caching, `GetCategoryBySlugQuery` phân quyền 3 cấp và Mapster projection, `SearchRecipesTests` tìm kiếm tiếng Việt không dấu PostgreSQL/In-Memory).
-    - `CulinaryBlog.API.IntegrationTests`: **5/5 tests passed**.
-
-- **Điểm dừng hiện tại:**  
-  Toàn bộ Backend Core Architecture từ Domain Model, Seeding, Repositories, CQRS Handlers (Categories, Recipes, Search tiếng Việt không dấu FTS, Auth), Minimal APIs Endpoints, Bộ nhớ đệm Redis 2 tầng, Middleware RFC 7807 đến Bộ kiểm thử tự động (177 tests passed - 100% Green) đã được nghiệm thu hoàn hảo. Phía Frontend Next.js 15 đã hoàn thiện toàn diện giao diện Public Categories, Admin Categories Dashboard, Admin Hub Dashboard, Navigation Tiếng Việt và các luồng xác thực.
-
-- **Bước kế tiếp cần làm:**  
-  Tiếp tục phối hợp cùng các thành viên hoàn thiện các phân hệ nâng cao (Bình luận, Đánh giá, Bookmark) và ghép nối màn hình soạn thảo công thức chi tiết (Recipe Editor) trên Next.js 15.
+    - `CulinaryBlog.UnitTests`: **66/66 tests passed** (+11 test cases mới cho MinIO Storage Service).
+    - `CulinaryBlog.API.IntegrationTests`: **9/9 tests passed** (+4 test cases mới cho File Endpoints).
 
 ---
 
-## 2. Bảng chỉ mục tra cứu: "Cần sửa gì -> Mở file nào?" (Quick Lookup Index)
+## 2. Tiêu chuẩn Xây dựng Code Map cho AI (Bộ 5 Quy Tắc Vàng)
+
+Bản đồ mã nguồn dưới đây được thiết kế tuân thủ nghiêm ngặt **Bộ 5 Quy Tắc Vàng của Code Map**:
+1. **Quy tắc Khung xương (Skeletal Extraction Rule):** Chỉ lưu giữ định nghĩa cấp cao (tên file, class, interface, method signature, record, types). Loại bỏ triệt để logic thân hàm và thay bằng `...`. Toàn bộ map được bao bọc trong code block YAML (` ```yaml ... ``` `).
+2. **Quy tắc Phân tích cú pháp AST (AST-Based Parsing):** Phản ánh đúng quan hệ phân cấp thụt đầu dòng (Indentation) chuẩn hóa: `File -> Class/Interface/Record -> Method/Property`.
+3. **Quy tắc Lọc nhiễu nghiêm ngặt (Strict Ignore & Filtering):** Loại bỏ hoàn toàn các thư mục rác, build artifacts (`bin/`, `obj/`, `node_modules/`, `.next/`, `.git/`, lock files).
+4. **Quy tắc Ngân sách Token (Token Budget Allocation):** Nén cấu trúc trong khoảng 1.500 – 3.000 tokens, đảm bảo cung cấp góc nhìn toàn cảnh mà không gây tràn context window của mô hình ngôn ngữ.
+5. **Quy tắc Đồ thị Phụ thuộc và Xếp hạng (Dependency & Graph Ranking):** Ưu tiên hiển thị các thành phần cốt lõi được tham chiếu nhiều nhất trong kiến trúc (Entities, Repositories, Commands/Queries, Endpoints, DTOs, Types).
+
+---
+
+## 3. Bản đồ Khung xương Toàn diện (Project Code Map - YAML)
+
+```yaml
+# ==============================================================================
+# PROJECT CODE MAP: CULINARY BLOG (API-DRIVEN ARCHITECTURE)
+# Backend: .NET 10 Minimal APIs, Clean Architecture, CQRS (MediatR), PostgreSQL, Redis, MinIO
+# Frontend: Next.js 15 (App Router), TypeScript 5, Tailwind CSS, TanStack Query v5
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. BACKEND - DOMAIN LAYER (src/Domain/ - Pure BCL, CONS-001)
+# ------------------------------------------------------------------------------
+backend/src/Domain/Common/BaseEntity.cs:
+  class BaseEntity:
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public byte[] RowVersion { get; set; }
+
+backend/src/Domain/Entities/Category.cs:
+  class Category : BaseEntity:
+    public string Name { get; set; }
+    public string Slug { get; set; }
+    public string? Description { get; set; }
+    public string? ImageUrl { get; set; }
+    public int OrderIndex { get; set; }
+    public ICollection<Recipe> Recipes { get; set; }
+
+backend/src/Domain/Entities/Recipe.cs:
+  class Recipe : BaseEntity:
+    public string Title { get; private set; }
+    public string Slug { get; private set; }
+    public string Description { get; private set; }
+    public string Instructions { get; private set; }
+    public int PrepTimeMinutes { get; private set; }
+    public int CookTimeMinutes { get; private set; }
+    public int Servings { get; private set; }
+    public RecipeDifficulty Difficulty { get; private set; }
+    public RecipeStatus Status { get; private set; }
+    public Guid CategoryId { get; private set; }
+    public string AuthorId { get; private set; }
+    public RecipeNutrition? Nutrition { get; private set; }
+    public ICollection<RecipeStep> Steps { get; }
+    public ICollection<RecipeIngredient> Ingredients { get; }
+    public ICollection<RecipeImage> Images { get; }
+    public static Recipe Create(string title, string slug, string description, string instructions, int prepTimeMinutes, int cookTimeMinutes, int servings, RecipeDifficulty difficulty, Guid categoryId, string authorId) -> Recipe: ...
+    public RecipeImage AddImage(string originalUrl, string? mediumUrl = null, string? thumbnailUrl = null, string? altText = null, bool isPrimary = false) -> RecipeImage: ...
+    public void SetPrimaryImage(Guid imageId) -> void: ...
+    public void RemoveImage(Guid imageId) -> void: ...
+    public void Publish() -> void: ...
+    public void Unpublish() -> void: ...
+    public void Archive() -> void: ...
+
+backend/src/Domain/Entities/RecipeChildren.cs:
+  class RecipeStep : BaseEntity:
+    public Guid RecipeId { get; private set; }
+    public int StepNumber { get; private set; }
+    public string Title { get; private set; }
+    public string Description { get; private set; }
+  class RecipeIngredient : BaseEntity:
+    public Guid RecipeId { get; private set; }
+    public string Name { get; private set; }
+    public decimal? Quantity { get; private set; }
+    public string? Unit { get; private set; }
+  class RecipeImage : BaseEntity:
+    public Guid RecipeId { get; private set; }
+    public string OriginalUrl { get; private set; }
+    public string? MediumUrl { get; private set; }
+    public string? ThumbnailUrl { get; private set; }
+    public string? AltText { get; private set; }
+    public bool IsPrimary { get; private set; }
+    public int OrderIndex { get; private set; }
+
+backend/src/Domain/Interfaces/Interfaces.cs:
+  interface ICurrentUser:
+    string? UserId { get; }
+    bool IsAuthenticated { get; }
+    bool IsAdmin { get; }
+  interface IFileStorageService:
+    Task<string> UploadAsync(Stream stream, string fileName, string contentType, string? folder = null, CancellationToken ct = default): ...
+    Task DeleteAsync(string fileUrl, CancellationToken ct = default): ...
+  interface ICacheable:
+    string CacheKey { get; }
+    TimeSpan? Expiration { get; }
+  interface ICacheInvalidator:
+    IEnumerable<string> CacheKeysToInvalidate { get; }
+
+backend/src/Domain/Interfaces/IRecipeRepository.cs:
+  interface IRecipeRepository : IRepository<Recipe>:
+    Task<Recipe?> GetByIdWithImagesAsync(Guid id, CancellationToken ct = default): ...
+    Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default): ...
+    Task<bool> IsSlugUniqueAsync(string slug, CancellationToken ct = default): ...
+
+# ------------------------------------------------------------------------------
+# 2. BACKEND - APPLICATION LAYER (src/Application/ - CQRS, MediatR, DTOs)
+# ------------------------------------------------------------------------------
+backend/src/Application/Common/Helpers/RecipeAuthorizationHelper.cs:
+  class RecipeAuthorizationHelper:
+    public static Task<Recipe> LoadAndAuthorize(IRecipeRepository repo, ICurrentUser user, Guid recipeId, CancellationToken ct): ...
+    public static Task<Recipe> LoadAndAuthorizeWithImages(IRecipeRepository repo, ICurrentUser user, Guid recipeId, CancellationToken ct): ...
+
+backend/src/Application/Features/Recipes/DTOs/RecipeImageDto.cs:
+  record RecipeImageDto(Guid Id, string OriginalUrl, string? MediumUrl, string? ThumbnailUrl, string? AltText, bool IsPrimary, int OrderIndex): ...
+
+backend/src/Application/Features/Recipes/Commands/UploadRecipeImage/:
+  record UploadRecipeImageCommand(Guid RecipeId, Stream FileStream, string FileName, string ContentType, string? AltText) : IRequest<RecipeImageDto>: ...
+  class UploadRecipeImageCommandHandler : IRequestHandler<UploadRecipeImageCommand, RecipeImageDto>:
+    public async Task<RecipeImageDto> Handle(UploadRecipeImageCommand request, CancellationToken cancellationToken): ...
+
+backend/src/Application/Features/Recipes/Commands/SetPrimaryRecipeImage/:
+  record SetPrimaryRecipeImageCommand(Guid RecipeId, Guid ImageId) : IRequest<RecipeImageDto>: ...
+  class SetPrimaryRecipeImageCommandHandler : IRequestHandler<SetPrimaryRecipeImageCommand, RecipeImageDto>:
+    public async Task<RecipeImageDto> Handle(SetPrimaryRecipeImageCommand request, CancellationToken cancellationToken): ...
+
+backend/src/Application/Features/Recipes/Commands/DeleteRecipeImage/:
+  record DeleteRecipeImageCommand(Guid RecipeId, Guid ImageId) : IRequest<Unit>: ...
+  class DeleteRecipeImageCommandHandler : IRequestHandler<DeleteRecipeImageCommand, Unit>:
+    public async Task<Unit> Handle(DeleteRecipeImageCommand request, CancellationToken cancellationToken): ...
+
+backend/src/Application/Features/Categories/Queries/GetCategories/:
+  record GetCategoriesQuery() : IRequest<List<CategoryDto>>, ICacheable: ...
+  class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, List<CategoryDto>>: ...
+
+backend/src/Application/Features/Categories/Queries/GetCategoryBySlug/:
+  record GetCategoryBySlugQuery(string Slug, int Page = 1, int PageSize = 12, string? CurrentUserId = null, bool IsAdmin = false) : IRequest<CategoryDetailResponseDto>: ...
+  class GetCategoryBySlugQueryHandler : IRequestHandler<GetCategoryBySlugQuery, CategoryDetailResponseDto>: ...
+
+# ------------------------------------------------------------------------------
+# 3. BACKEND - INFRASTRUCTURE LAYER (src/Infrastructure/ - EF Core, MinIO, Redis)
+# ------------------------------------------------------------------------------
+backend/src/Infrastructure/Services/MinioFileStorageService.cs:
+  class MinioFileStorageService : IFileStorageService:
+    public async Task<string> UploadAsync(Stream stream, string fileName, string contentType, string? folder = null, CancellationToken ct = default): ...
+    public async Task DeleteAsync(string fileUrl, CancellationToken ct = default): ...
+
+backend/src/Infrastructure/Data/Interceptors/AuditInterceptor.cs:
+  class AuditInterceptor : SaveChangesInterceptor:
+    private static void UpdateEntities(DbContext? context): ... # Fix EF Core navigation child Modified -> Added state
+
+backend/src/Infrastructure/Data/CulinaryBlogDbContext.cs:
+  class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>, IUnitOfWork:
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<Recipe> Recipes { get; set; }
+    public DbSet<RecipeStep> RecipeSteps { get; set; }
+    public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
+    public DbSet<RecipeImage> RecipeImages { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+backend/src/Infrastructure/Repositories/RecipeRepository.cs:
+  class RecipeRepository : BaseRepository<Recipe>, IRecipeRepository:
+    public Task<Recipe?> GetByIdWithImagesAsync(Guid id, CancellationToken ct = default): ...
+    public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default): ...
+    public Task<bool> IsSlugUniqueAsync(string slug, CancellationToken ct = default): ...
+
+# ------------------------------------------------------------------------------
+# 4. BACKEND - PRESENTATION LAYER (src/Presentation/ - Minimal APIs, Endpoints)
+# ------------------------------------------------------------------------------
+backend/src/Presentation/Endpoints/FilesEndpoints.cs:
+  class FilesEndpoints:
+    public static RouteGroupBuilder MapFilesEndpoints(this RouteGroupBuilder group) -> RouteGroupBuilder:
+      # POST   /api/v1/files/upload?folder=... (FR-FILE-001 - Auth, Magic Bytes, Max 5MB)
+      # DELETE /api/v1/files?url=...           (FR-FILE-002 - Auth, Idempotent, Retry 3x)
+
+backend/src/Presentation/Endpoints/RecipesEndpoints.cs:
+  class RecipesEndpoints:
+    public static RouteGroupBuilder MapRecipesEndpoints(this RouteGroupBuilder group) -> RouteGroupBuilder:
+      # POST   /api/v1/recipes/{id}/images                  (FR-RCP-008 - Upload recipe image, auto primary)
+      # PATCH  /api/v1/recipes/{id}/images/{imageId}/primary (FR-RCP-008 - Set primary image)
+      # DELETE /api/v1/recipes/{id}/images/{imageId}         (FR-RCP-008 - Delete image, auto transfer primary)
+
+backend/src/Presentation/Endpoints/CategoriesEndpoints.cs:
+  class CategoriesEndpoints:
+    public static RouteGroupBuilder MapCategoriesEndpoints(this RouteGroupBuilder group) -> RouteGroupBuilder:
+      # GET    /api/v1/categories         (FR-CAT-001 - Public, Redis cached 60m)
+      # GET    /api/v1/categories/{slug}  (FR-CAT-002 - Public, Paged, 3-tier auth)
+      # POST   /api/v1/categories         (FR-CAT-003 - Admin, Slug Gen, Cache Invalidation)
+      # PUT    /api/v1/categories/{id}    (FR-CAT-004 - Admin, RowVersion Concurrency)
+      # DELETE /api/v1/categories/{id}    (FR-CAT-005 - Admin, Soft Delete)
+
+backend/src/Presentation/Program.cs:
+  public partial class Program:
+    # Route Group /api/v1/:
+    #   /api/v1/auth        -> MapAuthEndpoints()
+    #   /api/v1/recipes     -> MapRecipesEndpoints()
+    #   /api/v1/categories  -> MapCategoriesEndpoints()
+    #   /api/v1/files       -> MapFilesEndpoints()
+    # Rate Limiting: 10 req/m (/auth), 5 req/m (/images, /files), 100 req/m (general)
+
+# ------------------------------------------------------------------------------
+# 5. FRONTEND - TYPESCRIPT TYPES (frontend/src/types/ - Central TS Definitions)
+# ------------------------------------------------------------------------------
+frontend/src/types/file.ts:
+  interface FileUploadResponse: { url: string, fileName: string, contentType: string, sizeBytes: number }
+
+frontend/src/types/recipe.ts:
+  interface RecipeImageDto: { id?: string, originalUrl: string, mediumUrl?: string | null, thumbnailUrl?: string | null, altText?: string | null, caption?: string | null, isPrimary: boolean, orderIndex?: number }
+  interface RecipeSummaryDto: { id, title, slug, description, prepTime, cookTime, servings, difficulty, status?, thumbnailUrl, authorName, publishedAt }
+  interface RecipeDetailDto: { id, title, slug, description, instructions?, prepTime, cookTime, servings, difficulty, status, categoryId, nutrition?, steps, ingredients, images, rowVersion }
+
+frontend/src/types/common.ts:
+  interface ProblemDetails: { type?, title?, status?, detail?, instance?, errors?, extensions? }
+  interface PagedResult<T>: { items: T[], totalCount, page, pageSize, totalPages, hasNextPage, hasPreviousPage }
+
+frontend/src/types/index.ts:
+  export * from './common'
+  export * from './category'
+  export * from './recipe'
+  export * from './auth'
+  export * from './file'
+
+# ------------------------------------------------------------------------------
+# 6. FRONTEND - SERVICES, STORES & COMPONENTS (frontend/src/)
+# ------------------------------------------------------------------------------
+frontend/src/lib/utils.ts:
+  cn(...inputs: ClassValue[]): string: ... # clsx + twMerge utility
+  formatDuration(minutes: number): string: ...
+  formatDate(dateString: string | Date): string: ...
+
+frontend/src/lib/error-utils.ts:
+  const ERROR_MESSAGES: Record<string, string>
+  getErrorMessage(error: unknown, fallback?: string): string: ...
+  getFieldErrors(error: unknown): Record<string, string[]>: ...
+  isNetworkError(error: unknown): boolean: ...
+
+frontend/src/stores/auth-store.ts:
+  const useAuthStore = create<AuthState>:
+    user, accessToken, isAuthenticated, isLoading
+    setAuth(user, token), setUser(user), setAccessToken(token), clearAuth()
+
+frontend/src/stores/ui-store.ts:
+  const useUIStore = create<UIState>:
+    isMobileMenuOpen, isSearchModalOpen, activeSearchQuery
+    toggleMobileMenu(), setSearchModalOpen(isOpen)
+
+frontend/src/components/ui/: # shadcn/ui Design System primitives
+  button.tsx: Button, buttonVariants (cva: default, destructive, outline, secondary, ghost, link)
+  input.tsx: Input
+  card.tsx: Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
+  badge.tsx: Badge, badgeVariants (default, secondary, destructive, outline, success, warning)
+  skeleton.tsx: Skeleton
+  textarea.tsx: Textarea
+
+frontend/src/components/common/: # Shared UI components
+  Footer.tsx: Footer navigation & culinary brand links
+  Pagination.tsx: Reusable pagination supporting query URL links and callback navigation
+  Loading.tsx: LoadingSpinner, LoadingPage, CardSkeleton, GridCardSkeleton
+  ErrorDisplay.tsx: Friendly error box with retry and home button
+  ImageUpload.tsx: Drag-and-drop MinIO S3 file upload with preview and deletion
+
+frontend/src/lib/services/file-service.ts:
+  const fileService:
+    uploadFile(file: File, folder?: string): Promise<FileUploadResponse>: ...
+    deleteFile(fileUrl: string): Promise<void>: ...
+    uploadRecipeImage(recipeId: string, file: File, altText?: string): Promise<RecipeImageDto>: ...
+    setPrimaryRecipeImage(recipeId: string, imageId: string): Promise<RecipeImageDto>: ...
+    deleteRecipeImage(recipeId: string, imageId: string): Promise<void>: ...
+
+frontend/src/lib/services/category-service.ts:
+  const categoryService:
+    getCategories(): Promise<CategoryDto[]>: ...
+    getCategoryBySlug(slug, page?, pageSize?): Promise<CategoryDetailDto>: ...
+    createCategory(input: CreateCategoryInput): Promise<CategoryDto>: ...
+    updateCategory(id, input: UpdateCategoryInput): Promise<CategoryDto>: ...
+    deleteCategory(id): Promise<void>: ...
+
+frontend/src/lib/api-client.ts:
+  export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T>: ... # Supports JSON and multipart FormData, timeout signal
+```
+
+---
+
+## 4. Bảng chỉ mục tra cứu nhanh: "Cần sửa gì -> Mở file nào?" (Quick Lookup Index)
 
 | Nghiệp vụ / Logic cần can thiệp | Tệp tin đảm nhận (File Path) | Hàm / Khối code cụ thể |
 |---|---|---|
-| **CQRS Lấy danh mục kèm Cache Redis (FR-CAT-001)** | [GetCategoriesQuery.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategories/GetCategoriesQuery.cs)<br>[GetCategoriesQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategories/GetCategoriesQueryHandler.cs) | `CacheKey => "categories:all"`, TTL 60m, kiểm tra Redis cache hit/miss, gọi `GetAllWithRecipeCountAsync()` |
-| **CQRS Chi tiết danh mục & phân quyền (FR-CAT-002)** | [GetCategoryBySlugQuery.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategoryBySlug/GetCategoryBySlugQuery.cs)<br>[GetCategoryBySlugQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Queries/GetCategoryBySlug/GetCategoryBySlugQueryHandler.cs) | Phân quyền 3 cấp (Guest chỉ thấy Published, Author thấy Published + Draft của mình, Admin thấy hết), Mapster projection |
-| **DTOs Phản hồi chi tiết danh mục phân trang** | [CategoryDetailResponseDto.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/DTOs/CategoryDetailResponseDto.cs)<br>[CategoryDetailDto.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/DTOs/CategoryDetailDto.cs) | Record `CategoryDetailResponseDto(CategoryDto Category, PaginatedResult<RecipeSummaryDto> Recipes)`, kế thừa tương thích |
-| **Cấu hình ánh xạ Mapster toàn cục** | [CategoryMappingConfig.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Mappings/CategoryMappingConfig.cs) | `RegisterMappings()`: Ánh xạ `Recipe` -> `RecipeSummaryDto` với logic ưu tiên ảnh đại diện Primary |
-| **Mô hình phân trang tiêu chuẩn hệ thống** | [PaginatedResult.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Models/PaginatedResult.cs) | Record `PaginatedResult<T>` kế thừa `PagedResult<T>` chuẩn hóa cấu trúc Items, TotalCount, Page, PageSize |
-| **CQRS Tìm kiếm toàn văn bản tiếng Việt FTS (FR-SRCH-001)** | [SearchRecipesQuery.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQuery.cs)<br>[SearchRecipesQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQueryHandler.cs) | PostgreSQL FTS `tsvector`, `unaccent`, `EF.Functions.PlainToTsQuery`, `ts_rank` & Fallback In-Memory `RemoveDiacritics` |
-| **Kiểm thực từ khóa & phân trang tìm kiếm (FR-SRCH-001)** | [SearchRecipesQueryValidator.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQueryValidator.cs) | Rule từ khóa tối thiểu 2 ký tự, Page >= 1, PageSize từ 1 đến 50 |
-| **Minimal API Endpoint Tìm kiếm FTS (FR-SRCH-001)** | [RecipesEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/RecipesEndpoints.cs) | `GET /api/v1/recipes/search`, bắt lỗi 422 Unprocessable Entity (`INVALID_SEARCH_TERM`), trích xuất JWT Claims |
-| **Minimal API Endpoint Danh mục & Trích xuất Claims** | [CategoriesEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/CategoriesEndpoints.cs) | `GET /api/v1/categories` (Cache Redis 60m), `GET /api/v1/categories/{slug}` (trích xuất `userId`, `isAdmin` từ `ClaimsPrincipal`) |
-| **MediatR Pipeline Caching & Invalidation** | [CachingBehaviors.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Behaviors/CachingBehaviors.cs) | `CachingBehavior<,>` xử lý `ICacheable`, `CacheInvalidationBehavior<,>` xử lý `ICacheInvalidator` |
-| **Giao diện Hợp đồng Caching & Invalidation** | [Interfaces.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Interfaces/Interfaces.cs) | `ICacheable` (`CacheKey`, `Expiration`), `ICacheInvalidator` (`CacheKeysToInvalidate`) |
-| **Dịch vụ Cache phân tán Redis** | [RedisCacheService.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Services/RedisCacheService.cs) | Hiện thực `ICacheService`: `GetAsync<T>`, `SetAsync<T>`, `RemoveAsync`, `RemoveByPrefixAsync` qua StackExchange.Redis |
-| **Ngoại lệ Not Found chuẩn hóa** | [AppExceptions.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Exceptions/AppExceptions.cs) | `NotFoundException` kế thừa `EntityNotFoundException` đảm bảo tương thích 100% Middleware RFC 7807 |
-| **Thay đổi hạt giống sinh ngẫu nhiên Seeder** | [CulinaryBlogSeeder.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Seeders/CulinaryBlogSeeder.cs) | Hằng số `private const int SEED = 42;` |
-| **Sửa danh mục mẫu tiếng Việt & Quốc tế** | [CulinaryBlogSeeder.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Seeders/CulinaryBlogSeeder.cs) | Mảng `private static readonly string[] CategoryNames` |
-| **Sửa kho công thức & nguyên liệu mẫu** | [CulinaryBlogSeeder.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Seeders/CulinaryBlogSeeder.cs) | Mảng `RecipeTitles`, `IngredientPool`, `StepDescriptions` |
-| **Thay đổi số lượng bản ghi mẫu Seeder** | [CulinaryBlogSeeder.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Seeders/CulinaryBlogSeeder.cs) | Điều kiện `CountAsync() >= 100`, `Generate(10)`, `Random.Int(5, 8)` |
-| **Cấu hình tự động Migration & Seeder khi khởi động** | [Program.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Program.cs) | Khối `if (app.Environment.IsDevelopment())` gọi `Database.MigrateAsync()` & `CulinaryBlogSeeder.SeedAsync` |
-| **Cấu hình DbContext, DbSets & Interceptors** | [CulinaryBlogDbContext.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/CulinaryBlogDbContext.cs) | `DbSet<Category>`, `DbSet<Recipe>`, `DbSet<RecipeStep>`, `DbSet<RecipeIngredient>`, `DbSet<RecipeImage>`, `DbSet<RefreshToken>` |
-| **Cấu hình Fluent API bảng Recipe & Owned Nutrition** | [RecipeConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeConfiguration.cs) | `builder.OwnsOne(r => r.Nutrition, ...)`, cấu hình `RowVersion` Concurrency Token |
-| **Cấu hình bảng Bước thực hiện (RecipeStep)** | [RecipeStepConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeStepConfiguration.cs) | Khóa ngoại `RecipeId`, chỉ mục `StepNumber`, ràng buộc chuỗi |
-| **Cấu hình bảng Nguyên liệu (RecipeIngredient)** | [RecipeIngredientConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeIngredientConfiguration.cs) | Khóa ngoại `RecipeId`, `Name`, `Quantity`, `Unit` |
-| **Cấu hình bảng Hình ảnh công thức (RecipeImage)** | [RecipeImageConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeImageConfiguration.cs) | Khóa ngoại `RecipeId`, `OriginalUrl`, `ThumbnailUrl`, `IsPrimary` |
-| **Thực thể Danh mục & Công thức gốc (Domain)** | [Category.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Entities/Category.cs), [Recipe.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Entities/Recipe.cs) | Khai báo thuộc tính, liên kết 1-N, enum `RecipeStatus`, `RecipeDifficulty` |
-| **Thực thể con Công thức (Steps, Ingredients, Images)** | [RecipeChildren.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Entities/RecipeChildren.cs) | Lớp `RecipeStep`, `RecipeIngredient`, `RecipeImage` |
-| **Value Object Dinh dưỡng công thức** | [RecipeNutrition.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/ValueObjects/RecipeNutrition.cs) | `RecipeNutrition(int Calories, decimal FatGrams, decimal CarbsGrams, decimal ProteinGrams)` |
-| **Repository Danh mục & Đếm công thức active** | [CategoryRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/CategoryRepository.cs) | `GetAllWithRecipeCountAsync()`, `GetBySlugAsync()`, `GetBySlugWithRecipesAsync()` |
-| **Repository Công thức & Include quan hệ** | [RecipeRepository.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/RecipeRepository.cs) | `GetBySlugAsync()`, `GetByIdWithDetailsAsync()`, `GetQueryable()` |
-| **Quản lý giao dịch dữ liệu Unit of Work** | [UnitOfWork.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Repositories/UnitOfWork.cs) | `SaveChangesAsync()`, `BeginTransactionAsync()`, `CommitTransactionAsync()` |
-| **Minimal APIs Endpoints Xác thực (FR-AUTH)** | [AuthEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/AuthEndpoints.cs) | `MapAuthEndpoints()`: Tuyến `/register`, `/login`, `/google`, `/refresh`, `/logout`, `/me` |
-| **CQRS Tìm kiếm & Lọc công thức đa tiêu chí** | [GetRecipesQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/GetRecipes/GetRecipesQueryHandler.cs) | Xử lý `SearchTerm`, `CategoryId`, `Difficulty`, `MaxTotalTimeMinutes`, `SortBy`, Phân quyền xem bài |
-| **CQRS Xem chi tiết công thức** | [GetRecipeBySlugQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/GetRecipeBySlug/GetRecipeBySlugQueryHandler.cs) | Lấy chi tiết công thức kèm bước, nguyên liệu, thông số dinh dưỡng, kiểm tra quyền tác giả |
-| **CQRS Tạo mới công thức** | [CreateRecipeCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Commands/CreateRecipe/CreateRecipeCommandHandler.cs) | Sinh Slug SEO, kiểm tra trùng lặp tiêu đề, lưu Steps & Ingredients |
-| **CQRS Cập nhật công thức & Concurrency** | [UpdateRecipeCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Commands/UpdateRecipe/UpdateRecipeCommandHandler.cs) | Cập nhật thông tin, thay thế danh sách Steps/Ingredients, kiểm tra quyền sở hữu |
-| **CQRS Xuất bản / Thu hồi / Lưu trữ công thức** | [PublishRecipeCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Commands/PublishRecipe/PublishRecipeCommandHandler.cs) | Chuyển đổi trạng thái `RecipeStatus`, kiểm tra điều kiện xuất bản |
-| **CQRS Xóa công thức** | [DeleteRecipeCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Commands/DeleteRecipe/DeleteRecipeCommandHandler.cs) | Kiểm tra quyền tác giả, thực hiện xóa mềm `IsDeleted = true` |
-| **CQRS Tạo danh mục & Xóa Cache** | [CreateCategoryCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Commands/CreateCategory/CreateCategoryCommandHandler.cs) | Sinh Slug SEO, kiểm tra trùng tên danh mục, xóa cache Redis qua `ICacheInvalidator` |
-| **CQRS Sửa danh mục & Kiểm tra Concurrency** | [UpdateCategoryCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Commands/UpdateCategory/UpdateCategoryCommandHandler.cs) | Kiểm tra `RowVersion`, bảo toàn Slug chống broken link, xóa cache |
-| **CQRS Xóa mềm danh mục & Chặn 409 Conflict** | [DeleteCategoryCommandHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Categories/Commands/DeleteCategory/DeleteCategoryCommandHandler.cs) | Kiểm tra `HasActiveRecipesAsync`, ném `CategoryNotEmptyException` nếu còn bài viết |
-| **Xử lý lỗi toàn cục RFC 7807 Problem Details** | [GlobalExceptionMiddleware.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Middlewares/GlobalExceptionMiddleware.cs) | Map các ngoại lệ sang mã HTTP 400, 401, 403, 404, 409, 422, 500 |
-| **Thuật toán sinh Slug tiếng Việt chuẩn SEO** | [SlugHelper.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Helpers/SlugHelper.cs) | Khử dấu tiếng Việt Unicode Normalization Form C/D, Regex ký tự an toàn |
-| **Frontend: Phông chữ tiếng Việt sắc nét chuẩn SEO** | [layout.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/layout.tsx) | Cấu hình Google Font Inter với subsets `latin`, `vietnamese`, thẻ `html lang="vi"` |
-| **Frontend: Thanh điều hướng Header & Menu Quản Trị** | [site-header.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/site-header.tsx) | Điều hướng Logo, Danh Mục, Công Thức, nút Bảng điều khiển "Quản Trị Viên" (Admin role) |
-| **Frontend: Bảng điều khiển Quản trị (Admin Dashboard)** | [dashboard/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/page.tsx) | Hub quản trị tập trung điều hướng đến Quản lý Danh mục (FR-CAT), Công thức, Hồ sơ |
-| **Frontend: Trang quản trị CRUD danh mục** | [dashboard/categories/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/categories/page.tsx) | Bảng Admin quản lý danh mục, thêm mới, chỉnh sửa, xóa và auto invalidate query |
-| **Frontend: Trang xem danh mục công khai** | [categories/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/page.tsx) | Hiển thị Grid danh mục kèm số món ăn, gọi qua `categoryService.getCategories()` |
-| **Frontend: Trang chi tiết danh mục + Món ăn** | [categories/[slug]/page.tsx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/%5Bslug%5D/page.tsx) | Server Component SSR hiển thị banner danh mục và danh sách công thức phân trang |
-| **Frontend: Gọi API danh mục từ Client** | [category-service.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/lib/services/category-service.ts) | Các phương thức `getCategories()`, `getCategoryBySlug()`, `createCategory()`, `updateCategory()`, `deleteCategory()` |
-| **Cấu hình Docker Compose đa dịch vụ** | [docker-compose.yml](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/infrastructure/docker-compose.yml) | Thiết lập Postgres 16 (extension unaccent), Redis 7, Seq (5341), MailHog (8025/1025) |
+| **Dịch vụ Lưu trữ MinIO S3 (FR-FILE)** | [MinioFileStorageService.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Services/MinioFileStorageService.cs) | `UploadAsync()` (Magic Bytes sniffing, size $\le 5$MB, bucket auto-init), `DeleteAsync()` (Idempotent, Retry 3x) |
+| **Minimal APIs Endpoints Tệp tin** | [FilesEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/FilesEndpoints.cs) | `MapFilesEndpoints()`: `POST /api/v1/files/upload` (201 Created), `DELETE /api/v1/files` (204 NoContent) |
+| **Quản lý Ảnh Công thức Nấu ăn (FR-RCP-008)** | [RecipesEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/RecipesEndpoints.cs) | `UploadRecipeImage` (`POST /{id}/images`), `SetPrimaryRecipeImage` (`PATCH .../primary`), `DeleteRecipeImage` (`DELETE .../{imageId}`) |
+| **CQRS Handlers Ảnh Công thức** | `Application/Features/Recipes/Commands/` | `UploadRecipeImageCommandHandler.cs`, `SetPrimaryRecipeImageCommandHandler.cs`, `DeleteRecipeImageCommandHandler.cs` |
+| **Phân quyền Sở hữu Công thức & Admin** | [RecipeAuthorizationHelper.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Helpers/RecipeAuthorizationHelper.cs) | `LoadAndAuthorize()`, `LoadAndAuthorizeWithImages()` (kiểm tra `AuthorId == currentUserId` hoặc `IsAdmin`) |
+| **Tối ưu Concurrency Entity Con EF Core** | [AuditInterceptor.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Interceptors/AuditInterceptor.cs) | Khối kiểm tra `entry.State == EntityState.Modified && RowVersion.Length == 0` -> chuyển sang `EntityState.Added` |
+| **Rate Limiting 5 req/min Upload** | [Program.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Program.cs) | `AddRateLimiter()`: Fixed Window 5 requests/phút/IP cho đường dẫn chứa `/images` hoặc bắt đầu với `/api/v1/files` |
+| **Frontend: Dịch vụ Quản lý File & Ảnh** | [file-service.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/lib/services/file-service.ts) | `uploadFile()`, `deleteFile()`, `uploadRecipeImage()`, `setPrimaryRecipeImage()`, `deleteRecipeImage()` |
+| **Frontend: Fetch API Client Hỗ trợ FormData** | [api-client.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/lib/api-client.ts) | `apiClient()`: Kiểm tra `options.body instanceof FormData` để không override `Content-Type: application/json` |
+| **Hệ thống TypeScript Types Phía Frontend** | [frontend/src/types/index.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/types/index.ts) | Barrel export tập trung: `common.ts`, `category.ts`, `recipe.ts`, `auth.ts`, `file.ts` |
+| **Tiện ích Xử lý Lỗi & Chuẩn hóa RFC 7807** | [error-utils.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/lib/error-utils.ts) | `getErrorMessage()`, `getFieldErrors()`, `isNetworkError()`, bảng ánh xạ `ERROR_MESSAGES` |
+| **Quản lý Trạng thái Xác thực & UI (Zustand)** | [auth-store.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/stores/auth-store.ts)<br>[ui-store.ts](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/stores/ui-store.ts) | `useAuthStore` (in-memory token, user session, logout), `useUIStore` (mobile menu, search drawer) |
+| **Thư viện Giao diện shadcn/ui Primitives** | [frontend/src/components/ui/](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/ui/) | `Button`, `Input`, `Card`, `Badge`, `Skeleton`, `Textarea` (kết hợp `cn()` qua `clsx` & `tailwind-merge`) |
+| **Component Dùng Chung (Common UI)** | [frontend/src/components/common/](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/common/) | `SiteHeader` (responsive nav), `Footer`, `Pagination`, `Loading` / `CardSkeleton`, `ErrorDisplay`, `ImageUpload` (MinIO S3) |
+| **Bố cục & Giao diện Tĩnh Blog App** | [frontend/src/app/](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/) | `layout.tsx` (Root Layout), `page.tsx` (Trang chủ tĩnh), `recipes/page.tsx` (Kho công thức), `recipes/[slug]/page.tsx` (Chi tiết công thức) |
+| **Minimal APIs Phân hệ Danh mục (FR-CAT)** | [CategoriesEndpoints.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Endpoints/CategoriesEndpoints.cs) | `MapCategoriesEndpoints`: 5 Endpoints chuẩn `/api/v1/categories`, bảo vệ `AdminPolicy` |
+| **Solution File Chứa Toàn Bộ Test Suites** | [CulinaryBlog.sln](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/CulinaryBlog.sln)<br>[CulinaryBlog.slnx](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/CulinaryBlog.slnx) | Cấu hình tích hợp đầy đủ 5 dự án test: Domain, Application, Infrastructure, UnitTests, API.IntegrationTests |
 
 ---
 
-## 3. Cây thư mục chi tiết & Giải phẫu trách nhiệm từng file
+## 5. Báo Cáo Bộ Kiểm Thử Tự Động (198/198 Tests - 100% Green)
 
 ```
-f:\PTUDW\PTUDWebNangCao-2026-Nhom13\
-│
-├── .gitignore                                  <-- Bộ lọc artifact đa nền tảng (.NET, Node, Next.js, IDE, OS)
-├── README.md                                  <-- Tài liệu tổng quan dự án & phân công trách nhiệm thành viên
-├── DATA_MODEL.md                              <-- Đặc tả cấu trúc cơ sở dữ liệu và quan hệ thực thể
-├── SPEC.md / SRS_Culinary_Blog_v1.0.0.md      <-- Bản đặc tả yêu cầu kỹ thuật & phân tích mâu thuẫn hệ thống
-│
-├── infrastructure/
-│   ├── docker-compose.yml                     <-- Cấu hình container: PostgreSQL 16 (5432), Redis 7 (6379), Seq (5341), MailHog (8025)
-│   └── init-db.sql                            <-- Kịch bản khởi tạo mở rộng unaccent và uuid-ossp cho PostgreSQL
-│
-├── backend/
-│   ├── CulinaryBlog.sln                       <-- Solution chuẩn Visual Studio
-│   ├── CulinaryBlog.slnx                      <-- Solution định dạng mới hiện đại của .NET 10
-│   ├── Dockerfile                             <-- File đóng gói container Backend .NET 10 đa tầng (Multi-stage build)
-│   │
-│   ├── src/
-│   │   ├── Domain/                            <-- TẦNG DOMAIN: Thuần C# BCL, không phụ thuộc framework ngoài (CONS-001)
-│   │   │   ├── CulinaryBlog.Domain.csproj
-│   │   │   ├── Common/
-│   │   │   │   ├── BaseEntity.cs              <-- Thực thể cơ sở: Id (Guid), CreatedAt, UpdatedAt, IsDeleted, RowVersion (byte[])
-│   │   │   │   └── Interfaces/
-│   │   │   │       ├── IRepository.cs          <-- Generic Repository interface
-│   │   │   │       ├── ICategoryRepository.cs  <-- Interface đặc thù cho danh mục (đếm món active, kiểm tra slug/name)
-│   │   │   │       └── IUnitOfWork.cs          <-- Quản lý transaction và Commit đồng bộ
-│   │   │   ├── Entities/
-│   │   │   │   ├── Category.cs                <-- Thực thể Danh mục (Name, Slug, Description, ImageUrl, OrderIndex)
-│   │   │   │   ├── Recipe.cs                  <-- Thực thể Công thức (Title, Slug, Prep/CookTime, Servings, Difficulty, Status)
-│   │   │   │   ├── RecipeChildren.cs          <-- Thực thể con: RecipeStep, RecipeIngredient, RecipeImage
-│   │   │   │   └── Identity.cs                <-- Thực thể người dùng & phân quyền Identity mở rộng (ApplicationUser, RefreshToken)
-│   │   │   ├── ValueObjects/
-│   │   │   │   └── RecipeNutrition.cs         <-- Value Object thông tin dinh dưỡng (Calories, Fat, Carbs, Protein, Fiber, Sodium)
-│   │   │   ├── Enums/
-│   │   │   │   ├── RecipeDifficulty.cs        <-- Easy (1), Medium (2), Hard (3)
-│   │   │   │   └── RecipeStatus.cs            <-- Draft (0), Pending (1), Published (2), Archived (3)
-│   │   │   ├── Exceptions/
-│   │   │   │   ├── DomainException.cs         <-- Ngoại lệ cơ sở cho toàn bộ tầng nghiệp vụ
-│   │   │   │   ├── EntityNotFoundException.cs  <-- Ngoại lệ không tìm thấy bản ghi (Map HTTP 404 RFC 7807)
-│   │   │   │   ├── CategoryNotEmptyException.cs<-- Ngoại lệ cấm xóa danh mục còn công thức (Map HTTP 409)
-│   │   │   │   ├── ConcurrencyConflictException.cs <-- Ngoại lệ xung đột phiên bản RowVersion (Map HTTP 409)
-│   │   │   │   └── BusinessRuleValidationException.cs <-- Vi phạm quy tắc nghiệp vụ cốt lõi (Map HTTP 422)
-│   │   │   └── Interfaces/
-│   │   │       ├── IRecipeRepository.cs       <-- Interface truy vấn chuyên sâu cho công thức (GetQueryable, Eager Loading)
-│   │   │       └── Interfaces.cs              <-- Hợp đồng cốt lõi: ICurrentUser, ICacheable, ICacheInvalidator, IJwtService
-│   │   │
-│   │   ├── Application/                       <-- TẦNG APPLICATION: Use cases, CQRS với MediatR, FluentValidation, Mapster
-│   │   │   ├── CulinaryBlog.Application.csproj<-- Tích hợp Npgsql.EntityFrameworkCore.PostgreSQL, Mapster, FluentValidation
-│   │   │   ├── DependencyInjection.cs         <-- Đăng ký MediatR, FluentValidation, Mapster và Pipeline Behaviors
-│   │   │   ├── Behaviors/
-│   │   │   │   ├── ValidationBehavior.cs      <-- Tự động kiểm tra FluentValidation trước khi vào Handler
-│   │   │   │   ├── LoggingBehavior.cs         <-- Ghi log có cấu trúc thời gian thực thi từng Request
-│   │   │   │   └── CachingBehaviors.cs        <-- CachingBehavior (xử lý ICacheable) & CacheInvalidationBehavior (xử lý ICacheInvalidator)
-│   │   │   ├── Common/
-│   │   │   │   ├── Exceptions/
-│   │   │   │   │   └── AppExceptions.cs       <-- AppException, ValidationException, NotFoundException (kế thừa EntityNotFoundException)
-│   │   │   │   ├── Helpers/
-│   │   │   │   │   ├── SlugHelper.cs          <-- Chuẩn hóa chuỗi tiếng Việt FormD/FormC sang URL Slug chuẩn SEO (Category)
-│   │   │   │   │   └── RecipeAuthorizationHelper.cs <-- Kiểm tra quyền tác giả hoặc quyền Admin với bài viết
-│   │   │   │   ├── Interfaces/
-│   │   │   │   │   └── ICacheService.cs       <-- Hợp đồng dịch vụ Cache phân tán Redis (GetAsync, SetAsync, RemoveAsync)
-│   │   │   │   └── Models/
-│   │   │   │       ├── PagedResult.cs         <-- Cấu trúc phân trang cơ sở (Items, TotalCount, Page, PageSize, TotalPages)
-│   │   │   │       └── PaginatedResult.cs     <-- Lớp phân trang tiêu chuẩn mở rộng, kế thừa PagedResult đa hình
-│   │   │   ├── Helpers/
-│   │   │   │   └── SlugHelper.cs              <-- SlugHelper hỗ trợ tạo slug cho phân hệ Recipe
-│   │   │   └── Features/
-│   │   │       ├── Categories/                <-- Phân hệ Danh mục (FR-CAT)
-│   │   │       │   ├── Commands/
-│   │   │       │   │   ├── CreateCategory/    <-- Tạo danh mục mới + sinh Slug SEO + ICacheInvalidator (xóa cache categories:all)
-│   │   │       │   │   ├── UpdateCategory/    <-- Cập nhật danh mục + RowVersion Concurrency + bảo toàn Slug + xóa cache
-│   │   │       │   │   └── DeleteCategory/    <-- Xóa mềm danh mục + chặn 409 Conflict nếu có công thức + xóa cache
-│   │   │       │   ├── Queries/
-│   │   │       │   │   ├── GetCategories/     <-- Lấy tất cả danh mục (Redis Cache 60m, đếm bài Published, ICacheable)
-│   │   │       │   │   └── GetCategoryBySlug/ <-- Lấy chi tiết danh mục + phân trang bài viết + phân quyền 3 cấp (Guest/Author/Admin)
-│   │   │       │   ├── DTOs/                  <-- CategoryDto, CategoryDetailResponseDto, CategoryDetailDto, RecipeSummaryDto
-│   │   │       │   └── Mappings/
-│   │   │       │       └── CategoryMappingConfig.cs <-- Cấu hình Mapster ánh xạ Recipe sang RecipeSummaryDto chọn ảnh Primary
-│   │   │       ├── Recipes/                   <-- Phân hệ Công thức & Tìm kiếm (FR-RCP & FR-SRCH)
-│   │   │       │   ├── Commands/
-│   │   │       │   │   ├── CreateRecipe/      <-- Tạo công thức kèm các bước, nguyên liệu và thông tin dinh dưỡng
-│   │   │       │   │   ├── UpdateRecipe/      <-- Cập nhật công thức toàn diện kèm kiểm tra quyền sở hữu và Concurrency
-│   │   │       │   │   ├── DeleteRecipe/      <-- Xóa mềm công thức (IsDeleted = true)
-│   │   │       │   │   ├── PublishRecipe/     <-- Xuất bản công thức (Status = Published)
-│   │   │       │   │   ├── UnpublishRecipe/   <-- Rút bài công thức về bản nháp (Status = Draft)
-│   │   │       │   │   └── ArchiveRecipe/     <-- Lưu trữ công thức vào kho (Status = Archived)
-│   │   │       │   ├── Queries/
-│   │   │       │   │   ├── GetRecipes/        <-- Tìm kiếm & lọc đa tiêu chí tổng hợp (SearchTerm, Category, Difficulty, Time, Sort)
-│   │   │       │   │   ├── GetRecipeBySlug/   <-- Lấy chi tiết công thức đầy đủ thông tin hiển thị
-│   │   │       │   │   └── SearchRecipes/     <-- [FR-SRCH-001] Tìm kiếm toàn văn bản tiếng Việt FTS (PostgreSQL tsvector/unaccent & In-Memory fallback)
-│   │   │       │   └── DTOs/                  <-- RecipeDto, RecipeDetailDto, RecipeSummaryDto
-│   │   │       └── Auth/                      <-- Phân hệ Xác thực (FR-AUTH)
-│   │   │           ├── Commands/              <-- Login, Register, GoogleLogin, RefreshToken, Logout, UpdateProfile
-│   │   │           ├── Queries/               <-- GetMeQuery lấy thông tin cá nhân
-│   │   │           ├── DTOs/                  <-- AuthDtos chứa Token, UserProfile
-│   │   │           └── Services/              <-- Giao diện dịch vụ bảo mật IAuthServices, IRefreshTokenStore
-│   │   │
-│   │   ├── Infrastructure/                    <-- TẦNG INFRASTRUCTURE: EF Core, PostgreSQL, Redis, Seeder, Dịch vụ ngoài
-│   │   │   ├── CulinaryBlog.Infrastructure.csproj
-│   │   │   ├── DependencyInjection.cs         <-- Đăng ký DbContext, Redis, Identity, Repositories, ICacheService
-│   │   │   ├── Data/
-│   │   │   │   ├── CulinaryBlogDbContext.cs   <-- Quản lý DbSets, Owned Entities, Bộ lọc Soft Delete toàn cục, RowVersion Token
-│   │   │   │   ├── Configurations/            <-- Cấu hình Fluent API bảng Recipe, Steps, Ingredients, Images
-│   │   │   │   ├── Interceptors/
-│   │   │   │   │   └── AuditInterceptor.cs    <-- Tự động cập nhật CreatedAt, UpdatedAt khi SaveChanges
-│   │   │   │   └── Seeders/
-│   │   │   │       └── CulinaryBlogSeeder.cs  <-- BỘ SINH DỮ LIỆU TỰ ĐỘNG CHÍNH (Bogus, SEED=42, Idempotent, Unique Pool)
-│   │   │   ├── Migrations/                    <-- Lịch sử di chuyển schema CSDL trên PostgreSQL
-│   │   │   ├── Repositories/
-│   │   │   │   ├── BaseRepository.cs          <-- Hiện thực Generic Repository cho các thực thể kế thừa BaseEntity
-│   │   │   │   ├── CategoryRepository.cs      <-- Hiện thực ICategoryRepository (GetAllWithRecipeCountAsync, GetBySlugAsync)
-│   │   │   │   ├── RecipeRepository.cs        <-- Hiện thực IRecipeRepository với Eager Loading quan hệ 1-N và GetQueryable()
-│   │   │   │   └── UnitOfWork.cs              <-- Hiện thực IUnitOfWork điều phối Transaction
-│   │   │   └── Services/
-│   │   │       ├── RedisCacheService.cs       <-- Triển khai ICacheService qua StackExchange.Redis
-│   │   │       ├── AuthRefreshTokenStore.cs  <-- Lưu trữ và thu hồi RefreshToken qua EF Core
-│   │   │       ├── JwtService.cs              <-- Sinh và thẩm định tính hợp lệ của JSON Web Token
-│   │   │       ├── CurrentUserService.cs      <-- Trích xuất thông tin UserId/Role từ ClaimsPrincipal hiện tại
-│   │   │       ├── GoogleTokenValidator.cs    <-- Xác thực Google OAuth ID Token
-│   │   │       ├── MinioFileStorageService.cs <-- Dịch vụ lưu trữ file tương thích S3 (MinIO)
-│   │   │       └── WelcomeEmailDispatcher.cs  <-- Gửi email chào mừng nền qua Hangfire & MailHog
-│   │   │
-│   │   └── Presentation/                      <-- TẦNG PRESENTATION: ASP.NET Core Minimal APIs (.NET 10)
-│   │       ├── CulinaryBlog.API.csproj
-│   │       ├── Program.cs                     <-- Host entry point: Cấu hình Middleware, Cache, Scalar OpenAPI, Seed runner
-│   │       ├── Endpoints/
-│   │       │   ├── CategoriesEndpoints.cs     <-- Minimal API endpoints cho FR-CAT (/api/v1/categories) kèm Scalar OpenAPI
-│   │       │   ├── RecipesEndpoints.cs        <-- Minimal API endpoints cho FR-RCP (/api/v1/recipes) và FTS (/api/v1/recipes/search)
-│   │       │   ├── AuthEndpoints.cs           <-- Minimal API endpoints cho FR-AUTH (/api/v1/auth)
-│   │       │   └── HealthEndpoints.cs         <-- Tuyến kiểm tra sức khỏe ứng dụng (/health, /health/ready, /health/live)
-│   │       └── Middlewares/
-│   │           ├── CorrelationIdMiddleware.cs <-- Tự động gắn và lưu vết X-Correlation-ID
-│   │           └── GlobalExceptionMiddleware.cs <-- Xử lý lỗi tập trung chuẩn RFC 7807 (application/problem+json)
-│   │
-│   └── tests/                                 <-- TOÀN BỘ BỘ KIỂM THỬ TỰ ĐỘNG (177 TESTS PASSED - 100% GREEN)
-│       ├── CulinaryBlog.Domain.Tests/         <-- [16 Tests PASSED] Kiểm thử Domain Entities, Value Objects, Business Invariants
-│       ├── CulinaryBlog.Application.Tests/    <-- [72 Tests PASSED] Kiểm thử CQRS Handlers, Validators (Recipes, Search, Auth)
-│       ├── CulinaryBlog.Infrastructure.Tests/ <-- [29 Tests PASSED] Kiểm thử Seeder (Tất định, Idempotent), Repositories, UnitOfWork
-│       ├── CulinaryBlog.UnitTests/            <-- [55 Tests PASSED] Kiểm thử GetCategoriesQuery (Redis Caching), GetCategoryBySlugQuery
-│       │                                           (Phân quyền 3 cấp, Mapster), SearchRecipesTests (Tiếng Việt FTS, Unaccent, 422 ProblemDetails)
-│       ├── CulinaryBlog.API.IntegrationTests/ <-- [5 Tests PASSED] Kiểm thử WebApplicationFactory end-to-end Minimal APIs Category
-│       └── CulinaryBlog.Api.Tests/            <-- Bộ kiểm thử tích hợp Auth Flow với Live Database (Docker Compose)
-│
-└── frontend/                                  <-- GIAO DIỆN CLIENT: Next.js 15 App Router + TailwindCSS
-    ├── package.json                           <-- Quản lý dependencies (Next 15.0.3, React 18, React Query 5, Zod, Lucide)
-    ├── tailwind.config.ts                     <-- Cấu hình hệ màu và thiết kế giao diện
-    ├── tsconfig.json                          <-- Cấu hình TypeScript
-    └── src/
-        ├── auth.ts                            <-- Cấu hình NextAuth v5
-        ├── app/
-        │   ├── layout.tsx                     <-- Layout gốc tích hợp font Google Inter (subsets vietnamese), SiteHeader, Toast
-        │   ├── page.tsx                       <-- Trang chủ giới thiệu hệ thống
-        │   ├── globals.css                    <-- Biến CSS giao diện và tiện ích Tailwind
-        │   ├── providers.tsx                  <-- Bọc QueryClientProvider cho State Management React Query
-        │   ├── categories/
-        │   │   ├── page.tsx                   <-- Trang Public: Hiển thị danh mục dạng Grid Card kèm số lượng món
-        │   │   └── [slug]/page.tsx            <-- Trang Public: Xem chi tiết danh mục và danh sách công thức thuộc danh mục
-        │   ├── recipes/
-        │   │   ├── page.tsx                   <-- Trang Public: Khung hiển thị danh sách công thức & thanh tìm kiếm
-        │   │   └── [slug]/page.tsx            <-- Trang Public: Khung hiển thị chi tiết công thức
-        │   ├── dashboard/
-        │   │   ├── page.tsx                   <-- Trang Hub Admin: Bảng điều khiển Quản Trị Viên (Thẻ Danh mục, Công thức, Hồ sơ)
-        │   │   └── categories/page.tsx        <-- Trang Admin: Bảng CRUD danh mục, tìm kiếm danh mục, phân trang, auto invalidate query
-        │   ├── login/page.tsx                 <-- Trang Đăng nhập hệ thống (Email/Password & Google Login)
-        │   ├── register/page.tsx              <-- Trang Đăng ký tài khoản tác giả / độc giả
-        │   └── profile/page.tsx               <-- Trang xem và chỉnh sửa thông tin cá nhân
-        ├── components/
-        │   ├── site-header.tsx                <-- Thanh điều hướng chính (Logo, Danh Mục, Công Thức, Nút Quản Trị Viên, Auth)
-        │   ├── categories/
-        │   │   ├── CategoryCard.tsx           <-- Component thẻ danh mục hiển thị hình ảnh, tên, mô tả và badge số lượng
-        │   │   ├── CategoryFormModal.tsx      <-- Modal form tạo mới / chỉnh sửa danh mục kèm validate Zod
-        │   │   └── DeleteCategoryModal.tsx    <-- Modal hộp thoại cảnh báo và xác nhận xóa danh mục
-        │   ├── recipes/
-        │   │   └── RecipeCard.tsx             <-- Component thẻ công thức hiển thị thời gian, độ khó, tác giả, ảnh bìa
-        │   └── common/
-        │       └── Toast.tsx                  <-- Hệ thống thông báo toast phản hồi thao tác người dùng
-        ├── features/auth/                     <-- Phân hệ Xác thực phía Client
-        │   ├── api.ts                         <-- Client gọi API Auth Backend (/register, /login, /refresh, /logout)
-        │   ├── google-button.tsx              <-- Nút đăng nhập Google OAuth
-        │   ├── hooks.ts                       <-- Custom React hooks quản lý phiên đăng nhập
-        │   ├── schemas.ts                     <-- Lược đồ xác thực biểu mẫu đăng ký / đăng nhập với Zod
-        │   ├── token-store.ts                 <-- Lưu trữ Access Token trong bộ nhớ client an toàn
-        │   └── types.ts                       <-- Khai báo Type TypeScript cho User, AuthState, Tokens
-        └── lib/
-            ├── api-client.ts                  <-- Wrapper cấu hình Fetch Client tự động đính kèm Bearer Token & bắt lỗi
-            ├── services/
-            │   └── category-service.ts        <-- Dịch vụ gọi API danh mục kết nối trực tiếp Backend (/api/v1/categories)
-            └── types/
-                └── category.ts                <-- Interface TypeScript: Category, CategoryDetail, RecipeSummary
+Test Run Summary:
+--------------------------------------------------------------------------------
+1. CulinaryBlog.Domain.Tests:             16 / 16 PASSED  (100%) [~0.1s]
+2. CulinaryBlog.Application.Tests:        78 / 78 PASSED  (100%) [~2.0s] (+6 new)
+3. CulinaryBlog.Infrastructure.Tests:     29 / 29 PASSED  (100%) [~25.0s]
+4. CulinaryBlog.UnitTests:                66 / 66 PASSED  (100%) [~2.0s] (+11 new)
+5. CulinaryBlog.API.IntegrationTests:      9 /  9 PASSED  (100%) [~4.0s] (+4 new)
+--------------------------------------------------------------------------------
+TỔNG CỘNG:                               198 / 198 PASSED (100% GREEN)
 ```
-
----
-
-## 4. Luồng thực thi chi tiết (Execution Flows)
-
-### 4.1. Luồng Khởi tạo & Seeding Dữ liệu Tự động (Seeding Lifecycle Flow)
-
-Khi lập trình viên khởi động API qua lệnh `dotnet run` tại thư mục [Presentation/](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/):
-
-```
-[dotnet run]
-     │
-     ▼
-[1. Program.cs - Bootstrap Host]
-     │  - Cấu hình Serilog Structured Logging, Rate Limiter (100 req/min), CORS
-     │  - Đăng ký DI: AddApplication(), AddInfrastructure()
-     │  - Kiểm tra điều kiện: if (app.Environment.IsDevelopment())
-     │
-     ▼
-[2. Khởi tạo Scope DI tạm thời]
-     │  - using var scope = app.Services.CreateScope();
-     │  - Lấy CulinaryBlogDbContext từ scope
-     │  - await db.Database.MigrateAsync(); (Áp dụng các bản Migration mới nhất lên PostgreSQL)
-     │
-     ▼
-[3. Kích hoạt CulinaryBlogSeeder.SeedAsync]
-     │  - Đặt Randomizer.Seed = new Random(42); (Cố định chuỗi giả ngẫu nhiên tất định)
-     │  - Mở Async Scope con độc lập để resolve DbContext, UserManager, RoleManager
-     │
-     ▼
-[4. Kiểm tra Roles & Authors]
-     │  - Duyệt mảng ["Admin", "Author", "Reader"] -> Tạo Role nếu chưa có trong DB
-     │  - Bogus sinh 10 ApplicationUser (locale "vi") với mật khẩu chuẩn băm PBKDF2 ("Author@123456")
-     │  - Gán Role "Author" cho các tài khoản vừa tạo
-     │
-     ▼
-[5. Kiểm tra Idempotency & Nạp 25 Categories]
-     │  - Kiểm tra: if (await db.Recipes.CountAsync() >= 100) return; -> Dừng ngay nếu DB đã đủ dữ liệu
-     │  - Duyệt 25 CategoryNames -> Sinh Slug SEO tiếng Việt không dấu -> Thêm vào db.Categories
-     │  - await db.SaveChangesAsync(); (Lưu để sinh Id khóa chính thật)
-     │
-     ▼
-[6. Tạo 100 Recipes & Quan hệ 1-N lồng ghép]
-     │  - Tính toán số lượng cần nạp: recipesNeeded = 100 - count
-     │  - Phân bổ ngẫu nhiên CategoryId và AuthorId
-     │  - Gán Value Object Nutrition (Calories, Fat, Carbs, Protein)
-     │  - Với mỗi Recipe:
-     │      + Thêm 5–8 RecipeStep (StepNumber = 1..N, thời gian timer tăng dần)
-     │      + Lấy 10–15 nguyên liệu từ IngredientPool bằng thuật toán chọn không trùng tên (Unique Pool)
-     │      + Tạo liên kết hình ảnh RecipeImage (đánh dấu IsPrimary = true)
-     │  - await db.Recipes.AddRangeAsync(recipes);
-     │  - await db.SaveChangesAsync();
-     │
-     ▼
-[7. Giải phóng Scope & Bật Web Server]
-        - Khối using kết thúc -> Giải phóng hoàn toàn DbContext và ChangeTracker khỏi RAM
-        - Web API chuyển sang trạng thái sẵn sàng lắng nghe HTTP Request tại http://localhost:5000
-```
-
----
-
-### 4.2. Luồng Lấy Danh mục & Cache Phân tán Redis (FR-CAT-001 / GetCategoriesQuery Flow)
-
-Khi Client gửi yêu cầu lấy danh sách danh mục: `GET /api/v1/categories`:
-
-```
-[HTTP Request: GET /api/v1/categories]
-     │
-     ▼
-[1. Middleware Pipeline]
-     │  - CorrelationIdMiddleware: Gắn X-Correlation-ID
-     │  - GlobalExceptionMiddleware: Lắng nghe ngoại lệ
-     │  - RateLimiter: Kiểm tra ngưỡng 100 req/min
-     │
-     ▼
-[2. CategoriesEndpoints.GetCategories]
-     │  - Gửi query: await mediator.Send(new GetCategoriesQuery(), ct);
-     │
-     ▼
-[3. MediatR Pipeline Behaviors]
-     │  - LoggingBehavior: Ghi log bắt đầu và kết thúc truy vấn
-     │  - CachingBehavior<GetCategoriesQuery, List<CategoryDto>>:
-     │    + Nhận diện query triển khai ICacheable (CacheKey = "categories:all", Expiration = 60 phút)
-     │    + Gọi ICacheService.GetAsync<List<CategoryDto>>("categories:all")
-     │    + Nếu CACHE HIT: Lập tức trả về danh sách DTO, bỏ qua Handler và Database!
-     │    + Nếu CACHE MISS: Chuyển tiếp điều khiển vào Handler thực thi.
-     │
-     ▼
-[4. GetCategoriesQueryHandler.Handle]
-     │  - Kiểm tra bộ nhớ đệm phân tán Redis (Double-Check)
-     │  - Truy vấn CSDL PostgreSQL qua CategoryRepository.GetAllWithRecipeCountAsync()
-     │    + Lọc danh mục chưa xóa mềm (!IsDeleted)
-     │    + Sắp xếp theo OrderIndex tăng dần
-     │    + Đếm chính xác số công thức đã xuất bản: Status == Published && !IsDeleted
-     │  - Chiếu sang List<CategoryDto> kèm RowVersion
-     │  - Ghi kết quả vào Redis Cache với khóa "categories:all" và TTL 60 phút
-     │
-     ▼
-[5. Phản hồi Client]
-        - Trả về HTTP 200 OK với mảng JSON List<CategoryDto>
-```
-
----
-
-### 4.3. Luồng Xem Chi tiết Danh mục & Phân quyền Tác nhân (FR-CAT-002 / GetCategoryBySlugQuery Flow)
-
-Khi người dùng truy cập trang danh mục: `GET /api/v1/categories/{slug}?page=1&pageSize=12`:
-
-```
-[HTTP Request: GET /api/v1/categories/{slug}?page=1&pageSize=12]
-     │
-     ▼
-[1. Minimal API Endpoint Trích xuất Claims]
-     │  - CategoriesEndpoints đọc ClaimsPrincipal từ HttpContext:
-     │    + userId = user.FindFirst(NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value
-     │    + isAdmin = user.IsInRole("Admin") || user.FindFirst("role")?.Value == "Admin"
-     │  - Khởi tạo: new GetCategoryBySlugQuery(slug, page, pageSize, userId, isAdmin)
-     │  - await mediator.Send(query, ct)
-     │
-     ▼
-[2. GetCategoryBySlugQueryHandler.Handle]
-     │  - Chuẩn hóa phân trang: page >= 1, pageSize nằm trong khoảng [1, 50]
-     │  - Truy vấn Danh mục theo Slug: await categoryRepository.GetBySlugAsync(slug, ct)
-     │    + Nếu không tìm thấy hoặc đã bị xóa mềm -> Ném NotFoundException("CATEGORY_NOT_FOUND") -> HTTP 404
-     │
-     ▼
-[3. Áp dụng Phân quyền Hiển thị 3 Cấp (Actor Scope)]
-     │  - Khởi tạo: query = recipeRepository.GetQueryable().AsNoTracking().Where(r => r.CategoryId == category.Id && !r.IsDeleted)
-     │  - Kiểm tra quyền:
-     │    + Cấp 1 (Admin): isAdmin == true -> Xem tất cả (Published, Draft, Archived).
-     │    + Cấp 2 (Author): userId != null -> Xem (Status == Published) HOẶC (Status == Draft && AuthorId == userId).
-     │    + Cấp 3 (Guest): Chưa đăng nhập -> Chỉ xem bài đã xuất bản (Status == Published).
-     │
-     ▼
-[4. Đếm số lượng & Chiếu DTO qua Mapster]
-     │  - totalCount = await query.CountAsync(ct);
-     │  - Phân trang: .OrderByDescending(r => r.PublishedAt ?? r.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize)
-     │  - Chiếu dữ liệu bằng Mapster: .ProjectToType<RecipeSummaryDto>().ToListAsync(ct)
-     │  - Đóng gói:
-     │    + CategoryDto(category, totalCount)
-     │    + PaginatedResult<RecipeSummaryDto>(items, totalCount, page, pageSize)
-     │    + CategoryDetailResponseDto(categoryDto, paginatedResult)
-     │
-     ▼
-[5. Phản hồi Client]
-        - Trả về HTTP 200 OK với CategoryDetailResponseDto
-```
-
----
-
-### 4.4. Luồng Tìm kiếm Toàn văn bản Tiếng Việt Không Dấu (FR-SRCH-001 / SearchRecipesQuery Flow)
-
-Khi người dùng tìm kiếm bài viết: `GET /api/v1/recipes/search?q=pho%20bo&page=1&pageSize=10`:
-
-```
-[HTTP Request: GET /api/v1/recipes/search?q=pho bo&page=1&pageSize=10]
-     │
-     ▼
-[1. RecipesEndpoints.SearchRecipes & Validation Nhanh]
-     │  - Kiểm tra tham số: queryTerm = q ?? searchTerm
-     │  - Nếu rỗng hoặc độ dài < 2 ký tự:
-     │    -> Trả về ngay HTTP 422 Unprocessable Entity kèm ProblemDetails RFC 7807 (INVALID_SEARCH_TERM)
-     │  - Trích xuất UserId và Role Admin từ JWT Claims
-     │  - Khởi tạo SearchRecipesQuery(queryTerm, page, pageSize, categoryId, difficulty, userId, isAdmin)
-     │
-     ▼
-[2. MediatR ValidationBehavior]
-     │  - Kích hoạt SearchRecipesQueryValidator:
-     │    + RuleFor(SearchTerm).NotEmpty().MinimumLength(2)
-     │    + RuleFor(Page).GreaterThanOrEqualTo(1)
-     │    + RuleFor(PageSize).InclusiveBetween(1, 50)
-     │
-     ▼
-[3. SearchRecipesQueryHandler.Handle]
-     │  - Khởi tạo: rawQuery = recipeRepository.GetQueryable().AsNoTracking()
-     │  - Áp dụng phân quyền tác nhân (Guest chỉ thấy Published; Author thấy Published + bài của mình; Admin thấy hết)
-     │  - Áp dụng bộ lọc tùy chọn CategoryId và Difficulty
-     │
-     ▼
-[4. Phân nhánh Thực thi Tìm kiếm FTS]
-     │  - Kiểm tra Provider: rawQuery.Provider có chứa "Npgsql"?
-     │  ├─► [NHÁNH 1: PostgreSQL Full-Text Search (Môi trường thực tế)]
-     │  │    + unaccentedTerm = RemoveDiacritics(searchTerm);
-     │  │    + tsQuery = EF.Functions.PlainToTsQuery("simple", unaccentedTerm);
-     │  │    + ftsQuery = rawQuery.Where(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + r.Description)).Matches(tsQuery))
-     │  │                         .OrderByDescending(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + r.Description)).Rank(tsQuery));
-     │  │    + totalCount = await ftsQuery.CountAsync();
-     │  │    + items = await ftsQuery.Skip(...).Take(...).ProjectToType<RecipeSummaryDto>().ToListAsync();
-     │  │
-     │  └─► [NHÁNH 2: In-Memory Fallback (Môi trường Test Unit)]
-     │       + normalizedTerm = RemoveDiacritics(searchTerm).ToLowerInvariant();
-     │       + Lọc danh sách bộ nhớ qua giải thuật RemoveDiacritics(r.Title) và RemoveDiacritics(r.Description)
-     │       + totalCount = matchedList.Count;
-     │       + items = matchedList.Skip(...).Take(...).Adapt<List<RecipeSummaryDto>>();
-     │
-     ▼
-[5. Đóng gói & Phản hồi]
-        - Đóng gói PaginatedResult<RecipeSummaryDto>(items, totalCount, page, pageSize)
-        - Trả về HTTP 200 OK
-```
-
----
-
-### 4.5. Luồng Thay đổi Dữ liệu & Xóa Cache Phân tán (Mutation & Invalidation Flow)
-
-Khi Quản trị viên cập nhật danh mục hoặc Tác giả xuất bản công thức (`PATCH /api/v1/recipes/{id}/publish` hoặc `PUT /api/v1/categories/{id}`):
-
-```
-[HTTP Request: PATCH /api/v1/recipes/{id}/publish HOẶC PUT /api/v1/categories/{id}]
-     │
-     ▼
-[1. Authentication & Authorization Middleware]
-     │  - Thẩm định JWT Bearer Token -> Xác nhận danh tính ClaimsPrincipal
-     │  - Kiểm tra quyền tác giả hoặc AdminPolicy
-     │
-     ▼
-[2. Xử lý CQRS Command Handler]
-     │  - Kiểm tra tính hợp lệ dữ liệu (FluentValidation)
-     │  - Kiểm tra Concurrency Token: byte[] RowVersion
-     │  - Thực hiện thay đổi trạng thái thực thể
-     │  - await unitOfWork.SaveChangesAsync(ct);
-     │
-     ▼
-[3. Xóa Cache Phân tán Tự động (Dual-Layer Eviction)]
-     │  ├─► [LỚP 1: MediatR CacheInvalidationBehavior (Danh mục)]
-     │  │    + Command triển khai ICacheInvalidator (CacheKeysToInvalidate = ["categories:all"])
-     │  │    + Behavior tự động gọi: await cacheService.RemoveAsync("categories:all", ct);
-     │  │    + Cache danh mục trên Redis bị hủy ngay lập tức!
-     │  │
-     │  └─► [LỚP 2: ASP.NET Core OutputCache Eviction (Công thức)]
-     │       + Endpoint gọi trực tiếp: await cacheStore.EvictByTagAsync("recipes", ct);
-     │       + Toàn bộ cache trang danh sách, tìm kiếm và chi tiết công thức lập tức được làm mới!
-     │
-     ▼
-[4. Phản hồi Client]
-        - Trả về HTTP 200 OK / 204 NoContent phản ánh thành công
-```
-
----
-
-## 5. Lưu ý kỹ thuật quan trọng khi chỉnh sửa code
-
-### 5.1. Cơ chế Sinh dữ liệu Không Trùng lặp (Unique Pool Strategy)
-- Một công thức nấu ăn thực tế không được phép chứa hai dòng nguyên liệu trùng tên.
-- **Quy tắc khi chỉnh sửa Seeder:** Tuyệt đối **không** dùng `faker.PickRandom(pool)` trong vòng lặp độc lập.
-- **Cách viết chuẩn hiện tại:**
-  ```csharp
-  var selectedIngredients = ingrFaker.PickRandom(IngredientPool, ingrCount).ToList();
-  for (int i = 0; i < selectedIngredients.Count; i++)
-  {
-      recipe.Ingredients.Add(new RecipeIngredient 
-      { 
-          Name = selectedIngredients[i],
-          Quantity = ingrFaker.Random.Int(1, 500),
-          Unit = ingrFaker.PickRandom("g", "ml", "thìa cà phê", "quả", "củ"),
-          OrderIndex = i + 1
-      });
-  }
+- Lệnh chạy kiểm thử tự động toàn diện Backend:
+  ```bash
+  cd backend
+  dotnet test CulinaryBlog.sln
   ```
-
-### 5.2. Quản lý Bộ nhớ Change Tracker của DbContext
-- Trong quá trình Seeding 100 Recipes cùng hàng trăm Steps và Ingredients, `CulinaryBlogDbContext` lưu vết trong Change Tracker. Nếu DbContext này tồn tại quá lâu ở phạm vi mở rộng, RAM máy chủ sẽ bị phình to.
-- **Quy tắc:** Luôn gói thao tác Seed bên trong `using var scope = serviceProvider.CreateScope();`. Sau khi `SeedAsync` hoàn tất và ra khỏi khối using, Garbage Collector sẽ lập tức giải phóng bộ nhớ thực thể.
-
-### 5.3. Tuân thủ Ràng buộc Soft Delete (Global Query Filters)
-- Hệ thống kích hoạt xóa mềm tự động bằng cấu hình `builder.Entity<T>().HasQueryFilter(e => !e.IsDeleted)`.
-- Khi thực hiện kiểm tra tính tồn tại hoặc thống kê:
-  - Nếu muốn kiểm tra số lượng bản ghi **thực tế trong cơ sở dữ liệu** (bao gồm cả bản ghi đã xóa mềm): Bắt buộc dùng `.IgnoreQueryFilters()`.
-  - Nếu truy vấn dữ liệu phục vụ hiển thị cho người dùng: Giữ nguyên truy vấn mặc định của EF Core.
-
-### 5.4. Kiểm soát Cạnh tranh Lạc quan với `RowVersion`
-- Tất cả các thực thể kế thừa [BaseEntity.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Domain/Common/BaseEntity.cs) đều được trang bị trường Concurrency Token `byte[] RowVersion`.
-- Trong [RecipeConfiguration.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Infrastructure/Data/Configurations/RecipeConfiguration.cs) và `CulinaryBlogDbContext`, trường này được cấu hình `.IsConcurrencyToken().ValueGeneratedNever()`.
-- Khi gọi lệnh cập nhật qua API (`PUT /api/v1/categories/{id}` hoặc `PUT /api/v1/recipes/{id}`), Client **bắt buộc** phải gửi kèm `RowVersion` hiện hành. Nếu xảy ra xung đột cập nhật đồng thời, [GlobalExceptionMiddleware.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Presentation/Middlewares/GlobalExceptionMiddleware.cs) sẽ bắt ngoại lệ và trả về mã lỗi chuẩn `409 Conflict`.
-
-### 5.5. Thuật toán Chuẩn hóa Slug SEO Tiếng Việt Không Dấu
-- Sử dụng tiện ích tập trung tại [SlugHelper.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Helpers/SlugHelper.cs):
-  - Chuẩn hóa Unicode Normalization Form D để tách rời dấu thanh và ký tự gốc.
-  - Loại bỏ các ký tự dấu qua bộ lọc `NonSpacingMark`.
-  - Chuyển `đ`/`Đ` thành `d`/`D`.
-  - Thay thế toàn bộ khoảng trắng và ký tự đặc biệt bằng dấu gạch ngang (`-`).
-  - Chuyển về chữ thường (lowercase) và cắt tỉa dấu gạch dư thừa ở hai đầu chuỗi.
-
-### 5.6. Chiến lược Quản lý Bộ nhớ Đệm Phân tán 2 Lớp (Dual-Layer Caching)
-- **Lớp CQRS Pipeline (MediatR):** Truy vấn danh mục công khai `GetCategoriesQuery` triển khai interface `ICacheable` với key cố định `categories:all` và TTL 60 phút. Bất kỳ lệnh tạo mới, cập nhật hoặc xóa danh mục nào cũng triển khai `ICacheInvalidator`, kích hoạt `CacheInvalidationBehavior` tự động gọi `_cacheService.RemoveAsync("categories:all")`.
-- **Lớp Output Cache (ASP.NET Core Minimal APIs):** Danh sách công thức và chi tiết công thức được cache ở tầng HTTP qua ASP.NET Core Output Caching với Redis store, gắn thẻ thống nhất Tag `"recipes"`. Mọi thao tác Mutation (Thêm/Sửa/Xóa/Publish/Archive công thức) đều kích hoạt xóa cache toàn bộ qua `IOutputCacheStore.EvictByTagAsync("recipes")`.
-
-### 5.7. Tìm kiếm Toàn văn bản Tiếng Việt Không Dấu trên PostgreSQL (tsvector + unaccent) & Fallback In-Memory
-- Trong [SearchRecipesQueryHandler.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Features/Recipes/Queries/SearchRecipes/SearchRecipesQueryHandler.cs), mã nguồn phát hiện provider runtime:
-  - Nếu là PostgreSQL (`Npgsql`): Sử dụng hàm `EF.Functions.Unaccent(r.Title + " " + r.Description)`, kết hợp `EF.Functions.ToTsVector("simple", ...)` và `EF.Functions.PlainToTsQuery("simple", unaccentedTerm)`. Xếp hạng kết quả chuẩn xác bằng `ts_rank`.
-  - Nếu là In-Memory Database (phục vụ kiểm thử Unit): Sử dụng phương thức tiện ích `RemoveDiacritics` kết hợp `Contains` không phân biệt hoa thường để bài test chạy độc lập hoàn toàn mà không cần PostgreSQL.
-
-### 5.8. Ma trận Phân quyền Hiển thị 3 Cấp (3-Tier Actor Scope: Guest vs Author vs Admin)
-- Được áp dụng nhất quán trong cả `GetCategoryBySlugQuery` và `SearchRecipesQuery`:
-  - **Khách vãng lai (Guest):** Chỉ được xem các bài viết có trạng thái đã xuất bản: `Status == RecipeStatus.Published`.
-  - **Tác giả (Author):** Được xem toàn bộ bài viết `Published` của cộng đồng cộng thêm các bài viết nháp của chính mình: `Status == Published || (Status == Draft && AuthorId == userId)`.
-  - **Quản trị viên (Admin):** Được xem toàn bộ bài viết trong hệ thống bất kể trạng thái (`Published`, `Draft`, `Archived`).
-
-### 5.9. Chiến lược Phân trang & Ánh xạ Hiệu năng cao với Mapster (`PaginatedResult<T>` & `ProjectToType`)
-- Sử dụng [PaginatedResult.cs](file:///f:/PTUDW/PTUDWebNangCao-2026-Nhom13/backend/src/Application/Common/Models/PaginatedResult.cs) kế thừa `PagedResult<T>` để chuẩn hóa cấu trúc JSON phản hồi cho Client Next.js.
-- Sử dụng phương thức mở rộng `.ProjectToType<RecipeSummaryDto>()` của thư viện **Mapster** trực tiếp trên `IQueryable` của EF Core trước khi gọi `.ToListAsync(ct)`. Điều này giúp SQL sinh ra chỉ SELECT đúng các cột cần thiết (Title, Slug, PrepTime, CookTime, Primary Image Url), tránh việc load toàn bộ thực thể vào bộ nhớ.
-
----
-
-## 6. Bản đồ kiểm thử tự động (Automated Test Suite Map)
-
-Toàn bộ hệ thống kiểm thử được xây dựng theo tiêu chuẩn công nghiệp với **xUnit, FluentAssertions, Moq, và Microsoft.AspNetCore.Mvc.Testing (WebApplicationFactory)**. 100% các bài kiểm thử đơn vị, kiến trúc và tích hợp đều chạy hoàn toàn độc lập trong bộ nhớ (In-Memory Database & Distributed Memory Cache), không yêu cầu khởi chạy Docker hay máy chủ bên ngoài để vượt qua kiểm thử.
-
-```
-backend/tests/
-│
-├── CulinaryBlog.Domain.Tests/                  <-- [16 Tests PASSED - 100% GREEN]
-│   ├── UnitTest1.cs
-│   └── Entities/
-│       └── RecipeDomainTests.cs                <-- 16 Tests: Kiểm thử tính toàn vẹn nghiệp vụ Domain,
-│                                                    bảo vệ bất biến thực thể Recipe, tính toán thời gian,
-│                                                    ràng buộc số lượng nguyên liệu và bước thực hiện.
-│
-├── CulinaryBlog.Application.Tests/             <-- [72 Tests PASSED - 100% GREEN]
-│   ├── CreateRecipeCommandHandlerTests.cs      <-- Kiểm thử logic tạo công thức, sinh slug SEO, validate đầu vào
-│   ├── UpdateRecipeCommandHandlerTests.cs      <-- Kiểm thử cập nhật công thức, thay thế steps/ingredients, kiểm tra quyền
-│   ├── DeleteRecipeCommandHandlerTests.cs      <-- Kiểm thử xóa mềm công thức, bảo vệ bài viết của tác giả khác
-│   ├── PublishRecipeCommandHandlerTests.cs     <-- Kiểm thử xuất bản bài viết và điều kiện chuyển trạng thái
-│   ├── UnpublishRecipeCommandHandlerTests.cs   <-- Kiểm thử rút bài viết về trạng thái nháp
-│   ├── ArchiveRecipeCommandHandlerTests.cs     <-- Kiểm thử lưu trữ công thức
-│   ├── GetRecipeBySlugQueryHandlerTests.cs     <-- Kiểm thử truy vấn chi tiết công thức, quyền xem bài nháp
-│   ├── GetRecipesQueryHandlerTests.cs          <-- Kiểm thử tìm kiếm đa tiêu chí, phân quyền xem bài viết,
-│   │                                               lọc theo danh mục, độ khó, thời gian nấu và sắp xếp
-│   ├── UnitTest1.cs
-│   └── Auth/
-│       ├── RegisterCommandHandlerTests.cs      <-- Kiểm thử đăng ký người dùng mới, trùng email, mã hóa mật khẩu
-│       ├── LoginCommandHandlerTests.cs         <-- Kiểm thử đăng nhập, sai mật khẩu, khóa tài khoản
-│       ├── RefreshTokenCommandHandlerTests.cs  <-- Kiểm thử cấp mới JWT qua refresh token, token hết hạn
-│       ├── GoogleAndProfileTests.cs            <-- Kiểm thử Google OAuth login và cập nhật hồ sơ cá nhân
-│       └── AuthValidatorsTests.cs              <-- Kiểm thử FluentValidation cho toàn bộ Request DTO xác thực
-│
-├── CulinaryBlog.Infrastructure.Tests/          <-- [29 Tests PASSED - 100% GREEN]
-│   ├── Persistence/Seeders/
-│   │   └── CulinaryBlogSeederTests.cs          <-- 19 Tests: Kiểm chứng cơ chế tất định SEED=42, Idempotency,
-│   │                                               ràng buộc 1-N lồng ghép, tính duy nhất nguyên liệu
-│   └── Repositories/
-│       └── RepositoryTests.cs                  <-- 10 Tests: Kiểm thử Generic BaseRepository CRUD, Soft Delete filter,
-│                                                   CategoryRepository đếm công thức active và UnitOfWork Commit
-│
-├── CulinaryBlog.UnitTests/                     <-- [55 Tests PASSED - 100% GREEN]
-│   ├── CategoryValidatorsTests.cs              <-- 10 Tests: FluentValidation rules cho Create/Update Category, XSS
-│   ├── CategoryHandlersTests.cs                <-- 23 Tests: MediatR CQRS Commands & Queries cho phân hệ Danh mục:
-│   │                                               - GetCategoriesQuery: kiểm thử Cache Hit, Cache Miss với TTL 60m, đếm Published recipes
-│   │                                               - GetCategoryBySlugQuery: kiểm thử phân quyền 3 cấp (Guest, Author, Admin) & Mapster projection
-│   │                                               - Create/Update/Delete Category: kiểm thử sinh slug, concurrency RowVersion, chặn xóa khi có recipes
-│   ├── SearchRecipesTests.cs                   <-- 6 Tests: [FR-SRCH-001] Kiểm thử tìm kiếm tiếng Việt không dấu (Unaccent),
-│   │                                               phân quyền 3 cấp tác nhân (Guest/Author/Admin), phân trang PaginatedResult,
-│   │                                               lọc kết hợp theo CategoryId và Độ khó (Difficulty)
-│   ├── SlugHelperTests.cs                      <-- 8 Tests: Thuật toán khử dấu tiếng Việt Unicode & chuẩn hóa URL
-│   ├── Domain/
-│   │   └── DomainExceptionTests.cs             <-- 8 Tests: Ngoại lệ thuần C# BCL (CONS-001)
-│   └── Middlewares/
-│       └── GlobalExceptionMiddlewareTests.cs   <-- 6 Tests: Ánh xạ mã lỗi HTTP 400, 404, 409, 500 kèm RFC 7807 Problem Details
-│
-└── CulinaryBlog.API.IntegrationTests/          <-- [5 Tests PASSED - 100% GREEN]
-    ├── Fixtures/
-    │   └── CustomWebApplicationFactory.cs      <-- TestServer cô lập (InMemory EF Core, Distributed Memory Cache, Mock Hangfire)
-    └── Endpoints/
-        └── CategoryEndpointsTests.cs           <-- 5 Tests: GET /categories (Thứ tự OrderIndex, Đếm bài, Cache Redis),
-                                                    GET /categories/{slug} (Phân trang, Problem Details 404)
-```
-
----
-
-### Bảng Thống Kê Kết Quả Chạy Kiểm Thử Tự Động (`dotnet test`):
-
-| Dự án Kiểm thử (Test Project) | Tầng kiểm thử | Số bài kiểm thử | Trạng thái | Thời gian thực thi |
-|---|---|:---:|:---:|:---:|
-| **`CulinaryBlog.Domain.Tests`** | Domain Layer (Unit) | **16 / 16** | **100% PASSED** | ~0.5 giây |
-| **`CulinaryBlog.Application.Tests`** | Application Layer (CQRS & Validation) | **72 / 72** | **100% PASSED** | ~4.0 giây |
-| **`CulinaryBlog.Infrastructure.Tests`** | Infrastructure Layer (Seeder & Repos) | **29 / 29** | **100% PASSED** | ~25.0 giây |
-| **`CulinaryBlog.UnitTests`** | Presentation & Cross-Cutting (Unit) | **55 / 55** | **100% PASSED** | ~5.0 giây |
-| **`CulinaryBlog.API.IntegrationTests`** | API Endpoints (Integration E2E) | **5 / 5** | **100% PASSED** | ~9.0 giây |
-| **TỔNG CỘNG HỆ THỐNG** | **Toàn diện 4 tầng kiến trúc + E2E API** | **177 / 177** | **100% GREEN** | **~43.5 giây** |
-
-> **Ghi chú về kiểm thử phụ thuộc môi trường:** Dự án `CulinaryBlog.Api.Tests` là bộ kiểm thử tích hợp chuyên biệt của phân hệ Xác thực (`AuthFlowTests`), được thiết kế để kiểm tra kết nối mạng thực tế với container PostgreSQL vật lý (Port 5432) và Hangfire storage khi khởi chạy qua Docker Compose. Bộ kiểm thử này được chạy riêng biệt trong môi trường kiểm thử tích hợp chuyên dụng.
+- Lệnh kiểm tra và biên dịch Frontend:
+  ```bash
+  cd frontend
+  npm run build
+  ```

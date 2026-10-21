@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 
 import { CategoryDto } from '@/lib/types/category';
 
-export const revalidate = 3600; // ISR revalidate 1 giờ theo yêu cầu SPEC
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Danh mục món ăn | Culinary Blog',

@@ -52,7 +52,7 @@ public class RecipeImagesHandlerTests
         var recipe = NewRecipe();
         SetupQueryable(recipe);
         SetupOwner();
-        _mockStorage.Setup(s => s.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _mockStorage.Setup(s => s.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("/culinary-blog/recipes/x/img1.jpg");
 
         var handler = new UploadRecipeImageCommandHandler(
@@ -75,7 +75,7 @@ public class RecipeImagesHandlerTests
         recipe.AddImage("https://cdn/img1.jpg");
         SetupQueryable(recipe);
         SetupOwner();
-        _mockStorage.Setup(s => s.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _mockStorage.Setup(s => s.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("https://cdn/img2.jpg");
 
         var handler = new UploadRecipeImageCommandHandler(

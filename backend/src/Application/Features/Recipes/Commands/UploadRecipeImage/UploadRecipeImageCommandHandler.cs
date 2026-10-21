@@ -32,13 +32,10 @@ public class UploadRecipeImageCommandHandler(
             ?? throw new NotFoundException("RECIPE_NOT_FOUND", $"Không tìm thấy công thức với Id {request.RecipeId}.");
 
         // Resource-Based Authorization: Owner hoặc Admin (SRS §2.3).
-        // NOTE (gap kiến trúc): ICurrentUser hiện không expose roles/claims Admin
-        // (do Member A sở hữu module Auth). Tạm chỉ check Owner; cần CR bổ sung
-        // ICurrentUser.IsAdmin / Roles để Admin bypass — endpoint đã RequireAuthorization.
         if (!currentUser.IsAuthenticated || string.IsNullOrEmpty(currentUser.UserId))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập để thực hiện chức năng này.");
 
-        if (!string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền thêm ảnh vào công thức của người khác.");
 
         var ext = Path.GetExtension(request.FileName).ToLowerInvariant();
@@ -48,7 +45,7 @@ public class UploadRecipeImageCommandHandler(
         try
         {
             using var stream = new MemoryStream(request.Content, writable: false);
-            publicUrl = await fileStorage.UploadAsync(stream, objectName, request.ContentType, cancellationToken);
+            publicUrl = await fileStorage.UploadAsync(stream, objectName, request.ContentType, folder: null, cancellationToken);
         }
         catch (ArgumentException ex) when (ex.Message.Contains("5MB") || ex.Message.Contains("Magic Bytes") || ex.Message.Contains("Định dạng"))
         {

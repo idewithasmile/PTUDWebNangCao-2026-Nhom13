@@ -14,6 +14,13 @@ public class RecipeRepository(CulinaryBlogDbContext dbContext) : BaseRepository<
             .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, ct);
     }
 
+    public Task<Recipe?> GetByIdWithImagesAsync(Guid id, CancellationToken ct = default)
+    {
+        return Context.Recipes
+            .Include(r => r.Images)
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, ct);
+    }
+
     public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         return Context.Recipes

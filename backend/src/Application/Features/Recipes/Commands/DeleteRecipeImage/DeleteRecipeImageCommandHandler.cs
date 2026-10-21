@@ -29,7 +29,7 @@ public class DeleteRecipeImageCommandHandler(
         if (!currentUser.IsAuthenticated || string.IsNullOrEmpty(currentUser.UserId))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập để thực hiện chức năng này.");
 
-        if (!string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền xóa ảnh của công thức người khác.");
 
         var image = recipe.Images.FirstOrDefault(i => i.Id == request.ImageId)

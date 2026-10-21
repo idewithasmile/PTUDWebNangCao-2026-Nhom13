@@ -37,7 +37,7 @@ public static class RecipesEndpoints
                 .Expire(TimeSpan.FromMinutes(5))
                 .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy", "onlyMine", "status")
                 .Tag("recipes"))
-            .Produces<CulinaryBlog.Application.Common.Models.PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
+            .Produces<PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/search", SearchRecipes)
             .AllowAnonymous()
@@ -96,6 +96,8 @@ public static class RecipesEndpoints
             .RequireAuthorization()
             .DisableAntiforgery()
             .Accepts<IFormFile>("multipart/form-data")
+            .WithName("UploadRecipeImage")
+            .WithSummary("Tải ảnh công thức lên qua Proxy MinIO (FR-RCP-008 & FR-FILE-001)")
             .Produces<RecipeImageDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -443,4 +445,3 @@ public static class RecipesEndpoints
         return Results.Ok(result);
     }
 }
-
