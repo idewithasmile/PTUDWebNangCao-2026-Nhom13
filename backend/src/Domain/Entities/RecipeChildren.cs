@@ -162,4 +162,11 @@ public class RecipeImage : BaseEntity
         AltText = altText?.Trim();
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void SetProcessedUrls(string? mediumUrl, string? thumbnailUrl)
+    {
+        MediumUrl = mediumUrl?.Trim();
+        ThumbnailUrl = thumbnailUrl?.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

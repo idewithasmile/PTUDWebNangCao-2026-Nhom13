@@ -1,36 +1,36 @@
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Features.Auth.Services;
+using CulinaryBlog.Infrastructure.Jobs;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 
 namespace CulinaryBlog.Infrastructure.Services;
 
 /// <summary>
-/// Job chào mừng (FR-JOB-001). Thân job hiện tại chỉ log — chủ module FR-JOB sẽ thay bằng
-/// gửi mail thật qua IEmailService. Tách class riêng để Hangfire serialize expression ổn định.
+/// Bridge class giữ tương thích ngược với các queued jobs cũ trong Hangfire database (nếu có).
 /// </summary>
-public sealed class AuthWelcomeEmailJob(ILogger<AuthWelcomeEmailJob> logger)
+public sealed class AuthWelcomeEmailJob(IWelcomeEmailJob welcomeEmailJob)
 {
-    public Task SendAsync(string email, string displayName, CancellationToken ct = default)
-    {
-        logger.LogInformation("Welcome email queued for {Email} ({DisplayName})", email, displayName);
-        return Task.CompletedTask;
-    }
+    public Task SendAsync(string email, string displayName, CancellationToken ct = default) =>
+        welcomeEmailJob.ExecuteAsync(email, displayName, ct);
 }
 
-/// <summary>Enqueue WelcomeEmailJob qua Hangfire, best-effort (không throw về handler).</summary>
+/// <summary>
+/// Enqueue WelcomeEmailJob qua IBackgroundJobService (hoặc IBackgroundJobClient), best-effort (không throw về handler).
+/// </summary>
 public sealed class WelcomeEmailDispatcher(
-    IBackgroundJobClient jobs,
+    IBackgroundJobService jobs,
     ILogger<WelcomeEmailDispatcher> logger) : IWelcomeEmailDispatcher
 {
     public Task DispatchAsync(string email, string displayName, CancellationToken ct = default)
     {
         try
         {
-            jobs.Enqueue<AuthWelcomeEmailJob>(j => j.SendAsync(email, displayName, CancellationToken.None));
+            jobs.Enqueue<IWelcomeEmailJob>(j => j.ExecuteAsync(email, displayName, CancellationToken.None));
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Hangfire enqueue WelcomeEmail failed for {Email}", email);
+            logger.LogWarning(ex, "FR-JOB-001: Hangfire enqueue WelcomeEmail failed for {Email}", email);
         }
 
         return Task.CompletedTask;

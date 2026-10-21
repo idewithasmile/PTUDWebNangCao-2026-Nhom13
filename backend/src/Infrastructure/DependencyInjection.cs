@@ -4,14 +4,17 @@ using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Interfaces;
 using CulinaryBlog.Infrastructure.Data;
 using CulinaryBlog.Infrastructure.Data.Interceptors;
+using CulinaryBlog.Infrastructure.Jobs;
 using CulinaryBlog.Infrastructure.Repositories;
 using CulinaryBlog.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CulinaryBlog.Infrastructure;
 
@@ -51,6 +54,20 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IFileStorageService, MinioFileStorageService>();
 
+        // FR-JOB services & abstractions (CONS-001)
+        services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IImageProcessingService, ImageProcessingService>();
+        services.AddScoped<ISitemapService, SitemapService>();
+
+        // FR-JOB job classes
+        services.AddScoped<IWelcomeEmailJob, WelcomeEmailJob>();
+        services.AddScoped<WelcomeEmailJob>();
+        services.AddScoped<IRecipeImageResizeJob, RecipeImageResizeJob>();
+        services.AddScoped<RecipeImageResizeJob>();
+        services.AddScoped<ISitemapGenerationJob, SitemapGenerationJob>();
+        services.AddScoped<SitemapGenerationJob>();
+
         // FR-AUTH services (Member A — module Auth).
         services.AddScoped<IRefreshTokenStore, AuthRefreshTokenStore>();
         services.AddHttpClient<IGoogleTokenValidator, GoogleTokenValidator>();
@@ -73,5 +90,34 @@ public static class DependencyInjection
         services.AddHangfireServer();
 
         return services;
+    }
+
+    /// <summary>
+    /// Đăng ký các Recurring Jobs cho Hangfire (FR-JOB-003).
+    /// </summary>
+    public static IApplicationBuilder UseHangfireJobs(this IApplicationBuilder app)
+    {
+        try
+        {
+            using var scope = app.ApplicationServices.CreateScope();
+            var recurringJobs = scope.ServiceProvider.GetService<IRecurringJobManager>();
+            if (recurringJobs != null)
+            {
+                // FR-JOB-003: Recurring Job tạo sitemap hàng ngày lúc 02:00 AM UTC
+                recurringJobs.AddOrUpdate<ISitemapGenerationJob>(
+                    "sitemap-generation",
+                    job => job.ExecuteAsync(CancellationToken.None),
+                    "0 2 * * *",
+                    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+            }
+        }
+        catch (Exception ex)
+        {
+            var logger = app.ApplicationServices.GetService<ILoggerFactory>()?
+                .CreateLogger("HangfireJobs");
+            logger?.LogWarning(ex, "Không thể đăng ký recurring job lúc khởi động: {Message}", ex.Message);
+        }
+
+        return app;
     }
 }
