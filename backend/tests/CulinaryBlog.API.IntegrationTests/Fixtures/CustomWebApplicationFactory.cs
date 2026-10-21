@@ -130,6 +130,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             return Task.CompletedTask;
         }
+
+        public Task<Stream> GetStreamAsync(string fileUrl, CancellationToken ct = default)
+        {
+            return Task.FromResult<Stream>(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0]));
+        }
     }
 
     public async Task ResetDatabaseAsync()

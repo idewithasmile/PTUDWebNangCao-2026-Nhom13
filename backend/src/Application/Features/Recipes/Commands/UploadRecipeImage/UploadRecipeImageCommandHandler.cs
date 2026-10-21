@@ -11,13 +11,15 @@ namespace CulinaryBlog.Application.Features.Recipes.Commands.UploadRecipeImage;
 /// FR-RCP-008 Upload: Owner (hoặc Admin) upload ảnh lên MinIO path
 /// recipes/{recipeId}/{uuid}.{ext}. Ảnh đầu tiên tự IsPrimary=true
 /// (logic nằm trong Recipe.AddImage — Core Domain).
+/// Kích hoạt FR-JOB-002: Image Resize & Thumbnail Generation Job qua IBackgroundJobService.
 /// </summary>
 public class UploadRecipeImageCommandHandler(
     IRecipeRepository recipeRepository,
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser,
     IFileStorageService fileStorage,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IBackgroundJobService? jobService = null)
     : IRequestHandler<UploadRecipeImageCommand, RecipeImageDto>
 {
     public async Task<RecipeImageDto> Handle(UploadRecipeImageCommand request, CancellationToken cancellationToken)
@@ -62,6 +64,16 @@ public class UploadRecipeImageCommandHandler(
         var image = recipe.AddImage(publicUrl, altText: request.AltText?.Trim());
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // FR-JOB-002: Enqueue Image Resize & Thumbnail Generation Job (Fire-and-forget)
+        try
+        {
+            jobService?.Enqueue<IRecipeImageResizeJob>(j => j.ExecuteAsync(recipe.Id, image.Id, publicUrl, CancellationToken.None));
+        }
+        catch
+        {
+            // Best-effort: không làm gãy flow upload ảnh gốc nếu Hangfire tạm thời lỗi
+        }
 
         // Evict key chi tiết theo yêu cầu: ["recipes", $"recipe:{slug}"].
         // "recipes" đã evict qua CacheInvalidationBehavior; ở đây evict key slug.

@@ -3,9 +3,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.Filters;
 using CulinaryBlog.API.HealthChecks;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.Application;
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Observability;
 using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.Data;
@@ -282,8 +284,20 @@ if (app.Environment.IsDevelopment())
     await CulinaryBlogSeeder.SeedAsync(app.Services);
 }
 
-// Hangfire Dashboard (Dev & Admin)
-app.UseHangfireDashboard("/hangfire");
+// Hangfire Dashboard (Dev & Admin) & Recurring Jobs (FR-JOB)
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireAuthorizationFilter(app.Environment)],
+    DashboardTitle = "Culinary Blog - Hangfire Dashboard"
+});
+app.UseHangfireJobs();
+
+// Sitemap XML Endpoint (FR-JOB-003, NFR-SEO-003)
+app.MapGet("/sitemap.xml", async (ISitemapService sitemapService, CancellationToken ct) =>
+{
+    var xml = await sitemapService.GenerateSitemapXmlAsync(ct);
+    return Results.Content(xml, "application/xml", Encoding.UTF8);
+}).AllowAnonymous();
 
 // Route Groups có tiền tố /api/v1/ (API Versioning v1)
 var v1 = app.MapGroup("/api/v1");

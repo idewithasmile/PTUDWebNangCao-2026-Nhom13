@@ -80,7 +80,25 @@ public class RecipeImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Upload_ValidFile_ReturnsDtoAndSetsPrimaryIfFirst()
+    public async Task Upload_Unauthenticated_ThrowsForbiddenException()
+    {
+        var recipe = Recipe.Create("Title", "title", "Desc", "Inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "owner-id", null);
+        SetupQueryable(recipe);
+        _mockCurrentUser.Setup(c => c.IsAuthenticated).Returns(false);
+
+        var handler = new UploadRecipeImageCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object,
+            _mockFileStorage.Object, _mockCache.Object);
+
+        var command = new UploadRecipeImageCommand(
+            recipe.Id, Encoding.UTF8.GetBytes("fake content"), "test.jpg", "image/jpeg", "Alt");
+
+        var act = async () => await handler.Handle(command, CancellationToken.None);
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task Upload_ValidOwner_AddsImageAndReturnsDto()
     {
         var recipe = Recipe.Create("Title", "title", "Desc", "Inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "owner-id", null);
         SetupQueryable(recipe);
@@ -96,15 +114,17 @@ public class RecipeImageCommandHandlerTests
             _mockFileStorage.Object, _mockCache.Object);
 
         var command = new UploadRecipeImageCommand(
-            recipe.Id, Encoding.UTF8.GetBytes("fake content"), "test.jpg", "image/jpeg", "My Alt");
+            recipe.Id, Encoding.UTF8.GetBytes("fake content"), "test.jpg", "image/jpeg", "Alt");
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.OriginalUrl.Should().Be("/culinary-blog/recipes/123/test.jpg");
-        result.AltText.Should().Be("My Alt");
-        result.IsPrimary.Should().BeTrue(); // First image is automatically primary
+        result.AltText.Should().Be("Alt");
+        result.IsPrimary.Should().BeTrue(); // first image is primary
+        recipe.Images.Should().HaveCount(1);
         _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockCache.Verify(c => c.RemoveAsync($"recipe:{recipe.Slug}", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -131,6 +151,33 @@ public class RecipeImageCommandHandlerTests
 
         result.Should().NotBeNull();
         result.OriginalUrl.Should().Be("/culinary-blog/recipes/123/test.jpg");
+    }
+
+    [Fact]
+    public async Task Upload_Success_EnqueuesResizeJob()
+    {
+        var recipe = Recipe.Create("Title", "title", "Desc", "Inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "owner-id", null);
+        SetupQueryable(recipe);
+        _mockCurrentUser.Setup(c => c.IsAuthenticated).Returns(true);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("owner-id");
+
+        _mockFileStorage.Setup(f => f.UploadAsync(
+                It.IsAny<Stream>(), It.IsAny<string>(), "image/jpeg", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("/culinary-blog/recipes/123/original.jpg");
+
+        var mockJobService = new Mock<IBackgroundJobService>();
+
+        var handler = new UploadRecipeImageCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object,
+            _mockFileStorage.Object, _mockCache.Object, mockJobService.Object);
+
+        var command = new UploadRecipeImageCommand(
+            recipe.Id, Encoding.UTF8.GetBytes("fake content"), "test.jpg", "image/jpeg", "Alt");
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        mockJobService.Verify(j => j.Enqueue(It.IsAny<System.Linq.Expressions.Expression<Func<IRecipeImageResizeJob, Task>>>()), Times.Once);
     }
 
     [Fact]

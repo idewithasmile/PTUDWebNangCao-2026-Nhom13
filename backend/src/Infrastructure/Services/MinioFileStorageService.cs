@@ -120,6 +120,42 @@ public class MinioFileStorageService : IFileStorageService
         }
     }
 
+    public async Task<Stream> GetStreamAsync(string fileUrl, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(fileUrl))
+            throw new AppException("FILE_NOT_FOUND", "URL tệp tin không hợp lệ.", 400);
+
+        var objectName = ExtractObjectName(fileUrl);
+        if (string.IsNullOrWhiteSpace(objectName))
+            throw new AppException("FILE_NOT_FOUND", "Không tìm thấy đường dẫn tệp tin trên hệ thống lưu trữ.", 404);
+
+        var memoryStream = new MemoryStream();
+        try
+        {
+            var getObjectArgs = new GetObjectArgs()
+                .WithBucket(_bucket)
+                .WithObject(objectName)
+                .WithCallbackStream(stream =>
+                {
+                    stream.CopyTo(memoryStream);
+                });
+
+            await _client.GetObjectAsync(getObjectArgs, ct);
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+        catch (MinioException ex)
+        {
+            _logger?.LogError(ex, "Lỗi khi tải stream file {Object} từ MinIO: {Message}", objectName, ex.Message);
+            throw new AppException("FILE_NOT_FOUND", $"Không thể tải tệp tin từ MinIO: {objectName}", 404);
+        }
+        catch (Exception ex) when (ex is not AppException)
+        {
+            _logger?.LogError(ex, "Lỗi kết nối khi lấy stream file {Object} từ MinIO: {Message}", objectName, ex.Message);
+            throw new AppException("STORAGE_UNAVAILABLE", "Hệ thống lưu trữ MinIO gặp sự cố khi đọc tệp.", 503);
+        }
+    }
+
     private string ResolveObjectName(string fileName, string? folder, string contentType)
     {
         var sanitized = (fileName ?? string.Empty).Trim().Replace('\\', '/').TrimStart('/');
