@@ -29,6 +29,10 @@ export const recipeFormSchema = z.object({
     .min(5, 'Hướng dẫn chung tối thiểu 5 ký tự.'),
   primaryImageUrl: z
     .string()
+    .max(500, 'Đường dẫn ảnh không được vượt quá 500 ký tự.')
+    .refine((val) => !val || !val.startsWith('data:'), {
+      message: 'Vui lòng tải ảnh lên hệ thống lưu trữ thay vì chuỗi base64.',
+    })
     .optional(),
   categoryId: z
     .string()

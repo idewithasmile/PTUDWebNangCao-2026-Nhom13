@@ -74,14 +74,12 @@ export default function RecipeForm({
         setValue('primaryImageUrl', res.url);
       }
     } catch (err: unknown) {
-      console.warn('Lỗi khi tải ảnh lên MinIO:', err);
-      // Fallback preview ảnh cục bộ qua FileReader nếu MinIO chưa bật
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Url = event.target?.result as string;
-        setValue('primaryImageUrl', base64Url);
-      };
-      reader.readAsDataURL(file);
+      console.error('Lỗi khi tải ảnh lên MinIO:', err);
+      setUploadError(
+        err instanceof Error
+          ? err.message
+          : 'Không thể tải ảnh lên hệ thống lưu trữ. Vui lòng kiểm tra quyền đăng nhập hoặc chọn ảnh hợp lệ.'
+      );
     } finally {
       setIsUploadingImage(false);
     }

@@ -25,5 +25,10 @@ public class CreateRecipeCommandValidator : AbstractValidator<CreateRecipeComman
 
         RuleFor(v => v.CategoryId)
             .NotEmpty().WithMessage("Danh mục công thức là bắt buộc.");
+
+        RuleFor(v => v.PrimaryImageUrl)
+            .MaximumLength(500).WithMessage("Đường dẫn ảnh đại diện không được vượt quá 500 ký tự.")
+            .Must(url => string.IsNullOrEmpty(url) || !url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("Đường dẫn ảnh không được là chuỗi base64 (cần tải lên hệ thống lưu trữ).");
     }
 }

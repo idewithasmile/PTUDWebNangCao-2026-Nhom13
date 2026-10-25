@@ -1,4 +1,4 @@
-import { setAccessToken } from '@/features/auth/token-store';
+import { getAccessToken, setAccessToken } from '@/features/auth/token-store';
 import type { ProblemDetails } from './types/category';
 
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
@@ -111,12 +111,19 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
       requestHeaders.set('Content-Type', 'application/json');
     }
 
-    // Thiết lập timeout 2.5 giây khi gọi fetch để tránh treo build SSG khi Backend chưa khởi chạy
+    // Tự động gắn Bearer Token nếu có và header Authorization chưa được chỉ định
+    const token = getAccessToken();
+    if (token && !requestHeaders.has('Authorization')) {
+      requestHeaders.set('Authorization', `Bearer ${token}`);
+    }
+
+    // Timeout hợp lý: file upload (FormData) cho phép tới 30s, mutation 15s, còn build SSG GET 3s
+    const defaultTimeoutMs = isFormData ? 30000 : method === 'GET' ? 3000 : 15000;
     const timeoutSignal =
       options.signal && typeof AbortSignal.any === 'function'
-        ? AbortSignal.any([options.signal, AbortSignal.timeout(2500)])
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(defaultTimeoutMs)])
         : typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-          ? AbortSignal.timeout(2500)
+          ? AbortSignal.timeout(defaultTimeoutMs)
           : options.signal;
 
     res = await fetch(url, {
