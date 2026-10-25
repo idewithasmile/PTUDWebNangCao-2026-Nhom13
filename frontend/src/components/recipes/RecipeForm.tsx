@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { recipeFormSchema, type RecipeFormData } from '@/features/recipes/schemas';
 import { categoryService } from '@/lib/services/category-service';
+import { fileService } from '@/lib/services/file-service';
 import type { CategoryDto } from '@/lib/types/category';
 import {
   Loader2,
@@ -53,20 +54,37 @@ export default function RecipeForm({
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh vượt quá giới hạn 5MB.');
+      setUploadError('Kích thước ảnh vượt quá giới hạn cho phép (5MB).');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      setValue('primaryImageUrl', base64Url);
-    };
-    reader.readAsDataURL(file);
+
+    setUploadError(null);
+    setIsUploadingImage(true);
+
+    try {
+      const res = await fileService.uploadFile(file, 'recipes');
+      if (res && res.url) {
+        setValue('primaryImageUrl', res.url);
+      }
+    } catch (err: unknown) {
+      console.warn('Lỗi khi tải ảnh lên MinIO:', err);
+      // Fallback preview ảnh cục bộ qua FileReader nếu MinIO chưa bật
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Url = event.target?.result as string;
+        setValue('primaryImageUrl', base64Url);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const {
@@ -324,24 +342,48 @@ export default function RecipeForm({
                   <div>
                     <label
                       htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all text-center"
+                      className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all text-center ${
+                        isUploadingImage
+                          ? 'border-orange-400 bg-orange-50/50 cursor-wait'
+                          : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50/30'
+                      }`}
                     >
-                      <Upload className="h-8 w-8 text-orange-500 mb-2" />
-                      <span className="text-sm font-semibold text-gray-700">
-                        Bấm để chọn ảnh từ máy tính hoặc điện thoại
-                      </span>
-                      <span className="text-xs text-gray-400 mt-1">
-                        Hỗ trợ PNG, JPG, JPEG, WebP (Tối đa 5MB)
-                      </span>
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-orange-500 animate-spin mb-2" />
+                          <span className="text-sm font-semibold text-orange-700">
+                            Đang tải ảnh lên hệ thống MinIO S3...
+                          </span>
+                          <span className="text-xs text-orange-500 mt-1">
+                            Hệ thống sẽ tự động cắt ảnh thumbnail và tối ưu kích thước
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-orange-500 mb-2" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            Bấm để chọn ảnh từ máy tính hoặc điện thoại
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1">
+                            Hỗ trợ PNG, JPG, JPEG, WebP (Tối đa 5MB)
+                          </span>
+                        </>
+                      )}
                       <input
                         id="file-upload"
                         type="file"
                         accept="image/*"
                         onChange={handleFileUpload}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isUploadingImage}
                         className="hidden"
                       />
                     </label>
+
+                    {uploadError && (
+                      <p className="mt-2 text-xs text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                        {uploadError}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">

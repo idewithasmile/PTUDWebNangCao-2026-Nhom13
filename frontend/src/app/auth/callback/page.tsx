@@ -35,7 +35,7 @@ export default function GoogleCallbackPage() {
       onSuccess: async () => {
         // Dọn session tạm của Auth.js, giữ lại session backend (access in-memory + refresh HttpOnly cookie).
         await signOut({ redirect: false }).catch(() => undefined);
-        router.push('/dashboard');
+        router.push('/');
       },
       onError: async (e) => {
         await signOut({ redirect: false }).catch(() => undefined);

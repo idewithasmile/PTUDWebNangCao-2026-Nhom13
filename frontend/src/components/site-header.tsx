@@ -47,8 +47,8 @@ export default function SiteHeader() {
 
   const navLinks = [
     { href: '/', label: 'Trang chủ', active: pathname === '/' },
-    { href: '/recipes', label: 'Công thức', active: pathname.startsWith('/recipes') && !pathname.startsWith('/recipes/create') && !pathname.startsWith('/recipes/new') },
-    { href: '/categories', label: 'Danh mục', active: pathname.startsWith('/categories') },
+    { href: '/recipes', label: 'Công thức', active: (pathname?.startsWith('/recipes') ?? false) && !pathname?.startsWith('/recipes/create') && !pathname?.startsWith('/recipes/new') },
+    { href: '/categories', label: 'Danh mục', active: pathname?.startsWith('/categories') ?? false },
   ];
 
   const isAdmin = user?.roles?.includes('Admin');
@@ -85,54 +85,23 @@ export default function SiteHeader() {
 
         {/* Right Action / Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
-          {/* Lối tắt Admin / Dashboard */}
+          {/* Nút Đăng công thức mới (dành cho User đã đăng nhập) */}
           {user && (
-            isAdmin ? (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-orange-100 px-3 py-1.5 text-xs font-bold text-orange-800 shadow-sm transition hover:bg-orange-200"
-                title="Bảng điều khiển Quản Trị Viên"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 text-orange-700" />
-                <span>Quản Trị Viên</span>
-              </Link>
-            ) : (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5 text-gray-500" />
-                <span>Dashboard</span>
-              </Link>
-            )
-          )}
-
-          {/* Nút Xem bài viết của tôi & Nút Tạo công thức mới (dành cho User đã đăng nhập) */}
-          {user && (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/recipes?onlyMine=true"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50/70 px-3 py-1.5 text-xs font-bold text-orange-700 shadow-sm transition hover:bg-orange-100"
-              >
-                <ChefHat className="h-3.5 w-3.5 text-orange-600" />
-                <span>Bài viết của tôi</span>
-              </Link>
-
-              <Link
-                href="/recipes/create"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm shadow-orange-200 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-95"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>Đăng công thức</span>
-              </Link>
-            </div>
+            <Link
+              href="/dashboard?tab=recipes-create"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm shadow-orange-200 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-95"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>Đăng công thức</span>
+            </Link>
           )}
 
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
               <Link
-                href="/profile"
+                href="/dashboard"
                 className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
+                title="Bảng điều khiển (Dashboard)"
               >
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>{user.displayName}</span>
@@ -207,41 +176,20 @@ export default function SiteHeader() {
             <div className="my-2 border-t border-gray-100 pt-2">
               {user ? (
                 <div className="flex flex-col gap-2">
-                  <div className="px-3 py-1 text-xs text-gray-500">
-                    Đăng nhập bởi: <span className="font-semibold text-gray-900">{user.displayName}</span>
-                  </div>
-
-                  {isAdmin ? (
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-orange-100 py-2 text-sm font-bold text-orange-800"
-                    >
-                      <ShieldCheck className="h-4 w-4 text-orange-700" />
-                      <span>Quản Trị Viên (Dashboard)</span>
-                    </Link>
-                  ) : (
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700"
-                    >
-                      <LayoutDashboard className="h-4 w-4 text-gray-500" />
-                      <span>Dashboard</span>
-                    </Link>
-                  )}
-
                   <Link
-                    href="/recipes?onlyMine=true"
+                    href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 py-2 text-sm font-bold text-orange-700"
+                    className="px-3 py-2 text-xs font-semibold rounded-xl bg-gray-50 border border-gray-200 text-gray-800 flex items-center justify-between"
                   >
-                    <ChefHat className="h-4 w-4 text-orange-600" />
-                    <span>Bài viết của tôi</span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>{user.displayName}</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-medium">Bảng điều khiển →</span>
                   </Link>
 
                   <Link
-                    href="/recipes/create"
+                    href="/dashboard?tab=recipes-create"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm"
                   >
@@ -250,11 +198,11 @@ export default function SiteHeader() {
                   </Link>
 
                   <Link
-                    href="/profile"
+                    href="/dashboard?tab=settings"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700"
                   >
-                    Hồ sơ cá nhân
+                    Hồ sơ & Cài đặt
                   </Link>
 
                   <button

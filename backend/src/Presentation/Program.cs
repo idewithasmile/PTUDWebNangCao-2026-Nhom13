@@ -305,6 +305,7 @@ v1.MapGroup("/auth").MapAuthEndpoints();
 v1.MapGroup("/recipes").MapRecipesEndpoints();
 v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/files").MapFilesEndpoints();
+v1.MapGroup("/dashboard").MapDashboardEndpoints();
 
 // Health Check Endpoints (/health, /health/live, /health/ready)
 app.MapHealthChecks();

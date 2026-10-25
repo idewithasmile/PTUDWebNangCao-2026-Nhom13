@@ -42,7 +42,7 @@ export default function LoginPage() {
       return;
     }
     login.mutate(parsed.data, {
-      onSuccess: () => router.push('/dashboard'),
+      onSuccess: () => router.push('/'),
       onError: (e) => setServerError(toErrorMessage(e, 'Đăng nhập thất bại.')),
     });
   };
