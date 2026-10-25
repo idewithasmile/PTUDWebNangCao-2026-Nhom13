@@ -86,6 +86,43 @@ export interface CreateRecipeIngredientDto {
   notes?: string | null;
 }
 
+// --- Sub-resource Requests (FR-RCP-009, FR-RCP-010) ---
+export interface AddRecipeIngredientRequest {
+  recipeId: string;
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+  sortOrder?: number | null;
+}
+
+export interface UpdateRecipeIngredientRequest {
+  recipeId: string;
+  ingredientId: string;
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+  sortOrder?: number | null;
+}
+
+export interface AddRecipeStepRequest {
+  recipeId: string;
+  description: string;
+  title?: string | null;
+  timerMinutes?: number | null;
+  imageUrl?: string | null;
+}
+
+export interface UpdateRecipeStepRequest {
+  recipeId: string;
+  stepId: string;
+  description: string;
+  title?: string | null;
+  timerMinutes?: number | null;
+  imageUrl?: string | null;
+}
+
 // --- Request types (gửi lên Backend) ---
 export interface CreateRecipeRequest {
   title: string;

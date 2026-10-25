@@ -34,6 +34,10 @@ import {
   CheckCircle2,
   Tag,
   Loader2,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface DashboardRecipesViewProps {
@@ -57,6 +61,9 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     subFilter === 'draft' ? '0' : 'ALL'
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
+  const [selectedMaxTime, setSelectedMaxTime] = useState<string>('');
+  const [selectedSortBy, setSelectedSortBy] = useState<'newest' | 'oldest' | 'time_asc' | 'time_desc'>('newest');
+  const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
   useEffect(() => {
     if (subFilter === 'draft') setSelectedStatus('0');
@@ -91,10 +98,32 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
       searchTerm: debouncedSearch || undefined,
       categoryId: selectedCategory || undefined,
       difficulty: selectedDifficulty !== '' ? (Number(selectedDifficulty) as RecipeDifficulty) : undefined,
+      maxTotalTimeMinutes: selectedMaxTime ? Number(selectedMaxTime) : undefined,
+      sortBy: selectedSortBy,
       status: selectedStatus !== 'ALL' ? (selectedStatus as RecipeStatus) : undefined,
       onlyMine,
     };
-  }, [page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedStatus, isAdmin, subFilter]);
+  }, [page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedMaxTime, selectedSortBy, selectedStatus, isAdmin, subFilter]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+    setSelectedCategory('');
+    setSelectedStatus(subFilter === 'draft' ? '0' : subFilter === 'trash' ? '2' : 'ALL');
+    setSelectedDifficulty('');
+    setSelectedMaxTime('');
+    setSelectedSortBy('newest');
+    setPage(1);
+  };
+
+  const hasActiveFilters = !!(
+    debouncedSearch ||
+    selectedCategory ||
+    selectedDifficulty !== '' ||
+    selectedMaxTime ||
+    selectedSortBy !== 'newest' ||
+    (selectedStatus !== 'ALL' && subFilter !== 'draft' && subFilter !== 'trash')
+  );
 
   const {
     data: recipesData,
@@ -375,64 +404,149 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
         </Link>
       </div>
 
-      {/* Filter Bar (Khớp Screen 2) */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex flex-col lg:flex-row items-center gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm kiếm tiêu đề, tác giả, nội dung..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
-          />
-        </div>
+      {/* Filter Bar (Khớp Screen 2 + FR-RCP-001) */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm tiêu đề, tác giả, nội dung..."
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+            />
+          </div>
 
-        {/* Dropdown Danh mục */}
-        <div className="w-full sm:w-48 shrink-0">
-          <select
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setPage(1);
-            }}
-            className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          {/* Dropdown Danh mục */}
+          <div className="w-full sm:w-48 shrink-0">
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              <option value="">Tất cả danh mục</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Dropdown Trạng thái */}
+          <div className="w-full sm:w-44 shrink-0">
+            <select
+              value={selectedStatus}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="1">Đã xuất bản</option>
+              <option value="0">Bản nháp</option>
+              <option value="2">Đã lưu trữ</option>
+            </select>
+          </div>
+
+          {/* Nút bật/tắt lọc nâng cao */}
+          <button
+            type="button"
+            onClick={() => setIsAdvancedFilterOpen(!isAdvancedFilterOpen)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition shrink-0 ${
+              isAdvancedFilterOpen || hasActiveFilters
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
           >
-            <option value="">Tất cả danh mục</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Lọc nâng cao</span>
+            {isAdvancedFilterOpen ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          {/* Nút xóa bộ lọc nhanh */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-100 text-xs font-bold text-rose-600 hover:bg-rose-100 transition shrink-0"
+              title="Đặt lại toàn bộ bộ lọc"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Đặt lại</span>
+            </button>
+          )}
         </div>
 
-        {/* Dropdown Trạng thái */}
-        <div className="w-full sm:w-44 shrink-0">
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setPage(1);
-            }}
-            className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="1">Đã xuất bản</option>
-            <option value="0">Bản nháp</option>
-            <option value="2">Đã lưu trữ</option>
-          </select>
-        </div>
+        {/* Khung lọc nâng cao mở rộng (FR-RCP-001: Độ khó, Thời gian nấu, Sắp xếp) */}
+        {isAdvancedFilterOpen && (
+          <div className="pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
+            {/* Lọc Độ khó */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-gray-600">Độ khó:</label>
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => {
+                  setSelectedDifficulty(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="">Tất cả độ khó</option>
+                <option value="0">Dễ (Dưới 30 phút)</option>
+                <option value="1">Trung bình</option>
+                <option value="2">Khó / Cầu kỳ</option>
+              </select>
+            </div>
 
-        {/* Nút lọc nâng cao */}
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition shrink-0"
-        >
-          <Filter className="w-3.5 h-3.5 text-gray-500" />
-          <span>Lọc nâng cao</span>
-        </button>
+            {/* Lọc Thời gian nấu */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-gray-600">Thời gian nấu tối đa:</label>
+              <select
+                value={selectedMaxTime}
+                onChange={(e) => {
+                  setSelectedMaxTime(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="">Không giới hạn thời gian</option>
+                <option value="15">Nấu nhanh (≤ 15 phút)</option>
+                <option value="30">Nhanh gọn (≤ 30 phút)</option>
+                <option value="60">Tiêu chuẩn (≤ 60 phút)</option>
+                <option value="120">Nấu chậm / Hầm (≤ 120 phút)</option>
+              </select>
+            </div>
+
+            {/* Sắp xếp kết quả */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-gray-600">Sắp xếp theo:</label>
+              <select
+                value={selectedSortBy}
+                onChange={(e) => {
+                  setSelectedSortBy(e.target.value as typeof selectedSortBy);
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="newest">Mới nhất trước</option>
+                <option value="oldest">Cũ nhất trước</option>
+                <option value="time_asc">Thời gian nấu tăng dần</option>
+                <option value="time_desc">Thời gian nấu giảm dần</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Recipes Table (Khớp Screen 2) */}
@@ -464,7 +578,25 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
               ) : recipes.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-gray-400">
-                    Chưa có bài viết nào phù hợp với bộ lọc hiện tại.
+                    <div className="max-w-sm mx-auto space-y-3">
+                      <ChefHat className="w-10 h-10 mx-auto text-gray-300" />
+                      <p className="font-semibold text-gray-700">Không tìm thấy bài viết nào phù hợp</p>
+                      <p className="text-xs text-gray-400">
+                        {hasActiveFilters
+                          ? 'Hãy thử điều chỉnh hoặc xóa các tiêu chí lọc để xem thêm bài viết.'
+                          : 'Hiện chưa có bài viết nào trong mục này.'}
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={handleResetFilters}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 transition"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Xóa bộ lọc</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

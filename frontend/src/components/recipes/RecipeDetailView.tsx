@@ -54,28 +54,33 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
 
   if (isError || !recipe) {
     return (
-      <div className="mx-auto max-w-2xl py-12 text-center">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50 p-8 text-red-700">
-          <AlertCircle className="mb-2 h-10 w-10 text-red-500" />
-          <h3 className="text-lg font-bold">Tải thông tin công thức thất bại</h3>
-          <p className="mt-1 text-sm text-red-600">
-            {toErrorMessage(error, 'Công thức không tồn tại hoặc bạn không có quyền xem bài viết nháp này.')}
-          </p>
-          <div className="mt-5 flex gap-3">
+      <div className="mx-auto max-w-xl py-16 px-4 text-center animate-fade-in">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-gray-100 bg-white p-8 sm:p-10 shadow-sm space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
+            <UtensilsCrossed className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
+              Công thức không khả dụng
+            </h2>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
+              Công thức này hiện đang ở chế độ bản nháp, đã được tác giả chuyển vào kho lưu trữ hoặc chưa được xuất bản công khai.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/recipes"
-              className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Quay lại danh sách</span>
+              <span>Khám phá các công thức khác</span>
             </Link>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition"
             >
-              Thử lại
-            </button>
+              <span>Về trang chủ</span>
+            </Link>
           </div>
         </div>
       </div>

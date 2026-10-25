@@ -1,30 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import RecipeForm from '@/components/recipes/RecipeForm';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   useRecipeDetail,
-  useUpdateRecipe,
   usePublishRecipe,
   useUnpublishRecipe,
   useArchiveRecipe,
   useDeleteRecipe,
 } from '@/features/recipes/hooks';
 import { toErrorMessage } from '@/features/auth/hooks';
-import type { RecipeFormData } from '@/features/recipes/schemas';
-import type { RecipeDifficulty } from '@/lib/types/recipe';
 import type { DashboardTab } from '../DashboardSidebar';
+import RecipeStudioHeader from '../studio/RecipeStudioHeader';
+import StudioGeneralTab from '../studio/tabs/StudioGeneralTab';
+import StudioGalleryTab from '../studio/tabs/StudioGalleryTab';
+import StudioIngredientsTab from '../studio/tabs/StudioIngredientsTab';
+import StudioStepsTab from '../studio/tabs/StudioStepsTab';
+import Toast, { ToastMessage } from '@/components/common/Toast';
 import {
-  ArrowLeft,
-  ChefHat,
-  AlertCircle,
+  FileText,
+  Image as ImageIcon,
+  Utensils,
   CheckCircle2,
-  Globe,
-  EyeOff,
-  Archive,
-  Trash2,
+  AlertCircle,
   Loader2,
-  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 
 interface DashboardRecipeEditViewProps {
@@ -32,16 +32,31 @@ interface DashboardRecipeEditViewProps {
   onSelectTab: (tab: DashboardTab) => void;
 }
 
+type StudioActiveTab = 'general' | 'gallery' | 'ingredients' | 'steps';
+
 export default function DashboardRecipeEditView({
   slug,
   onSelectTab,
 }: DashboardRecipeEditViewProps) {
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const studioTabParam = (searchParams.get('studioTab') as StudioActiveTab) || 'general';
 
+  const [activeTab, setActiveTab] = useState<StudioActiveTab>(studioTabParam);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (type: 'success' | 'error' | 'warning', title: string, message?: string) => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, type, title, message }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Lấy dữ liệu bài viết
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
-  const updateMutation = useUpdateRecipe(recipe?.id ?? '');
+
   const publishMutation = usePublishRecipe();
   const unpublishMutation = useUnpublishRecipe();
   const archiveMutation = useArchiveRecipe();
@@ -49,9 +64,9 @@ export default function DashboardRecipeEditView({
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-gray-100 p-8">
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-gray-100 p-8 shadow-xs">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <p className="text-xs text-gray-500 font-medium">Đang tải thông tin bài viết để chỉnh sửa...</p>
+        <p className="text-xs text-gray-500 font-medium">Đang tải Recipe Studio...</p>
       </div>
     );
   }
@@ -71,309 +86,162 @@ export default function DashboardRecipeEditView({
           onClick={() => onSelectTab('recipes-mine')}
           className="px-4 py-2.5 rounded-2xl bg-gray-900 text-white text-xs font-bold hover:bg-black transition"
         >
-          Quay lại danh sách bài viết của tôi
+          Quay lại danh sách bài viết
         </button>
       </div>
     );
   }
 
-  const primaryImage =
-    recipe.images?.find((img) => img.isPrimary)?.originalUrl ||
-    recipe.images?.[0]?.originalUrl;
-
-  const initialValues: Partial<RecipeFormData> = {
-    title: recipe.title,
-    description: recipe.description,
-    instructions: recipe.instructions,
-    categoryId: recipe.categoryId,
-    prepTimeMinutes: recipe.prepTimeMinutes,
-    cookTimeMinutes: recipe.cookTimeMinutes,
-    servings: recipe.servings,
-    difficulty: recipe.difficulty,
-    calories: recipe.nutrition?.calories ?? 0,
-    protein: recipe.nutrition?.protein ?? 0,
-    carbs: recipe.nutrition?.carbohydrates ?? 0,
-    fat: recipe.nutrition?.fat ?? 0,
-    primaryImageUrl: primaryImage ?? '',
-    steps: recipe.steps?.map((s) => ({
-      title: s.title,
-      description: s.description,
-      timerMinutes: s.timerMinutes,
-      imageUrl: s.imageUrl,
-    })),
-    ingredients: recipe.ingredients?.map((i) => ({
-      name: i.name,
-      quantity: i.quantity,
-      unit: i.unit,
-      notes: i.notes,
-    })),
+  // Chuyển đổi tab Studio
+  const handleTabChange = (tab: StudioActiveTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('studioTab', tab);
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
   };
 
-  const handleSubmit = async (formData: RecipeFormData) => {
-    setServerError(null);
-    setSuccessMessage(null);
-
-    const payload = {
-      id: recipe.id,
-      title: formData.title,
-      description: formData.description,
-      instructions: formData.instructions,
-      prepTimeMinutes: formData.prepTimeMinutes,
-      cookTimeMinutes: formData.cookTimeMinutes,
-      servings: formData.servings,
-      difficulty: formData.difficulty as RecipeDifficulty,
-      categoryId: formData.categoryId,
-      calories: formData.calories,
-      protein: formData.protein,
-      carbs: formData.carbs,
-      fat: formData.fat,
-      rowVersionBase64: recipe.rowVersionBase64 || '',
-      steps: formData.steps,
-      ingredients: formData.ingredients,
-      primaryImageUrl: formData.primaryImageUrl,
-    };
-
-    updateMutation.mutate(payload, {
-      onSuccess: () => {
-        setSuccessMessage('Cập nhật công thức thành công!');
-        refetch();
-        setTimeout(() => {
-          onSelectTab('recipes-mine');
-        }, 1200);
-      },
-      onError: (err) => {
-        setServerError(
-          toErrorMessage(
-            err,
-            'Cập nhật công thức thất bại. Vui lòng kiểm tra lại các trường thông tin.'
-          )
-        );
-      },
-    });
+  // Header quick actions
+  const handlePublish = async () => {
+    try {
+      await publishMutation.mutateAsync(recipe.id);
+      addToast('success', 'Xuất bản thành công', `Công thức "${recipe.title}" đã được hiển thị công khai.`);
+      refetch();
+    } catch (err: unknown) {
+      addToast('error', 'Không thể xuất bản', toErrorMessage(err, 'Vui lòng kiểm tra lại điều kiện công thức.'));
+    }
   };
 
-  const handlePublish = () => {
-    setServerError(null);
-    publishMutation.mutate(recipe.id, {
-      onSuccess: () => {
-        setSuccessMessage('Đã xuất bản bài viết thành công!');
-        refetch();
-      },
-      onError: (err) => setServerError(toErrorMessage(err, 'Không thể xuất bản công thức.')),
-    });
+  const handleUnpublish = async () => {
+    try {
+      await unpublishMutation.mutateAsync(recipe.id);
+      addToast('success', 'Đã gỡ xuất bản', `Công thức "${recipe.title}" đã chuyển về bản nháp.`);
+      refetch();
+    } catch (err: unknown) {
+      addToast('error', 'Hủy xuất bản thất bại', toErrorMessage(err));
+    }
   };
 
-  const handleUnpublish = () => {
-    setServerError(null);
-    unpublishMutation.mutate(recipe.id, {
-      onSuccess: () => {
-        setSuccessMessage('Đã hủy xuất bản bài viết.');
-        refetch();
-      },
-      onError: (err) => setServerError(toErrorMessage(err, 'Không thể hủy xuất bản.')),
-    });
+  const handleArchive = async () => {
+    try {
+      await archiveMutation.mutateAsync(recipe.id);
+      addToast('success', 'Đã lưu trữ', `Công thức "${recipe.title}" đã chuyển vào kho lưu trữ.`);
+      refetch();
+    } catch (err: unknown) {
+      addToast('error', 'Lưu trữ thất bại', toErrorMessage(err));
+    }
   };
 
-  const handleArchive = () => {
-    setServerError(null);
-    archiveMutation.mutate(recipe.id, {
-      onSuccess: () => {
-        setSuccessMessage('Đã chuyển bài viết vào kho lưu trữ.');
-        refetch();
-      },
-      onError: (err) => setServerError(toErrorMessage(err, 'Không thể lưu trữ.')),
-    });
-  };
-
-  const handleDelete = () => {
-    setServerError(null);
-    deleteMutation.mutate(recipe.id, {
-      onSuccess: () => {
-        setIsConfirmingDelete(false);
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync(recipe.id);
+      addToast('success', 'Đã xóa công thức', `Công thức "${recipe.title}" đã được xóa vĩnh viễn.`);
+      setTimeout(() => {
         onSelectTab('recipes-mine');
-      },
-      onError: (err) => {
-        setServerError(toErrorMessage(err, 'Không thể xóa công thức.'));
-        setIsConfirmingDelete(false);
-      },
-    });
+      }, 800);
+    } catch (err: unknown) {
+      addToast('error', 'Xóa công thức thất bại', toErrorMessage(err));
+    }
   };
 
-  const isActionPending =
-    publishMutation.isPending ||
-    unpublishMutation.isPending ||
-    archiveMutation.isPending ||
-    deleteMutation.isPending;
+  const imagesCount = recipe.images?.length ?? 0;
+  const ingredientsCount = recipe.ingredients?.length ?? 0;
+  const stepsCount = recipe.steps?.length ?? 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* 1. Header Bar: Breadcrumb + Quản lý trạng thái + Nút quay lại */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-2xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes-mine')}
-              className="hover:text-blue-600 transition"
-            >
-              Bài viết của tôi
-            </button>
-            <span>/</span>
-            <span className="text-gray-700 font-semibold truncate max-w-xs sm:max-w-md">
-              Chỉnh sửa: {recipe.title}
-            </span>
+    <div className="space-y-6 animate-fade-in pb-12">
+      {/* Toast Notifications Container */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto">
+            <Toast toast={toast} onClose={removeToast} />
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                  Chỉnh sửa công thức nấu ăn
-                </h2>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                    recipe.status === 'Published'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : recipe.status === 'Draft'
-                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : 'bg-gray-100 text-gray-700 border border-gray-200'
-                  }`}
-                >
-                  {recipe.status === 'Published'
-                    ? 'Đã xuất bản'
-                    : recipe.status === 'Draft'
-                    ? 'Bản nháp'
-                    : 'Đã lưu trữ'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">
-                Cập nhật thông tin chi tiết, nguyên liệu, hình ảnh và trạng thái bài viết
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Thanh công cụ quản lý trạng thái ngay trong Dashboard */}
-        <div className="flex flex-wrap items-center gap-2">
-          {recipe.status === 'Published' ? (
-            <button
-              type="button"
-              onClick={handleUnpublish}
-              disabled={isActionPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition disabled:opacity-50"
-            >
-              <EyeOff className="w-3.5 h-3.5" />
-              <span>Gỡ xuất bản</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={isActionPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>Xuất bản ngay</span>
-            </button>
-          )}
-
-          {recipe.status !== 'Archived' && (
-            <button
-              type="button"
-              onClick={handleArchive}
-              disabled={isActionPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-xs font-semibold hover:bg-gray-100 transition disabled:opacity-50"
-            >
-              <Archive className="w-3.5 h-3.5" />
-              <span>Lưu trữ</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsConfirmingDelete(true)}
-            disabled={isActionPending}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition disabled:opacity-50"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Xóa bài</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onSelectTab('recipes-mine')}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay lại</span>
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* Thông báo Thành công / Thất bại */}
-      {successMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-xs font-semibold animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{successMessage}</span>
-        </div>
-      )}
+      {/* 1. Header Studio Bar (FR-RCP-005, 006, 007) */}
+      <RecipeStudioHeader
+        recipe={recipe}
+        onSelectTab={onSelectTab}
+        onPublish={handlePublish}
+        onUnpublish={handleUnpublish}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
+        isPublishing={publishMutation.isPending}
+        isUnpublishing={unpublishMutation.isPending}
+        isArchiving={archiveMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+      />
 
-      {serverError && (
-        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 flex items-center gap-3 text-xs font-semibold animate-fade-in">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-          <span>{serverError}</span>
-        </div>
-      )}
+      {/* 2. Studio Tabs Navigation */}
+      <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => handleTabChange('general')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            activeTab === 'general'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Thông tin chung & Dinh dưỡng</span>
+        </button>
 
-      {/* 2. Form Chỉnh Sửa */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-2xs">
-        <RecipeForm
-          initialValues={initialValues}
-          isEdit={true}
-          isSubmitting={updateMutation.isPending}
-          serverError={serverError}
-          onSubmit={handleSubmit}
-        />
+        <button
+          type="button"
+          onClick={() => handleTabChange('gallery')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            activeTab === 'gallery'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>Thư viện ảnh ({imagesCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('ingredients')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            activeTab === 'ingredients'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Utensils className="w-4 h-4" />
+          <span>Nguyên liệu chuẩn bị ({ingredientsCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('steps')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            activeTab === 'steps'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          <span>Quy trình các bước ({stepsCount})</span>
+        </button>
       </div>
 
-      {/* Modal Xác nhận xóa */}
-      {isConfirmingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center gap-3 text-red-600">
-              <div className="rounded-2xl bg-red-100 p-2.5">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <h4 className="text-base font-bold text-gray-900">Xác nhận xóa công thức</h4>
-            </div>
+      {/* 3. Tab Contents */}
+      {activeTab === 'general' && (
+        <StudioGeneralTab recipe={recipe} onRefresh={refetch} />
+      )}
 
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Bạn có chắc chắn muốn xóa bài viết <span className="font-semibold text-gray-900">&quot;{recipe.title}&quot;</span>? Bài viết sẽ được chuyển vào thùng rác hệ thống.
-            </p>
+      {activeTab === 'gallery' && (
+        <StudioGalleryTab recipe={recipe} onRefresh={refetch} />
+      )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsConfirmingDelete(false)}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleteMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>Xác nhận xóa</span>
-              </button>
-            </div>
-          </div>
-        </div>
+      {activeTab === 'ingredients' && (
+        <StudioIngredientsTab recipe={recipe} onRefresh={refetch} />
+      )}
+
+      {activeTab === 'steps' && (
+        <StudioStepsTab recipe={recipe} onRefresh={refetch} />
       )}
     </div>
   );

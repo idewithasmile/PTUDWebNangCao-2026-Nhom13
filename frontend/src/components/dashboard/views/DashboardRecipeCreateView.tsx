@@ -46,11 +46,14 @@ export default function DashboardRecipeCreateView({
     };
 
     createMutation.mutate(payload, {
-      onSuccess: () => {
-        setSuccessMessage('Công thức nấu ăn đã được tạo thành công!');
-        // Sau 1.5 giây, tự động chuyển về tab "Bài viết của tôi" trong Dashboard
+      onSuccess: (newRecipe) => {
+        setSuccessMessage('Công thức nấu ăn đã được tạo thành công! Đang chuyển vào Recipe Studio...');
         setTimeout(() => {
-          onSelectTab('recipes-mine');
+          if (newRecipe?.slug) {
+            window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
+          } else {
+            onSelectTab('recipes-mine');
+          }
         }, 1200);
       },
       onError: (err) => {

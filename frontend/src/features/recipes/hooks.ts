@@ -113,3 +113,130 @@ export function useDeleteRecipe() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// FR-RCP-008: Hooks quản lý Thư viện ảnh (Images Gallery & Primary Image)
+// ---------------------------------------------------------------------------
+
+export function useUploadRecipeImage(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, altText }: { file: File; altText?: string }) =>
+      recipeService.uploadRecipeImage(recipeId, file, altText),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useSetPrimaryRecipeImage(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: string) => recipeService.setPrimaryImage(recipeId, imageId),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useDeleteRecipeImage(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: string) => recipeService.deleteRecipeImage(recipeId, imageId),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FR-RCP-009: Hooks quản lý Nguyên liệu (Ingredients CRUD độc lập)
+// ---------------------------------------------------------------------------
+
+export function useAddRecipeIngredient(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof recipeService.addRecipeIngredient>[1]) =>
+      recipeService.addRecipeIngredient(recipeId, data),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useUpdateRecipeIngredient(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      ingredientId,
+      data,
+    }: {
+      ingredientId: string;
+      data: Parameters<typeof recipeService.updateRecipeIngredient>[2];
+    }) => recipeService.updateRecipeIngredient(recipeId, ingredientId, data),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useDeleteRecipeIngredient(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ingredientId: string) =>
+      recipeService.deleteRecipeIngredient(recipeId, ingredientId),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FR-RCP-010: Hooks quản lý Các bước thực hiện (Steps CRUD độc lập)
+// ---------------------------------------------------------------------------
+
+export function useAddRecipeStep(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof recipeService.addRecipeStep>[1]) =>
+      recipeService.addRecipeStep(recipeId, data),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useUpdateRecipeStep(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      stepId,
+      data,
+    }: {
+      stepId: string;
+      data: Parameters<typeof recipeService.updateRecipeStep>[2];
+    }) => recipeService.updateRecipeStep(recipeId, stepId, data),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+export function useDeleteRecipeStep(recipeId: string, slug?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (stepId: string) => recipeService.deleteRecipeStep(recipeId, stepId),
+    onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
