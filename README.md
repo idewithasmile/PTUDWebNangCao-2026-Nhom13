@@ -36,6 +36,37 @@ Chào mừng đội ngũ phát triển đến với dự án **Culinary Blog**!
 
 ---
 
+## 🎯 Thông Tin Tài Khoản Demo & Đường Dẫn Trực Quan (Quick Reference)
+
+### 1. Danh sách Tài khoản Khởi tạo Sẵn (Demo Accounts)
+Database Seeder tự động nạp sẵn 3 tài khoản tương ứng với 3 cấp độ phân quyền trong hệ thống:
+
+| Vai trò | Email đăng nhập | Mật khẩu mặc định | Phân quyền (Roles) | Phạm vi kiểm thử khuyến nghị |
+|---|---|---|---|---|
+| 👑 **Admin** | `admin@culinaryblog.com` | `Admin@123456` | `Admin`, `Author`, `User` | Thêm/sửa danh mục (/dashboard/categories), xóa cache Redis, truy cập Hangfire |
+| ✍️ **Author** | `author@culinaryblog.com` | `Author@123456` | `Author`, `User` | Đăng bài mới, chỉnh sửa công thức, upload ảnh MinIO, sắp xếp bước nấu |
+| 👤 **User** | `user@culinaryblog.com` | `User@123456` | `User` | Xem chi tiết, tìm kiếm bài viết, cập nhật hồ sơ cá nhân (/profile) |
+
+### 2. Các Bài viết Tiêu biểu để Demo (Showcase Recipes)
+Hai bài viết được nạp sẵn đầy đủ cấu trúc chuẩn SEO, nguyên liệu, các bước thực hiện và ảnh MinIO:
+- 🍲 **Phở Bò Tái Lăn Chuẩn Vị Hà Thành:** [`/recipes/pho-bo-tai-lan-chuan-vi-ha-thanh`](http://localhost:3000/recipes/pho-bo-tai-lan-chuan-vi-ha-thanh) *(4 ảnh gallery, 7 nguyên liệu, 4 bước có ảnh minh họa, JSON-LD Schema.org)*
+- 🥖 **Bánh Mì Kẹp Thịt Sườn Nướng Ngũ Vị:** [`/recipes/banh-mi-kep-thit-suon-nuong-ngu-vi`](http://localhost:3000/recipes/banh-mi-kep-thit-suon-nuong-ngu-vi) *(3 ảnh gallery, 6 nguyên liệu, 4 bước chi tiết)*
+
+### 3. Bảng Tra Cứu Nhanh Dịch Vụ (Service URLs Quick Reference)
+| Dịch vụ / Phân hệ | Cổng (Port) | Địa chỉ URL truy cập | Tài khoản / Ghi chú |
+|---|---|---|---|
+| **Frontend Web** | `3000` | [`http://localhost:3000`](http://localhost:3000) | Giao diện người dùng Next.js 15 |
+| **Backend API & Scalar** | `5001` | [`http://localhost:5001/scalar/v1`](http://localhost:5001/scalar/v1) | Interactive OpenAPI / Scalar Documentation |
+| **Health Checks (Ready)** | `5001` | [`http://localhost:5001/health/ready`](http://localhost:5001/health/ready) | Kiểm tra kết nối Postgres, Redis, MinIO |
+| **Hangfire Dashboard** | `5001` | [`http://localhost:5001/hangfire`](http://localhost:5001/hangfire) | Giám sát tác vụ ngầm & Recurring Jobs |
+| **MinIO Console (S3)** | `9001` | [`http://localhost:9001`](http://localhost:9001) | User: `minioadmin` / Pass: `minioadmin` |
+| **Seq Log Dashboard** | `5341` | [`http://localhost:5341`](http://localhost:5341) | Tra cứu Structured Logs & Tracing theo CorrelationId |
+| **MailHog Web UI** | `8025` | [`http://localhost:8025`](http://localhost:8025) | Hộp thư SMTP ảo hứng email chào mừng |
+| **Sitemap XML** | `5001` | [`http://localhost:5001/sitemap.xml`](http://localhost:5001/sitemap.xml) | Endpoint sinh XML chuẩn SEO |
+
+
+---
+
 ## 🚀 Công nghệ sử dụng (Tech Stack)
 
 Hệ thống được thiết kế theo mô hình **API-Driven Architecture**, tách biệt hoàn toàn giữa Frontend và Backend.
