@@ -202,7 +202,7 @@ export default function RecipeActionButtons({ recipe }: RecipeActionButtonsProps
             </div>
 
             <p className="text-sm text-gray-600">
-              Bạn có chắc chắn muốn xóa bài viết <span className="font-semibold text-gray-900">"{recipe.title}"</span>? Hành động này sẽ chuyển công thức vào thùng rác soft delete.
+              Bạn có chắc chắn muốn xóa bài viết <span className="font-semibold text-gray-900">&quot;{recipe.title}&quot;</span>? Hành động này sẽ chuyển công thức vào thùng rác soft delete.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2">

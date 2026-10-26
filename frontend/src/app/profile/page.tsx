@@ -11,6 +11,7 @@ import {
 } from '@/features/auth/hooks';
 import { updateProfileSchema, type UpdateProfileForm } from '@/features/auth/schemas';
 import { hasSession } from '@/features/auth/api';
+import ImageUpload from '@/components/common/ImageUpload';
 
 // FR-AUTH-006 (GET /auth/me) + FR-AUTH-007 (PATCH /auth/me).
 // email/userName là input DISABLED read-only — backend cấm đổi 2 field này,
@@ -32,6 +33,8 @@ export default function ProfilePage() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     setError,
     formState: { errors },
   } = useForm<UpdateProfileForm>();
@@ -153,7 +156,13 @@ export default function ProfilePage() {
           {errors.displayName && <p className="text-sm text-red-600">{errors.displayName.message}</p>}
         </div>
         <div>
-          <label htmlFor="avatarUrl" className="block text-sm font-medium">Avatar URL</label>
+          <label className="block text-sm font-medium mb-1">Ảnh đại diện (Avatar)</label>
+          <ImageUpload
+            value={watch('avatarUrl') || ''}
+            onChange={(url) => setValue('avatarUrl', url, { shouldValidate: true })}
+            folder="avatars"
+            label="Tải ảnh đại diện lên MinIO (Tối đa 5MB: JPG, PNG, WebP, AVIF)"
+          />
           <input
             id="avatarUrl"
             type="url"

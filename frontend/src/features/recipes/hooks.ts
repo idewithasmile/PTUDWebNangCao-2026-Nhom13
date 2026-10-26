@@ -2,12 +2,22 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { recipeService } from '@/lib/services/recipe-service';
-import type { GetRecipesParams, CreateRecipeRequest, UpdateRecipeRequest } from '@/lib/types/recipe';
+import type {
+  GetRecipesParams,
+  SearchRecipesParams,
+  CreateRecipeRequest,
+  UpdateRecipeRequest,
+  AddIngredientRequest,
+  UpdateIngredientRequest,
+  AddStepRequest,
+  UpdateStepRequest,
+} from '@/lib/types/recipe';
 
 export const recipeKeys = {
   all: ['recipes'] as const,
   lists: () => [...recipeKeys.all, 'list'] as const,
   list: (params: GetRecipesParams) => [...recipeKeys.lists(), params] as const,
+  search: (params: SearchRecipesParams) => [...recipeKeys.all, 'search', params] as const,
   details: () => [...recipeKeys.all, 'detail'] as const,
   detail: (slug: string) => [...recipeKeys.details(), slug] as const,
 };
@@ -21,6 +31,18 @@ export function useRecipes(params: GetRecipesParams = {}, enabled = true) {
     queryFn: () => recipeService.getRecipes(params),
     enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook tìm kiếm công thức bằng PostgreSQL Full-Text Search (FR-SRCH-001)
+ */
+export function useSearchRecipes(params: SearchRecipesParams, enabled = true) {
+  return useQuery({
+    queryKey: recipeKeys.search(params),
+    queryFn: () => recipeService.searchRecipes(params),
+    enabled: enabled && !!params.searchTerm?.trim(),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -108,6 +130,126 @@ export function useDeleteRecipe() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => recipeService.deleteRecipe(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-008: Hook mutation tải ảnh công thức
+ */
+export function useUploadRecipeImage(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, altText }: { file: File; altText?: string }) =>
+      recipeService.uploadRecipeImage(recipeId, file, altText),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-008: Hook mutation đặt ảnh chính cho công thức
+ */
+export function useSetPrimaryRecipeImage(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: string) => recipeService.setPrimaryRecipeImage(recipeId, imageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-008: Hook mutation xóa ảnh công thức
+ */
+export function useDeleteRecipeImage(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: string) => recipeService.deleteRecipeImage(recipeId, imageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-009: Hook mutation thêm nguyên liệu
+ */
+export function useAddIngredient(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AddIngredientRequest) => recipeService.addIngredient(recipeId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-009: Hook mutation cập nhật nguyên liệu
+ */
+export function useUpdateIngredient(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ingredientId, data }: { ingredientId: string; data: UpdateIngredientRequest }) =>
+      recipeService.updateIngredient(recipeId, ingredientId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-009: Hook mutation xóa nguyên liệu
+ */
+export function useDeleteIngredient(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ingredientId: string) => recipeService.deleteIngredient(recipeId, ingredientId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-010: Hook mutation thêm bước thực hiện
+ */
+export function useAddStep(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AddStepRequest) => recipeService.addStep(recipeId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-010: Hook mutation cập nhật bước thực hiện
+ */
+export function useUpdateStep(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ stepId, data }: { stepId: string; data: UpdateStepRequest }) =>
+      recipeService.updateStep(recipeId, stepId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+    },
+  });
+}
+
+/**
+ * FR-RCP-010: Hook mutation xóa bước thực hiện
+ */
+export function useDeleteStep(recipeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (stepId: string) => recipeService.deleteStep(recipeId, stepId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },

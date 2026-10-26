@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { recipeFormSchema, type RecipeFormData } from '@/features/recipes/schemas';
 import { categoryService } from '@/lib/services/category-service';
+import { fileService } from '@/lib/services/file-service';
 import type { CategoryDto } from '@/lib/types/category';
 import {
   Loader2,
@@ -54,19 +55,33 @@ export default function RecipeForm({
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadError(null);
     if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh vượt quá giới hạn 5MB.');
+      setUploadError('Kích thước ảnh vượt quá giới hạn 5MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      setValue('primaryImageUrl', base64Url);
-    };
-    reader.readAsDataURL(file);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!allowed.includes(file.type)) {
+      setUploadError('Chỉ chấp nhận ảnh JPG, PNG, WebP, AVIF.');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const res = await fileService.uploadFile(file, 'recipes');
+      setValue('primaryImageUrl', res.url);
+    } catch (err: unknown) {
+      const error = err as { detail?: string; title?: string };
+      setUploadError(error.detail || error.title || 'Tải ảnh lên MinIO thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const {
@@ -326,22 +341,34 @@ export default function RecipeForm({
                       htmlFor="file-upload"
                       className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all text-center"
                     >
-                      <Upload className="h-8 w-8 text-orange-500 mb-2" />
-                      <span className="text-sm font-semibold text-gray-700">
-                        Bấm để chọn ảnh từ máy tính hoặc điện thoại
-                      </span>
-                      <span className="text-xs text-gray-400 mt-1">
-                        Hỗ trợ PNG, JPG, JPEG, WebP (Tối đa 5MB)
-                      </span>
+                      {isUploadingImage ? (
+                        <div className="flex flex-col items-center py-2">
+                          <Loader2 className="h-8 w-8 text-orange-500 animate-spin mb-2" />
+                          <span className="text-sm font-semibold text-orange-600">Đang tải ảnh lên MinIO...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-orange-500 mb-2" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            Bấm để chọn ảnh từ máy tính hoặc điện thoại
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1">
+                            Hỗ trợ JPG, PNG, WebP, AVIF (Tối đa 5MB)
+                          </span>
+                        </>
+                      )}
                       <input
                         id="file-upload"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
                         onChange={handleFileUpload}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isUploadingImage}
                         className="hidden"
                       />
                     </label>
+                    {uploadError && (
+                      <p className="text-xs text-red-500 font-medium mt-1">{uploadError}</p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">

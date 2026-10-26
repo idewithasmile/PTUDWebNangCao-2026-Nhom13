@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import RecipeForm from '@/components/recipes/RecipeForm';
+import RecipeImageGalleryManager from '@/components/recipes/RecipeImageGalleryManager';
 import { useRecipeDetail, useUpdateRecipe } from '@/features/recipes/hooks';
 import { useMe, toErrorMessage } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
@@ -177,9 +178,16 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
           Chỉnh sửa Công thức Nấu ăn
         </h1>
         <p className="text-sm text-gray-500">
-          Cập nhật thông tin công thức <span className="font-semibold text-gray-800">"{recipe.title}"</span>.
+          Cập nhật thông tin công thức <span className="font-semibold text-gray-800">&quot;{recipe.title}&quot;</span>.
         </p>
       </div>
+
+      {/* Bộ sưu tập ảnh & Quản lý ảnh MinIO S3 (FR-RCP-008) */}
+      <RecipeImageGalleryManager
+        recipeId={recipe.id}
+        images={recipe.images ?? []}
+        isOwner={isOwner}
+      />
 
       <RecipeForm
         initialValues={initialValues}
