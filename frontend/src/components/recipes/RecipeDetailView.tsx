@@ -8,6 +8,7 @@ import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeActionButtons from '@/components/recipes/RecipeActionButtons';
+import { resolveMediaUrl } from '@/lib/utils';
 import {
   Clock,
   Users,
@@ -160,7 +161,7 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
           {currentDisplayImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={currentDisplayImage}
+              src={resolveMediaUrl(currentDisplayImage)}
               alt={recipe.title}
               className="h-full w-full object-cover object-center transition-all duration-300"
             />
@@ -187,7 +188,7 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={img.thumbnailUrl || img.originalUrl}
+                  src={resolveMediaUrl(img.thumbnailUrl || img.originalUrl)}
                   alt={img.altText || recipe.title}
                   className="h-full w-full object-cover"
                 />

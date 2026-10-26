@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { recipeFormSchema, type RecipeFormData } from '@/features/recipes/schemas';
 import { categoryService } from '@/lib/services/category-service';
 import { fileService } from '@/lib/services/file-service';
+import { resolveMediaUrl } from '@/lib/utils';
 import type { CategoryDto } from '@/lib/types/category';
 import {
   Loader2,
@@ -56,6 +57,8 @@ export default function RecipeForm({
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +69,10 @@ export default function RecipeForm({
     }
 
     setUploadError(null);
+    // Tạo preview blob URL tức thì để người dùng xem trước ngay lập tức
+    const blobUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(blobUrl);
+
     setIsUploadingImage(true);
 
     try {
@@ -369,6 +376,7 @@ export default function RecipeForm({
                       )}
                       <input
                         id="file-upload"
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         onChange={handleFileUpload}
@@ -399,7 +407,10 @@ export default function RecipeForm({
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => setValue('primaryImageUrl', s.url)}
+                          onClick={() => {
+                            setLocalPreviewUrl(null);
+                            setValue('primaryImageUrl', s.url);
+                          }}
                           className="rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-100 transition-colors"
                         >
                           {s.label}
@@ -412,20 +423,29 @@ export default function RecipeForm({
 
               {/* Preview ảnh nhỏ kèm nút Xóa */}
               <div className="relative h-28 w-40 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm">
-                {watchedImageUrl ? (
+                {localPreviewUrl || watchedImageUrl ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={watchedImageUrl}
+                      src={localPreviewUrl || resolveMediaUrl(watchedImageUrl)}
                       alt="Preview"
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
+                        const target = e.target as HTMLImageElement;
+                        if (watchedImageUrl && watchedImageUrl.startsWith('/culinary-blog/') && !target.src.includes(':9000')) {
+                          target.src = `http://localhost:9000${watchedImageUrl}`;
+                        } else if (!localPreviewUrl) {
+                          target.style.display = 'none';
+                        }
                       }}
                     />
                     <button
                       type="button"
-                      onClick={() => setValue('primaryImageUrl', '')}
+                      onClick={() => {
+                        setLocalPreviewUrl(null);
+                        setValue('primaryImageUrl', '');
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
                       className="absolute top-1.5 right-1.5 rounded-full bg-black/60 p-1 text-white hover:bg-black transition-colors"
                       title="Xóa ảnh này"
                     >

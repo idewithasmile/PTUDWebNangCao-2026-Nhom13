@@ -8,6 +8,7 @@ import {
   useDeleteRecipeImage,
 } from '@/features/recipes/hooks';
 import { toErrorMessage } from '@/features/auth/hooks';
+import { resolveMediaUrl } from '@/lib/utils';
 import {
   Upload,
   Image as ImageIcon,
@@ -213,11 +214,14 @@ export default function StudioGalleryTab({ recipe, onRefresh }: StudioGalleryTab
                 <div className="w-full h-48 bg-gray-100 relative overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={img.mediumUrl || img.originalUrl}
+                    src={resolveMediaUrl(img.mediumUrl || img.originalUrl)}
                     alt={img.altText || 'Ảnh công thức'}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     onError={(e) => {
-                      e.currentTarget.src = img.originalUrl;
+                      const fallback = resolveMediaUrl(img.originalUrl);
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
                     }}
                   />
 

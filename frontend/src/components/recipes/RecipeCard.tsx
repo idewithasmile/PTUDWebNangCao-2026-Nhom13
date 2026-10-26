@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { RecipeSummaryDto } from '@/lib/types/category';
 import { Clock, Users, UtensilsCrossed } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/utils';
 
 interface RecipeCardProps {
   recipe: RecipeSummaryDto;
@@ -28,7 +29,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         {recipe.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={recipe.thumbnailUrl}
+            src={resolveMediaUrl(recipe.thumbnailUrl)}
             alt={recipe.title}
             className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {

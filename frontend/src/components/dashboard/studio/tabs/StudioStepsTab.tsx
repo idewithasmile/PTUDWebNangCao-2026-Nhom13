@@ -9,6 +9,7 @@ import {
 } from '@/features/recipes/hooks';
 import { fileService } from '@/lib/services/file-service';
 import { toErrorMessage } from '@/features/auth/hooks';
+import { resolveMediaUrl } from '@/lib/utils';
 import {
   CheckCircle2,
   Plus,
@@ -311,7 +312,7 @@ export default function StudioStepsTab({ recipe, onRefresh }: StudioStepsTabProp
               {newImageUrl && (
                 <div className="w-24 h-24 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 relative mt-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={newImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(newImageUrl)} alt="Preview" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setNewImageUrl('')}
@@ -508,7 +509,7 @@ export default function StudioStepsTab({ recipe, onRefresh }: StudioStepsTabProp
                       <div className="w-36 h-28 rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 mt-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={step.imageUrl}
+                          src={resolveMediaUrl(step.imageUrl)}
                           alt={step.title || `Bước ${step.stepNumber}`}
                           className="w-full h-full object-cover hover:scale-105 transition"
                           onError={(e) => {
