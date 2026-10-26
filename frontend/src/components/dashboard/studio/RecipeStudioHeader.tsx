@@ -209,13 +209,12 @@ export default function RecipeStudioHeader({
       {/* Modal xác nhận xóa an toàn */}
       <DeleteRecipeModal
         isOpen={isConfirmingDelete}
-        recipeTitle={recipe.title}
-        isLoading={isDeleting}
-        onConfirm={() => {
+        recipe={recipe}
+        onClose={() => setIsConfirmingDelete(false)}
+        onConfirmDelete={async () => {
           setIsConfirmingDelete(false);
-          onDelete();
+          await onDelete();
         }}
-        onCancel={() => setIsConfirmingDelete(false)}
       />
     </>
   );

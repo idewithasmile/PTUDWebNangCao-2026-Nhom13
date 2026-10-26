@@ -117,7 +117,7 @@ export default function DashboardRecipeEditView({
       addToast('success', 'Đã gỡ xuất bản', `Công thức "${recipe.title}" đã chuyển về bản nháp.`);
       refetch();
     } catch (err: unknown) {
-      addToast('error', 'Hủy xuất bản thất bại', toErrorMessage(err));
+      addToast('error', 'Hủy xuất bản thất bại', toErrorMessage(err, 'Không thể hủy xuất bản công thức.'));
     }
   };
 
@@ -127,7 +127,7 @@ export default function DashboardRecipeEditView({
       addToast('success', 'Đã lưu trữ', `Công thức "${recipe.title}" đã chuyển vào kho lưu trữ.`);
       refetch();
     } catch (err: unknown) {
-      addToast('error', 'Lưu trữ thất bại', toErrorMessage(err));
+      addToast('error', 'Lưu trữ thất bại', toErrorMessage(err, 'Không thể lưu trữ công thức.'));
     }
   };
 
@@ -139,7 +139,7 @@ export default function DashboardRecipeEditView({
         onSelectTab('recipes-mine');
       }, 800);
     } catch (err: unknown) {
-      addToast('error', 'Xóa công thức thất bại', toErrorMessage(err));
+      addToast('error', 'Xóa công thức thất bại', toErrorMessage(err, 'Không thể xóa công thức.'));
     }
   };
 

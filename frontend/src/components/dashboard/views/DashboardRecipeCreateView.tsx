@@ -4,11 +4,12 @@ import { useState } from 'react';
 import RecipeForm from '@/components/recipes/RecipeForm';
 import { useCreateRecipe } from '@/features/recipes/hooks';
 import { toErrorMessage } from '@/features/auth/hooks';
+import { recipeService } from '@/lib/services/recipe-service';
 import type { RecipeFormData } from '@/features/recipes/schemas';
 import type { RecipeDifficulty } from '@/lib/types/recipe';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
-import { ArrowLeft, ChefHat, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ChefHat, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -21,11 +22,13 @@ export default function DashboardRecipeCreateView({
 }: DashboardRecipeCreateViewProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const createMutation = useCreateRecipe();
 
-  const handleSubmit = async (formData: RecipeFormData) => {
+  const handleSubmit = async (formData: RecipeFormData, secondaryFiles: File[] = []) => {
     setServerError(null);
     setSuccessMessage(null);
+    setUploadProgress(null);
 
     const payload = {
       title: formData.title,
@@ -45,23 +48,41 @@ export default function DashboardRecipeCreateView({
       primaryImageUrl: formData.primaryImageUrl,
     };
 
-    createMutation.mutate(payload, {
-      onSuccess: (newRecipe) => {
-        setSuccessMessage('Công thức nấu ăn đã được tạo thành công! Đang chuyển vào Recipe Studio...');
-        setTimeout(() => {
-          if (newRecipe?.slug) {
-            window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
-          } else {
-            onSelectTab('recipes-mine');
-          }
-        }, 1200);
-      },
-      onError: (err) => {
-        setServerError(
-          toErrorMessage(err, 'Tạo công thức thất bại. Vui lòng kiểm tra lại các trường dữ liệu.')
+    try {
+      // 1. Tạo công thức với ảnh chính
+      const newRecipe = await createMutation.mutateAsync(payload);
+
+      // 2. Phương án 1: Tự động tải lên các ảnh phụ vào Thư viện ảnh (FR-RCP-008)
+      if (secondaryFiles.length > 0 && newRecipe?.id) {
+        setUploadProgress(
+          `Đang tải lên ${secondaryFiles.length} hình ảnh phụ vào Thư viện ảnh công thức...`
         );
-      },
-    });
+        for (let i = 0; i < secondaryFiles.length; i++) {
+          const file = secondaryFiles[i];
+          try {
+            await recipeService.uploadRecipeImage(newRecipe.id, file);
+          } catch (imgErr) {
+            console.warn(`Lỗi khi tải ảnh phụ "${file.name}":`, imgErr);
+          }
+        }
+      }
+
+      setUploadProgress(null);
+      setSuccessMessage('Công thức và thư viện ảnh đã được tạo thành công! Đang chuyển vào Recipe Studio...');
+
+      setTimeout(() => {
+        if (newRecipe?.slug) {
+          window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
+        } else {
+          onSelectTab('recipes-mine');
+        }
+      }, 1200);
+    } catch (err: unknown) {
+      setUploadProgress(null);
+      setServerError(
+        toErrorMessage(err, 'Tạo công thức thất bại. Vui lòng kiểm tra lại các trường dữ liệu.')
+      );
+    }
   };
 
   return (
@@ -98,7 +119,7 @@ export default function DashboardRecipeCreateView({
                 Đăng công thức ẩm thực mới
               </h2>
               <p className="text-xs text-gray-500">
-                Tạo bài viết với nguyên liệu, các bước làm, hình ảnh minh họa và thông số dinh dưỡng
+                Tạo bài viết với thông tin chung & dinh dưỡng, hình ảnh, nguyên liệu và các bước làm
               </p>
             </div>
           </div>
@@ -114,11 +135,19 @@ export default function DashboardRecipeCreateView({
         </button>
       </div>
 
+      {/* Thông báo Tiến trình tải ảnh phụ */}
+      {uploadProgress && (
+        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center gap-3 text-xs font-semibold animate-fade-in">
+          <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+          <span>{uploadProgress}</span>
+        </div>
+      )}
+
       {/* Thông báo Thành công nếu có */}
       {successMessage && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-xs font-semibold animate-fade-in">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{successMessage} Đang chuyển hướng về mục &quot;Bài viết của tôi&quot;...</span>
+          <span>{successMessage}</span>
         </div>
       )}
 
@@ -130,11 +159,11 @@ export default function DashboardRecipeCreateView({
         </div>
       )}
 
-      {/* 2. Form Nhập Liệu Chi Tiết */}
+      {/* 2. Form Nhập Liệu Chi Tiết Với Tab Bar & Phương Án 1 */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-2xs">
         <RecipeForm
           isEdit={false}
-          isSubmitting={createMutation.isPending}
+          isSubmitting={createMutation.isPending || Boolean(uploadProgress)}
           serverError={serverError}
           onSubmit={handleSubmit}
         />
