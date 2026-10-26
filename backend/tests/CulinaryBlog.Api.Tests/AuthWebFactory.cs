@@ -1,6 +1,8 @@
 using Xunit;
 using CulinaryBlog.Application.Features.Auth.Services;
 using CulinaryBlog.Infrastructure.Data;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -38,8 +40,37 @@ public sealed class AuthWebFactory : WebApplicationFactory<Program>
             services.AddDbContext<CulinaryBlogDbContext>((sp, o) =>
                 o.UseInMemoryDatabase(dbName, sp.GetRequiredService<InMemoryDatabaseRoot>()));
 
-            // 2. Gỡ Hangfire server (tránh nối Postgres khi boot).
-            services.RemoveAll(typeof(IHostedService));
+            // 2. Gỡ bỏ Hangfire PostgreSQL và thay bằng MemoryStorage (tránh mở socket kết nối Postgres khi test)
+            static bool IsHangfire(Type? type)
+            {
+                if (type == null) return false;
+                if (type.Namespace?.StartsWith("Hangfire") == true) return true;
+                if (type.FullName?.Contains("Hangfire") == true) return true;
+                if (type.IsGenericType && type.GenericTypeArguments.Any(IsHangfire)) return true;
+                return false;
+            }
+
+            var hangfireDescriptors = services.Where(d =>
+                IsHangfire(d.ServiceType) ||
+                IsHangfire(d.ImplementationType) ||
+                (d.ImplementationInstance != null && IsHangfire(d.ImplementationInstance.GetType()))
+            ).ToList();
+
+            foreach (var d in hangfireDescriptors)
+            {
+                services.Remove(d);
+            }
+
+            var hangfireHostedServices = services.Where(d =>
+                d.ServiceType == typeof(IHostedService) &&
+                (IsHangfire(d.ImplementationType) || (d.ImplementationInstance != null && IsHangfire(d.ImplementationInstance.GetType())))
+            ).ToList();
+            foreach (var hs in hangfireHostedServices)
+            {
+                services.Remove(hs);
+            }
+
+            services.AddHangfire(h => h.UseMemoryStorage());
 
             // 3. Fake Google validator + welcome mail (không gọi mạng ngoài).
             services.RemoveAll(typeof(IGoogleTokenValidator));

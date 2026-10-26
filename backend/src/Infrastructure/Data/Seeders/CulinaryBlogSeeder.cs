@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Enums;
+using CulinaryBlog.Domain.Interfaces;
 using CulinaryBlog.Infrastructure.Data;
 
 namespace CulinaryBlog.Infrastructure.Persistence.Seeders;
@@ -17,6 +18,11 @@ public static class CulinaryBlogSeeder
         string Slug,
         string Description,
         string ImageUrl
+    );
+
+    public record ImageSeedItem(
+        string Url,
+        string Alt
     );
 
     public static readonly CategorySeedItem[] PredefinedCategories =
@@ -48,7 +54,24 @@ public static class CulinaryBlogSeeder
         new("Ẩm thực miền Nam", "am-thuc-mien-nam", "Các món ăn thuộc danh mục Ẩm thực miền Nam hào sảng, phóng khoáng kết hợp vị ngọt tự nhiên của nước dừa, đường thốt nốt và rau đồng trù phú phù sa.", "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80")
     ];
 
-    private static readonly string[] CategoryNames = PredefinedCategories.Select(c => c.Name).ToArray();
+    public static readonly ImageSeedItem[] RecipeImages =
+    [
+        new("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1200&q=80", "Bát phở bò truyền thống bốc khói nghi ngút"),
+        new("https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80", "Món sườn nướng mật ong óng ả thơm lừng"),
+        new("https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=1200&q=80", "Gỏi cuốn tôm thịt thanh mát kèm nước chấm tương đen"),
+        new("https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80", "Nồi lẩu hải sản chua cay thơm nồng đậm đà"),
+        new("https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=80", "Cơm rang ngọc bích đỗ xanh giòn thơm"),
+        new("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80", "Thịt xiên nướng than hoa sốt mè thơm phức"),
+        new("https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=1200&q=80", "Dimsum hấp trong xửng tre nóng hổi"),
+        new("https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80", "Đĩa salad rau củ mùa hè thanh mát sốt giấm"),
+        new("https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80", "Món rau củ xào dầu hào giữ trọn độ giòn ngọt"),
+        new("https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=1200&q=80", "Gà rán giòn rụm màu vàng óng hấp dẫn"),
+        new("https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1200&q=80", "Bít tết bò sốt tiêu đen thảo mộc"),
+        new("https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=1200&q=80", "Tôm càng nướng bơ tỏi thơm lừng"),
+        new("https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=1200&q=80", "Đậu hũ sốt nấm hương tươi thanh đạm"),
+        new("https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80", "Canh sườn hầm rau củ nhiệt đới thanh mát"),
+        new("https://images.unsplash.com/photo-1505253758473-96b3015f21c9?auto=format&fit=crop&w=1200&q=80", "Bánh mì giòn rụm kẹp thịt và pate thơm béo")
+    ];
 
     private static readonly string[] RecipeTitles =
     [
@@ -92,8 +115,22 @@ public static class CulinaryBlogSeeder
         var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var fileStorage = scope.ServiceProvider.GetService<IFileStorageService>();
 
-        // 0. Tạo Roles nếu chưa có
+        // 0. Đảm bảo MinIO storage bucket & anonymous public read policy
+        if (fileStorage != null)
+        {
+            try
+            {
+                await fileStorage.EnsureStorageReadyAsync();
+            }
+            catch
+            {
+                // Best-effort: Không làm đứt mạch seed dữ liệu nếu MinIO chưa bật
+            }
+        }
+
+        // 1. Tạo Roles nếu chưa có
         string[] roles = ["Admin", "Author", "Reader"];
         foreach (var role in roles)
         {
@@ -103,10 +140,10 @@ public static class CulinaryBlogSeeder
             }
         }
 
-        // Bỏ qua nếu đã đủ 100 recipes
+        // Bỏ qua nếu đã đủ 100 recipes (bảo đảm tính cô lập kiểm thử theo chuẩn)
         if (await db.Recipes.CountAsync() >= 100) return;
 
-        // 1. Tạo Authors mẫu
+        // 2. Tạo 10 Authors mẫu qua Faker chuẩn xác định (Deterministic Seed 42)
         var authorFaker = new Faker<ApplicationUser>("vi")
             .RuleFor(u => u.Id, f => Guid.NewGuid().ToString())
             .RuleFor(u => u.DisplayName, f => f.Name.FullName())
@@ -116,8 +153,9 @@ public static class CulinaryBlogSeeder
             .RuleFor(u => u.AvatarUrl, f => f.Internet.Avatar());
 
         var authors = authorFaker.UseSeed(SEED).Generate(10);
-        foreach (var author in authors)
+        for (int idx = 0; idx < authors.Count; idx++)
         {
+            var author = authors[idx];
             var existingUser = await userManager.FindByEmailAsync(author.Email!);
             if (existingUser == null)
             {
@@ -125,6 +163,11 @@ public static class CulinaryBlogSeeder
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(author, "Author");
+                    if (idx == 0)
+                    {
+                        // Gán thêm quyền Admin cho tác giả đầu tiên để hỗ trợ quản trị
+                        await userManager.AddToRoleAsync(author, "Admin");
+                    }
                 }
             }
             else
@@ -133,7 +176,7 @@ public static class CulinaryBlogSeeder
             }
         }
 
-        // 2. Tạo Categories (đảm bảo ít nhất 20 categories với dữ liệu thật)
+        // 3. Tạo Categories (đảm bảo đúng 20 categories chuẩn với slug tiếng Việt)
         var currentCategories = await db.Categories.ToListAsync();
         if (currentCategories.Count < 20)
         {
@@ -194,7 +237,69 @@ public static class CulinaryBlogSeeder
 
         var categoryIds = currentCategories.Select(c => c.Id).ToList();
 
-        // 3. Tạo Recipes (đủ 100 recipes)
+        // 4. Backfill Dữ liệu hình ảnh / bước / nguyên liệu cho recipes đã tồn tại nếu thiếu
+        var existingRecipes = await db.Recipes
+            .Include(r => r.Images)
+            .Include(r => r.Steps)
+            .Include(r => r.Ingredients)
+            .ToListAsync();
+
+        bool hasBackfillUpdates = false;
+        var rand = new Random(SEED);
+
+        foreach (var r in existingRecipes)
+        {
+            if (r.Images.Count == 0)
+            {
+                int imgCount = rand.Next(2, 4);
+                var samples = RecipeImages.OrderBy(_ => rand.Next()).Take(imgCount).ToList();
+                for (int idx = 0; idx < samples.Count; idx++)
+                {
+                    r.AddImage(
+                        originalUrl: samples[idx].Url,
+                        mediumUrl: samples[idx].Url,
+                        thumbnailUrl: samples[idx].Url,
+                        altText: samples[idx].Alt,
+                        isPrimary: idx == 0);
+                }
+                hasBackfillUpdates = true;
+            }
+
+            if (r.Steps.Count == 0)
+            {
+                int stepCount = rand.Next(5, 8);
+                for (int s = 1; s <= stepCount; s++)
+                {
+                    r.AddStep(
+                        $"Bước {s}: Tiến hành chế biến",
+                        StepDescriptions[rand.Next(StepDescriptions.Length)],
+                        rand.Next(5, 35));
+                }
+                hasBackfillUpdates = true;
+            }
+
+            if (r.Ingredients.Count == 0)
+            {
+                int ingrCount = rand.Next(8, 12);
+                var selected = IngredientPool.OrderBy(_ => rand.Next()).Take(ingrCount).ToList();
+                foreach (var ingr in selected)
+                {
+                    r.AddIngredient(
+                        ingr,
+                        (decimal)rand.Next(10, 500),
+                        "gram",
+                        rand.Next(0, 3) == 0 ? "Ưu tiên chọn loại tươi ngon" : null);
+                }
+                hasBackfillUpdates = true;
+            }
+        }
+
+        if (hasBackfillUpdates)
+        {
+            await db.SaveChangesAsync();
+        }
+
+        // 5. Tạo Recipes mới nếu chưa đủ 100 recipes
         int recipesNeeded = 100 - await db.Recipes.CountAsync();
         if (recipesNeeded <= 0) return;
 
@@ -204,6 +309,7 @@ public static class CulinaryBlogSeeder
                 var baseTitle = f.PickRandom(RecipeTitles);
                 var title = $"{baseTitle} {f.Random.Int(1, 999)}";
                 var slug = f.Lorem.Slug() + "-" + f.Random.Guid().ToString()[..8];
+                var author = f.PickRandom(authors);
 
                 return Recipe.Create(
                     title,
@@ -215,12 +321,12 @@ public static class CulinaryBlogSeeder
                     f.Random.Int(2, 8),
                     f.PickRandom<RecipeDifficulty>(),
                     f.PickRandom(categoryIds),
-                    f.PickRandom(authors).Id);
+                    author.Id);
             });
 
         var recipes = recipeFaker.UseSeed(SEED).Generate(recipesNeeded);
 
-        // 4. Tạo Steps (5-8 bước) và Ingredients (10-15 nguyên liệu) qua Rich Domain API.
+        // 6. Tạo Steps (5-8 bước), Ingredients (10-15 nguyên liệu), và Images (2-4 ảnh) qua Rich Domain API
         var stepFaker = new Faker("vi");
         var ingrFaker = new Faker("vi");
 
@@ -247,11 +353,196 @@ public static class CulinaryBlogSeeder
                     ingrFaker.Random.Bool(0.3f) ? "Ưu tiên chọn loại tươi ngon" : null);
             }
 
+            // Thêm từ 2 đến 4 ảnh cho mỗi recipe (ảnh đầu tiên là Primary)
+            int imgCount = stepFaker.Random.Int(2, 4);
+            var selectedImages = stepFaker.PickRandom(RecipeImages, imgCount).DistinctBy(x => x.Url).ToList();
+            for (int idx = 0; idx < selectedImages.Count; idx++)
+            {
+                recipe.AddImage(
+                    originalUrl: selectedImages[idx].Url,
+                    mediumUrl: selectedImages[idx].Url,
+                    thumbnailUrl: selectedImages[idx].Url,
+                    altText: selectedImages[idx].Alt,
+                    isPrimary: idx == 0);
+            }
+
             // Seeder tạo dữ liệu Published (cần ít nhất 1 step — đã có ở trên).
             recipe.Publish();
         }
 
         await db.Recipes.AddRangeAsync(recipes);
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Tạo các tài khoản Demo chuẩn phục vụ thuyết minh, bảo vệ đồ án và kiểm thử trực quan.
+    /// Admin: admin@culinaryblog.com / Admin@123456
+    /// Author: author@culinaryblog.com / Author@123456
+    /// Reader: user@culinaryblog.com / User@123456
+    /// Kèm 2 công thức showcase với đầy đủ ảnh, bước, nguyên liệu để kiểm thử Gallery & CRUD.
+    /// </summary>
+    public static async Task SeedDemoAccountsAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+
+        var demoAccounts = new[]
+        {
+            new
+            {
+                Email = "admin@culinaryblog.com",
+                UserName = "admin",
+                DisplayName = "Quản trị viên Hệ thống",
+                Password = "Admin@123456",
+                Roles = new[] { "Admin", "Author" },
+                Avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+            },
+            new
+            {
+                Email = "author@culinaryblog.com",
+                UserName = "author",
+                DisplayName = "Đầu bếp Chuẩn Vị",
+                Password = "Author@123456",
+                Roles = new[] { "Author" },
+                Avatar = "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80"
+            },
+            new
+            {
+                Email = "user@culinaryblog.com",
+                UserName = "user",
+                DisplayName = "Thành viên Khám Phá",
+                Password = "User@123456",
+                Roles = new[] { "Reader" },
+                Avatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"
+            }
+        };
+
+        ApplicationUser? demoAuthor = null;
+
+        foreach (var demo in demoAccounts)
+        {
+            var user = await userManager.FindByEmailAsync(demo.Email);
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Email = demo.Email,
+                    UserName = demo.UserName,
+                    DisplayName = demo.DisplayName,
+                    EmailConfirmed = true,
+                    AvatarUrl = demo.Avatar
+                };
+
+                var createRes = await userManager.CreateAsync(user, demo.Password);
+                if (createRes.Succeeded)
+                {
+                    foreach (var role in demo.Roles)
+                    {
+                        await userManager.AddToRoleAsync(user, role);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var role in demo.Roles)
+                {
+                    if (!await userManager.IsInRoleAsync(user, role))
+                    {
+                        await userManager.AddToRoleAsync(user, role);
+                    }
+                }
+            }
+
+            if (demo.Email == "author@culinaryblog.com")
+            {
+                demoAuthor = user;
+            }
+        }
+
+        // Tạo 2 công thức Showcase mẫu cho Demo/Thuyết minh (Author là author@culinaryblog.com)
+        if (demoAuthor != null)
+        {
+            var demoCategory = await db.Categories.FirstOrDefaultAsync();
+            if (demoCategory != null)
+            {
+                var showcaseItems = new[]
+                {
+                    new
+                    {
+                        Title = "Phở bò tái lăn chuẩn vị Hà Thành",
+                        Slug = "pho-bo-tai-lan-chuan-vi-ha-thanh",
+                        Description = "Công thức nấu phở bò tái lăn đậm đà nước dùng thơm mùi gừng tỏi xào lăn, sợi phở mềm mướt và thịt bò mềm ngọt chuẩn vị truyền thống Hà Nội.",
+                        PrepTime = 30,
+                        CookTime = 90,
+                        Servings = 4,
+                        Difficulty = RecipeDifficulty.Medium,
+                        Images = new[]
+                        {
+                            new ImageSeedItem("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1200&q=80", "Tô phở bò tái lăn bốc khói ngút ngàn"),
+                            new ImageSeedItem("https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=1200&q=80", "Các loại rau thơm và gia vị ăn kèm phở"),
+                            new ImageSeedItem("https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80", "Nồi nước dùng ninh từ xương ống trong veo")
+                        }
+                    },
+                    new
+                    {
+                        Title = "Bánh mì kẹp thịt sườn nướng ngũ vị",
+                        Slug = "banh-mi-kep-thit-suon-nuong-ngu-vi",
+                        Description = "Bánh mì vỏ giòn rụm kẹp thịt sườn ướp ngũ vị hương nướng than hoa, kèm pate gan béo ngậy, đồ chua giòn ngọt và sốt bơ trứng đặc trưng.",
+                        PrepTime = 20,
+                        CookTime = 40,
+                        Servings = 2,
+                        Difficulty = RecipeDifficulty.Easy,
+                        Images = new[]
+                        {
+                            new ImageSeedItem("https://images.unsplash.com/photo-1505253758473-96b3015f21c9?auto=format&fit=crop&w=1200&q=80", "Bánh mì kẹp thịt sườn nướng hấp dẫn"),
+                            new ImageSeedItem("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80", "Thịt sườn nướng xém cạnh thơm phức")
+                        }
+                    }
+                };
+
+                foreach (var dr in showcaseItems)
+                {
+                    if (!await db.Recipes.AnyAsync(r => r.Slug == dr.Slug))
+                    {
+                        var recipe = Recipe.Create(
+                            dr.Title,
+                            dr.Slug,
+                            dr.Description,
+                            "Hướng dẫn chi tiết từng bước nấu ăn bên dưới.",
+                            dr.PrepTime,
+                            dr.CookTime,
+                            dr.Servings,
+                            dr.Difficulty,
+                            demoCategory.Id,
+                            demoAuthor.Id);
+
+                        recipe.AddStep("Sơ chế nguyên liệu", "Rửa sạch thịt bò và các loại rau gia vị thơm. Cắt thịt bò lát mỏng vừa ăn.", 15);
+                        recipe.AddStep("Xào lăn thịt bò", "Đun chảo nóng già với mỡ gừng tỏi, cho thịt bò vào đảo nhanh tay trên lửa lớn trong 1 phút.", 5);
+                        recipe.AddStep("Chan nước dùng và thưởng thức", "Trần bánh phở, xếp thịt bò lên trên, rắc hành hoa rồi chan nước dùng đang sôi sùng sục.", 5);
+
+                        recipe.AddIngredient("Thịt bò bắp / thăn", 500, "gram", "Chọn thịt tươi màu đỏ thắm");
+                        recipe.AddIngredient("Bánh phở tươi", 1, "kg", "Sợi phở mềm dai tự nhiên");
+                        recipe.AddIngredient("Xương ống hầm", 1.5m, "kg", "Ninh lấy nước ngọt tự nhiên");
+                        recipe.AddIngredient("Gừng già và tỏi ta", 100, "gram", "Đập dập phi thơm");
+
+                        for (int i = 0; i < dr.Images.Length; i++)
+                        {
+                            recipe.AddImage(
+                                dr.Images[i].Url,
+                                dr.Images[i].Url,
+                                dr.Images[i].Url,
+                                dr.Images[i].Alt,
+                                isPrimary: i == 0);
+                        }
+
+                        recipe.Publish();
+                        db.Recipes.Add(recipe);
+                    }
+                }
+                await db.SaveChangesAsync();
+            }
+        }
     }
 }
