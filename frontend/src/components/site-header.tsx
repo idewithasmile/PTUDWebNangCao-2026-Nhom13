@@ -7,7 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SESSION_REVOKED_EVENT } from '@/lib/api-client';
 import { authKeys, toErrorMessage, useLogout, useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
-import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/utils';
+import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard, Search } from 'lucide-react';
 
 export default function SiteHeader() {
   const router = useRouter();
@@ -53,16 +54,21 @@ export default function SiteHeader() {
 
   const isAdmin = user?.roles?.includes('Admin');
 
+  const [headerSearch, setHeaderSearch] = useState('');
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Logo & Brand */}
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-gray-900 transition-colors hover:text-orange-600">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-lg text-white shadow-sm shadow-orange-200">
+        <div className="flex items-center gap-6 xl:gap-8">
+          <Link href="/" className="group flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-gray-900 transition-colors">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-lg text-white shadow-sm shadow-orange-200 group-hover:scale-105 transition-transform">
               🍳
             </span>
-            <span>Culinary<span className="text-orange-600">Blog</span></span>
+            <div className="flex flex-col">
+              <span className="leading-tight">Culinary<span className="text-orange-600">Blog</span></span>
+              <span className="text-[10px] font-medium tracking-normal text-gray-400">Nấu ngon • Sống vui</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation Links */}
@@ -83,6 +89,26 @@ export default function SiteHeader() {
           </nav>
         </div>
 
+        {/* Quick Search on Desktop Header */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (headerSearch.trim()) {
+              router.push(`/recipes?searchTerm=${encodeURIComponent(headerSearch.trim())}`);
+            }
+          }}
+          className="relative hidden lg:block w-44 xl:w-60"
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <input
+            type="text"
+            value={headerSearch}
+            onChange={(e) => setHeaderSearch(e.target.value)}
+            placeholder="Tìm món ngon..."
+            className="w-full rounded-full border border-gray-200 bg-gray-50/80 py-1.5 pl-8 pr-3 text-xs text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
+          />
+        </form>
+
         {/* Right Action / Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
           {/* Nút Đăng công thức mới (dành cho User đã đăng nhập) */}
@@ -100,11 +126,21 @@ export default function SiteHeader() {
             <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
+                className="flex items-center gap-2 rounded-xl border border-gray-200 py-1 pl-1.5 pr-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
                 title="Bảng điều khiển (Dashboard)"
               >
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span>{user.displayName}</span>
+                {user.avatarUrl ? (
+                  <img
+                    src={resolveMediaUrl(user.avatarUrl)}
+                    alt={user.displayName}
+                    className="h-6 w-6 rounded-full object-cover border border-orange-200"
+                  />
+                ) : (
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="max-w-[120px] truncate">{user.displayName}</span>
               </Link>
               <button
                 type="button"
@@ -158,7 +194,28 @@ export default function SiteHeader() {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="border-t border-gray-100 bg-white px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-2">
+          {/* Mobile Search */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (headerSearch.trim()) {
+                setMobileMenuOpen(false);
+                router.push(`/recipes?searchTerm=${encodeURIComponent(headerSearch.trim())}`);
+              }
+            }}
+            className="relative mb-3"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              placeholder="Tìm công thức món ăn..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+            />
+          </form>
+
+          <nav className="flex flex-col gap-1.5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -182,7 +239,17 @@ export default function SiteHeader() {
                     className="px-3 py-2 text-xs font-semibold rounded-xl bg-gray-50 border border-gray-200 text-gray-800 flex items-center justify-between"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      {user.avatarUrl ? (
+                        <img
+                          src={resolveMediaUrl(user.avatarUrl)}
+                          alt={user.displayName}
+                          className="h-6 w-6 rounded-full object-cover border border-orange-200"
+                        />
+                      ) : (
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
+                          {user.displayName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                       <span>{user.displayName}</span>
                     </span>
                     <span className="text-[11px] text-gray-400 font-medium">Bảng điều khiển →</span>
