@@ -147,6 +147,37 @@ export interface UpdateRecipeRequest extends CreateRecipeRequest {
   rowVersionBase64?: string; // Base64 concurrency token
 }
 
+// --- FR-RCP-009 & FR-RCP-010 Request types ---
+export interface AddIngredientRequest {
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+  sortOrder?: number | null;
+}
+
+export interface UpdateIngredientRequest {
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+  sortOrder?: number | null;
+}
+
+export interface AddStepRequest {
+  description: string;
+  title?: string | null;
+  timerMinutes?: number | null;
+  imageUrl?: string | null;
+}
+
+export interface UpdateStepRequest {
+  description: string;
+  title?: string | null;
+  timerMinutes?: number | null;
+  imageUrl?: string | null;
+}
+
 // --- Query params ---
 export interface GetRecipesParams {
   searchTerm?: string;
@@ -158,4 +189,12 @@ export interface GetRecipesParams {
   pageSize?: number;
   onlyMine?: boolean;
   status?: RecipeStatus;
+}
+
+export interface SearchRecipesParams {
+  searchTerm: string;
+  page?: number;
+  pageSize?: number;
+  categoryId?: string;
+  difficulty?: RecipeDifficulty;
 }

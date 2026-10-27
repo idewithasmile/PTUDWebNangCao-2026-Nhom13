@@ -50,12 +50,35 @@
     - Cập nhật `frontend/src/lib/api-client.ts`: Tự động nhận diện `FormData` để không ghi đè `Content-Type: application/json`.
     - Cài đặt `frontend/src/lib/services/file-service.ts`: Cung cấp 5 methods gọi API (`uploadFile`, `deleteFile`, `uploadRecipeImage`, `setPrimaryRecipeImage`, `deleteRecipeImage`).
     - `npm run build` Next.js 15 đạt 100% (0 lỗi TypeScript / lint).
-  - [x] **Đồng bộ Solution & Bộ Kiểm thử Tự động (198/198 Tests Passed - 100% Green):**
-    - `CulinaryBlog.Domain.Tests`: **16/16 tests passed**.
-    - `CulinaryBlog.Application.Tests`: **78/78 tests passed** (+6 test cases mới cho Recipe Image Handlers).
-    - `CulinaryBlog.Infrastructure.Tests`: **29/29 tests passed**.
-    - `CulinaryBlog.UnitTests`: **66/66 tests passed** (+11 test cases mới cho MinIO Storage Service).
-    - `CulinaryBlog.API.IntegrationTests`: **9/9 tests passed** (+4 test cases mới cho File Endpoints).
+  - [x] **Quản lý Nguyên liệu & Các Bước Nấu Ăn (FR-RCP-009 & FR-RCP-010):**
+    - Thêm, sửa, xóa nguyên liệu (`POST/PUT/DELETE /api/v1/recipes/{id}/ingredients/{ingId}`).
+    - Thêm, sửa, xóa bước thực hiện (`POST/PUT/DELETE /api/v1/recipes/{id}/steps/{stepId}`), tự động tính toán lại `StepNumber` tuần tự (1, 2, 3...) khi xóa.
+  - [x] **Tìm kiếm Full-Text Search Tiếng Việt (FR-SRCH-001 -> 004):**
+    - Tìm kiếm công thức bằng PostgreSQL `tsvector`/`tsquery` kết hợp extension `unaccent` và `ts_rank`.
+    - Lọc linh hoạt theo danh mục, độ khó, thời gian nấu, đồng bộ URL query params phía Frontend.
+  - [x] **Phân hệ Background Jobs với Hangfire (FR-JOB-001 -> 003):**
+    - `FR-JOB-001 (WelcomeEmailJob)`: Gửi email chào mừng kích hoạt tài khoản qua MailKit/MailHog với 3 lần thử lại (60s, 300s, 1800s).
+    - `FR-JOB-002 (RecipeImageResizeJob)`: Tạo ảnh thu nhỏ Thumbnail (300x300) và Medium (800x600) dùng SixLabors.ImageSharp, cập nhật URL vào database.
+    - `FR-JOB-003 (SitemapGenerationJob)`: Job định kỳ lúc 02:00 AM UTC xuất toàn bộ công thức và danh mục ra chuẩn XML `sitemaps.org`, cung cấp endpoint `GET /sitemap.xml`.
+    - Bảo vệ Hangfire Dashboard với filter phân quyền (`Admin` trên Production, mở tự do ở Development).
+  - [x] **Phân hệ Giám sát & Quan sát Hệ thống (FR-OBS-001 -> 003):**
+    - Health Checks đa tầng: `/health`, `/health/ready` (kiểm tra Postgres & Redis), `/health/live`.
+    - Structured Logging Serilog tích hợp `CorrelationId` (`X-Correlation-ID`), `RequestPath`, `UserId`, `TraceId`.
+    - Tracing OpenTelemetry kết nối Seq (`http://localhost:5341`).
+  - [x] **Frontend Hoàn thiện Toàn diện (Next.js 15 App Router):**
+    - Tích hợp `RecipeImageGalleryManager`: kéo thả ảnh, chọn ảnh chính, xóa ảnh qua MinIO proxy.
+    - Cập nhật `RecipeForm`, trang `/recipes/[slug]/edit`, trang `/profile` đổi avatar MinIO.
+    - Cấu hình ISR `revalidate = 300` và JSON-LD Schema.org `@type: "Recipe"`.
+    - `npm run lint` đạt 0 cảnh báo/lỗi; `npm run build` xuất thành công 13/13 static routes.
+  - [x] **Đồng bộ Solution & Toàn bộ 6 Bộ Kiểm thử Tự động (284/284 Tests Passed - 100% Green):**
+    - `CulinaryBlog.Domain.Tests`: **23/23 tests passed**.
+    - `CulinaryBlog.Application.Tests`: **113/113 tests passed**.
+    - `CulinaryBlog.Api.Tests`: **4/4 tests passed**.
+    - `CulinaryBlog.UnitTests`: **95/95 tests passed**.
+    - `CulinaryBlog.Infrastructure.Tests`: **34/34 tests passed** (+5 unit tests cho Hangfire Jobs & Sitemap).
+    - `CulinaryBlog.API.IntegrationTests`: **15/15 tests passed** (+1 integration test cho endpoint `/sitemap.xml`).
+  - [x] **Tích hợp CI/CD Pipeline Toàn diện:**
+    - File `.github/workflows/ci.yml` tự động kiểm thử đồng thời .NET 10 Solution và Next.js 15 Frontend trên GitHub Actions.
 
 ---
 

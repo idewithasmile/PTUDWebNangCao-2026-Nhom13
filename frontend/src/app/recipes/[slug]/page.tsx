@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { recipeService } from '@/lib/services/recipe-service';
 import RecipeDetailView from '@/components/recipes/RecipeDetailView';
 
+export const revalidate = 300; // ISR revalidate = 300 (5 phút) theo SRS FR-RCP-002
+
 interface RecipePageProps {
   params: Promise<{ slug: string }>;
 }

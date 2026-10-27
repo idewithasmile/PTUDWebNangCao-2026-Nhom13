@@ -2,12 +2,22 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { recipeService } from '@/lib/services/recipe-service';
-import type { GetRecipesParams, CreateRecipeRequest, UpdateRecipeRequest } from '@/lib/types/recipe';
+import type {
+  GetRecipesParams,
+  SearchRecipesParams,
+  CreateRecipeRequest,
+  UpdateRecipeRequest,
+  AddIngredientRequest,
+  UpdateIngredientRequest,
+  AddStepRequest,
+  UpdateStepRequest,
+} from '@/lib/types/recipe';
 
 export const recipeKeys = {
   all: ['recipes'] as const,
   lists: () => [...recipeKeys.all, 'list'] as const,
   list: (params: GetRecipesParams) => [...recipeKeys.lists(), params] as const,
+  search: (params: SearchRecipesParams) => [...recipeKeys.all, 'search', params] as const,
   details: () => [...recipeKeys.all, 'detail'] as const,
   detail: (slug: string) => [...recipeKeys.details(), slug] as const,
 };
@@ -21,6 +31,18 @@ export function useRecipes(params: GetRecipesParams = {}, enabled = true) {
     queryFn: () => recipeService.getRecipes(params),
     enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook tìm kiếm công thức bằng PostgreSQL Full-Text Search (FR-SRCH-001)
+ */
+export function useSearchRecipes(params: SearchRecipesParams, enabled = true) {
+  return useQuery({
+    queryKey: recipeKeys.search(params),
+    queryFn: () => recipeService.searchRecipes(params),
+    enabled: enabled && !!params.searchTerm?.trim(),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -159,7 +181,7 @@ export function useDeleteRecipeImage(recipeId: string, slug?: string) {
 export function useAddRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof recipeService.addRecipeIngredient>[1]) =>
+    mutationFn: (data: AddIngredientRequest) =>
       recipeService.addRecipeIngredient(recipeId, data),
     onSuccess: () => {
       if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
@@ -167,6 +189,8 @@ export function useAddRecipeIngredient(recipeId: string, slug?: string) {
     },
   });
 }
+
+export const useAddIngredient = useAddRecipeIngredient;
 
 export function useUpdateRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
@@ -176,7 +200,7 @@ export function useUpdateRecipeIngredient(recipeId: string, slug?: string) {
       data,
     }: {
       ingredientId: string;
-      data: Parameters<typeof recipeService.updateRecipeIngredient>[2];
+      data: UpdateIngredientRequest;
     }) => recipeService.updateRecipeIngredient(recipeId, ingredientId, data),
     onSuccess: () => {
       if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
@@ -184,6 +208,8 @@ export function useUpdateRecipeIngredient(recipeId: string, slug?: string) {
     },
   });
 }
+
+export const useUpdateIngredient = useUpdateRecipeIngredient;
 
 export function useDeleteRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
@@ -197,6 +223,8 @@ export function useDeleteRecipeIngredient(recipeId: string, slug?: string) {
   });
 }
 
+export const useDeleteIngredient = useDeleteRecipeIngredient;
+
 // ---------------------------------------------------------------------------
 // FR-RCP-010: Hooks quản lý Các bước thực hiện (Steps CRUD độc lập)
 // ---------------------------------------------------------------------------
@@ -204,7 +232,7 @@ export function useDeleteRecipeIngredient(recipeId: string, slug?: string) {
 export function useAddRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof recipeService.addRecipeStep>[1]) =>
+    mutationFn: (data: AddStepRequest) =>
       recipeService.addRecipeStep(recipeId, data),
     onSuccess: () => {
       if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
@@ -212,6 +240,8 @@ export function useAddRecipeStep(recipeId: string, slug?: string) {
     },
   });
 }
+
+export const useAddStep = useAddRecipeStep;
 
 export function useUpdateRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
@@ -221,7 +251,7 @@ export function useUpdateRecipeStep(recipeId: string, slug?: string) {
       data,
     }: {
       stepId: string;
-      data: Parameters<typeof recipeService.updateRecipeStep>[2];
+      data: UpdateStepRequest;
     }) => recipeService.updateRecipeStep(recipeId, stepId, data),
     onSuccess: () => {
       if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
@@ -229,6 +259,8 @@ export function useUpdateRecipeStep(recipeId: string, slug?: string) {
     },
   });
 }
+
+export const useUpdateStep = useUpdateRecipeStep;
 
 export function useDeleteRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
@@ -240,3 +272,5 @@ export function useDeleteRecipeStep(recipeId: string, slug?: string) {
     },
   });
 }
+
+export const useDeleteStep = useDeleteRecipeStep;

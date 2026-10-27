@@ -12,8 +12,7 @@ interface RecipeActionButtonsProps {
 
 /**
  * Thanh thông báo tác giả trên trang xem công thức công khai.
- * Thay vì đặt toàn bộ nút quản trị cồng kềnh ngoài trang public,
- * thanh này cung cấp đường dẫn chuyển thẳng vào Dashboard Workspace để quản lý & chỉnh sửa chuyên nghiệp.
+ * Cung cấp lối tắt điều hướng trực tiếp vào Recipe Studio trong Dashboard.
  */
 export default function RecipeActionButtons({ recipe }: RecipeActionButtonsProps) {
   const isLoggedIn = hasSession();

@@ -138,4 +138,18 @@ public class ObservabilityEndpointsTests : IClassFixture<CustomWebApplicationFac
         generatedId.Should().NotBeNullOrWhiteSpace();
         Guid.TryParse(generatedId, out _).Should().BeTrue("Auto-generated Correlation ID must be a valid GUID");
     }
+
+    [Fact]
+    public async Task GetSitemapXml_ShouldReturn200AndValidXmlContent()
+    {
+        // Act
+        var response = await _client.GetAsync("/sitemap.xml");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/xml");
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("<?xml");
+        content.Should().Contain("urlset");
+    }
 }

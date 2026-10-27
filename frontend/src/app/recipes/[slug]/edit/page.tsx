@@ -8,7 +8,7 @@ interface EditRecipePageProps {
 }
 
 /**
- * Điều hướng trang chỉnh sửa công thức vào không gian làm việc Bảng điều khiển (Dashboard)
+ * Điều hướng trang chỉnh sửa công thức vào Recipe Studio trong Bảng điều khiển (Dashboard)
  */
 export default function EditRecipeRedirectPage({ params }: EditRecipePageProps) {
   const resolvedParams = use(params);

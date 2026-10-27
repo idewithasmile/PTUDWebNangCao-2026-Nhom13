@@ -34,6 +34,11 @@ public class MinioFileStorageService : IFileStorageService
         _bucket = config["MinIO:BucketName"] ?? "culinary-blog";
     }
 
+    public async Task EnsureStorageReadyAsync(CancellationToken ct = default)
+    {
+        await EnsureBucketExistsAsync(ct);
+    }
+
     public async Task<string> UploadAsync(Stream stream, string fileName, string contentType, string? folder = null, CancellationToken ct = default)
     {
         if (stream == null || stream.Length == 0)
@@ -238,27 +243,28 @@ public class MinioFileStorageService : IFileStorageService
             {
                 var mbArgs = new MakeBucketArgs().WithBucket(_bucket);
                 await _client.MakeBucketAsync(mbArgs, ct);
-
-                var policy = $$"""
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {"AWS": ["*"]},
-                            "Action": ["s3:GetObject"],
-                            "Resource": ["arn:aws:s3:::{{_bucket}}/*"]
-                        }
-                    ]
-                }
-                """;
-                var spArgs = new SetPolicyArgs().WithBucket(_bucket).WithPolicy(policy);
-                await _client.SetPolicyAsync(spArgs, ct);
             }
+
+            var policy = $$"""
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": ["arn:aws:s3:::{{_bucket}}/*"]
+                    }
+                ]
+            }
+            """;
+            var spArgs = new SetPolicyArgs().WithBucket(_bucket).WithPolicy(policy);
+            await _client.SetPolicyAsync(spArgs, ct);
+            _logger?.LogInformation("MinIO bucket {Bucket} đã sẵn sàng với chính sách Public Read.", _bucket);
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Không thể kiểm tra hoặc tạo bucket {Bucket}: {Message}", _bucket, ex.Message);
+            _logger?.LogWarning(ex, "Không thể kiểm tra hoặc cấu hình bucket {Bucket}: {Message}", _bucket, ex.Message);
         }
     }
 

@@ -7,6 +7,7 @@ using CulinaryBlog.API.Filters;
 using CulinaryBlog.API.HealthChecks;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.Application;
+using CulinaryBlog.Domain.Interfaces;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Observability;
 using CulinaryBlog.Infrastructure;
@@ -281,16 +282,26 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
     await db.Database.MigrateAsync();
 
+    var storage = scope.ServiceProvider.GetService<IFileStorageService>();
+    if (storage != null)
+    {
+        await storage.EnsureStorageReadyAsync();
+    }
+
     await CulinaryBlogSeeder.SeedAsync(app.Services);
+    await CulinaryBlogSeeder.SeedDemoAccountsAsync(app.Services);
 }
 
 // Hangfire Dashboard (Dev & Admin) & Recurring Jobs (FR-JOB)
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    Authorization = [new HangfireAuthorizationFilter(app.Environment)],
-    DashboardTitle = "Culinary Blog - Hangfire Dashboard"
-});
-app.UseHangfireJobs();
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new HangfireAuthorizationFilter(app.Environment)],
+        DashboardTitle = "Culinary Blog - Hangfire Dashboard"
+    });
+    app.UseHangfireJobs();
+}
 
 // Sitemap XML Endpoint (FR-JOB-003, NFR-SEO-003)
 app.MapGet("/sitemap.xml", async (ISitemapService sitemapService, CancellationToken ct) =>

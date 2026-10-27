@@ -1,4 +1,4 @@
-name: Backend CI Pipeline
+name: Full Stack CI Pipeline
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-and-test:
+  backend-build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,14 +17,8 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # Only postgres is needed: Api.Tests boot the real Program via
-      # WebApplicationFactory. Hangfire.PostgreSqlStorage connects eagerly at
-      # DI time (DependencyInjection.cs:63) and the dashboard (Program.cs:84),
-      # so the runner must have PostgreSQL on 5432. The app DB is replaced by
-      # InMemory in tests (AuthWebFactory); Redis/Seq/MinIO are lazy and never
-      # touched by the Auth flow, so they are not started here.
-      - name: Start PostgreSQL
-        run: docker compose -f infrastructure/docker-compose.yml up -d postgres
+      - name: Start Infrastructure (PostgreSQL & Redis)
+        run: docker compose -f infrastructure/docker-compose.yml up -d postgres redis
 
       # Wait until Postgres really accepts connections (avoid race).
       - name: Wait for PostgreSQL readiness
@@ -47,12 +41,33 @@ jobs:
       - name: Build
         run: dotnet build backend/CulinaryBlog.slnx --configuration Release --no-restore
 
-      # No `dotnet ef database update` needed: Program.cs does not auto-migrate,
-      # Api.Tests use InMemory for the app DB, and Hangfire auto-creates its
-      # schema ("Hangfire SQL objects installed") on first connection.
       - name: Test
         run: dotnet test backend/CulinaryBlog.slnx --configuration Release --no-build --verbosity normal
 
       - name: Stop CI infrastructure
         if: always()
         run: docker compose -f infrastructure/docker-compose.yml down
+
+  frontend-build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: TypeScript type-check
+        run: cd frontend && npx tsc --noEmit
+
+      - name: ESLint
+        run: cd frontend && npm run lint
+
+      - name: Build Next.js
+        run: cd frontend && npm run build
