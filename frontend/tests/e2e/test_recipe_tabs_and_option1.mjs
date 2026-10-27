@@ -38,12 +38,12 @@ async function runTest() {
     console.log('🔑 1. Đăng nhập tài khoản Author...');
     await page.goto('http://localhost:3000/login?returnUrl=/dashboard', { waitUntil: 'networkidle' });
 
-    await page.fill('input[type="email"]', 'DoanThanh.Ly25@hotmail.com');
+    await page.fill('input[type="email"]', 'author@culinaryblog.com');
     await page.fill('input[type="password"]', 'Author@123456');
     await page.click('button[type="submit"]');
 
     // Chờ lưu token và điều hướng vào dashboard
-    await page.waitForURL('**/dashboard**', { timeout: 15000 });
+    await page.waitForURL((url) => url.pathname === '/dashboard', { timeout: 20000 });
     console.log('✅ Đã đăng nhập và chuyển hướng vào Dashboard thành công.');
 
     // 3. Điều hướng đến trang Đăng công thức (tab=recipes-create)
