@@ -21,9 +21,10 @@ import { logoutApi } from '@/features/auth/api';
 
 interface DashboardHeaderProps {
   user: UserProfile;
+  isStudioMode?: boolean;
 }
 
-export default function DashboardHeader({ user }: DashboardHeaderProps) {
+export default function DashboardHeader({ user, isStudioMode = false }: DashboardHeaderProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDark, setIsDark] = useState(false);
@@ -102,17 +103,10 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
               className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-xs text-gray-800 placeholder-gray-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
             />
           </form>
-
-          <span className="hidden xl:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
-            6. Thanh tìm kiếm toàn hệ thống
-          </span>
         </div>
 
         {/* Right Controls: Notifications + Theme + User Pill */}
         <div className="flex items-center justify-end gap-3 shrink-0">
-          <span className="hidden xl:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-100">
-            7. Thông báo & chế độ giao diện
-          </span>
 
           {/* Bell Notification */}
           <button
@@ -194,39 +188,37 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
               </div>
             )}
           </div>
-
-          <span className="hidden xl:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-            8. Thông tin người dùng
-          </span>
         </div>
       </div>
 
-      {/* 2. Greeting & Real-time Weather Bar (Image 1 row 2) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
-        <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-            Xin chào, {user.displayName || user.userName}! 👋
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Chào mừng bạn quay trở lại Culinary Blog. Hãy cùng khám phá những món ăn ngon và chia sẻ đam mê ẩm thực!
-          </p>
-        </div>
+      {/* 2. Greeting & Real-time Weather Bar (Hidden in Studio Mode to eliminate distraction) */}
+      {!isStudioMode && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1 animate-fade-in">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              Xin chào, {user.displayName || user.userName}! 👋
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Chào mừng bạn quay trở lại Culinary Blog. Hãy cùng khám phá những món ăn ngon và chia sẻ đam mê ẩm thực!
+            </p>
+          </div>
 
-        <div className="flex items-center gap-4 text-xs font-semibold text-gray-600 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <span>{dateStr}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-gray-400" />
-            <span>{timeStr}</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-blue-50/70 text-blue-700 font-bold border border-blue-100/60 shadow-2xs">
-            <CloudSun className="w-4 h-4 text-blue-500" />
-            <span>Đà Lạt 22°C • Trời quang mây</span>
+          <div className="flex items-center gap-4 text-xs font-semibold text-gray-600 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span>{dateStr}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span>{timeStr}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-blue-50/70 text-blue-700 font-bold border border-blue-100/60 shadow-2xs">
+              <CloudSun className="w-4 h-4 text-blue-500" />
+              <span>Đà Lạt 22°C • Trời quang mây</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

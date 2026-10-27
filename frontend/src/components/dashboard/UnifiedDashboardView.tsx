@@ -71,8 +71,11 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
 
       {/* 2. Cột phải: Toàn bộ nội dung Bảng điều khiển (Dashboard Canvas) */}
       <div className="flex-1 min-w-0 p-5 sm:p-7 space-y-6 overflow-x-hidden">
-        {/* Header trên cùng & Lời chào kèm widget thời tiết */}
-        <DashboardHeader user={user} />
+        {/* Header trên cùng (tự động bật Studio Mode khi soạn bài để chống phân tâm) */}
+        <DashboardHeader
+          user={user}
+          isStudioMode={activeTab === 'recipes-create' || activeTab === 'recipes-edit'}
+        />
 
         {/* Chuyển đổi linh hoạt giữa 9 khu vực quản lý bên trong Dashboard */}
         {activeTab === 'overview' && (

@@ -25,7 +25,11 @@ export default function DashboardRecipeCreateView({
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const createMutation = useCreateRecipe();
 
-  const handleSubmit = async (formData: RecipeFormData, secondaryFiles: File[] = []) => {
+  const handleSubmit = async (
+    formData: RecipeFormData,
+    secondaryFiles: File[] = [],
+    targetStatus: 'draft' | 'publish' = 'draft'
+  ) => {
     setServerError(null);
     setSuccessMessage(null);
     setUploadProgress(null);
@@ -68,7 +72,34 @@ export default function DashboardRecipeCreateView({
       }
 
       setUploadProgress(null);
-      setSuccessMessage('Công thức và thư viện ảnh đã được tạo thành công! Đang chuyển vào Recipe Studio...');
+
+      // 3. Xử lý xuất bản hoặc lưu nháp theo quyết định của tác giả tại Bước 5
+      if (targetStatus === 'publish' && newRecipe?.id) {
+        setUploadProgress('Đang kích hoạt xuất bản bài viết công khai (FR-RCP-005)...');
+        try {
+          await recipeService.publishRecipe(newRecipe.id);
+          setUploadProgress(null);
+          setSuccessMessage(
+            'Công thức đã được tạo và xuất bản công khai thành công! Đang chuyển đến bài viết...'
+          );
+          setTimeout(() => {
+            window.location.href = `/recipes/${encodeURIComponent(newRecipe.slug)}`;
+          }, 1200);
+          return;
+        } catch (publishErr) {
+          console.error('Lỗi khi xuất bản ngay:', publishErr);
+          setUploadProgress(null);
+          setServerError(
+            'Công thức đã được tạo dưới dạng bản nháp, nhưng chưa thể xuất bản ngay. Đang chuyển vào Recipe Studio...'
+          );
+          setTimeout(() => {
+            window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
+          }, 1500);
+          return;
+        }
+      }
+
+      setSuccessMessage('Công thức đã được lưu bản nháp thành công! Đang chuyển vào Recipe Studio...');
 
       setTimeout(() => {
         if (newRecipe?.slug) {
@@ -115,11 +146,17 @@ export default function DashboardRecipeCreateView({
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                Đăng công thức ẩm thực mới
-              </h2>
-              <p className="text-xs text-gray-500">
-                Tạo bài viết với thông tin chung & dinh dưỡng, hình ảnh, nguyên liệu và các bước làm
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                  Đăng công thức ẩm thực mới
+                </h2>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Bản nháp mới</span>
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Quy trình 5 bước tạo công thức chuẩn: Thông tin & dinh dưỡng, hình ảnh, nguyên liệu, các bước làm và xem trước bài viết
               </p>
             </div>
           </div>

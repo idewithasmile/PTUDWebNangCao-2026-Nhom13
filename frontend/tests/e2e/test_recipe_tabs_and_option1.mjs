@@ -36,30 +36,31 @@ async function runTest() {
   try {
     // 2. Đăng nhập hệ thống
     console.log('🔑 1. Đăng nhập tài khoản Author...');
-    await page.goto('http://localhost:3000/login', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3000/login?returnUrl=/dashboard', { waitUntil: 'networkidle' });
 
     await page.fill('input[type="email"]', 'DoanThanh.Ly25@hotmail.com');
     await page.fill('input[type="password"]', 'Author@123456');
     await page.click('button[type="submit"]');
 
-    // Chờ lưu token và điều hướng
-    await page.waitForTimeout(2000);
-    console.log('✅ Đã đăng nhập, tiến hành chuyển tới Dashboard Đăng công thức...');
+    // Chờ lưu token và điều hướng vào dashboard
+    await page.waitForURL('**/dashboard**', { timeout: 15000 });
+    console.log('✅ Đã đăng nhập và chuyển hướng vào Dashboard thành công.');
 
     // 3. Điều hướng đến trang Đăng công thức (tab=recipes-create)
     console.log('🧭 2. Điều hướng đến trang Đăng công thức (tab=recipes-create)...');
     await page.goto('http://localhost:3000/dashboard?tab=recipes-create', { waitUntil: 'networkidle' });
 
-    // Đảm bảo các Tab đã hiển thị trên màn hình
-    await page.waitForSelector('text=1. Thông tin chung & Dinh dưỡng');
-    await page.waitForSelector('text=2. Hình ảnh món ăn');
-    await page.waitForSelector('text=3. Nguyên liệu');
-    await page.waitForSelector('text=4. Các bước nấu');
-    console.log('✅ Xác nhận 4 Tab đã hiển thị đầy đủ và rõ ràng trên giao diện.');
+    // Đảm bảo các Tab Stepper đã hiển thị trên màn hình với nhãn chuẩn mới
+    await page.waitForSelector('text=Thông tin & Dinh dưỡng');
+    await page.waitForSelector('text=Thư viện hình ảnh');
+    await page.waitForSelector('text=Nguyên liệu');
+    await page.waitForSelector('text=Các bước thực hiện');
+    console.log('✅ Xác nhận 4 Tab Stepper đã hiển thị đầy đủ và rõ ràng trên giao diện (không bị cắt chữ).');
 
     // 4. Kiểm tra Tab 1: Thông tin chung & Dinh dưỡng
     console.log('📝 3. Kiểm tra và điền dữ liệu Tab 1 (Thông tin chung & Dinh dưỡng)...');
-    await page.fill('input[name="title"]', 'Bò xào lúc lắc rau củ tươi ngon (E2E Test)');
+    const uniqueTitle = `Bò xào lúc lắc rau củ tươi ngon ${Date.now()}`;
+    await page.fill('input[name="title"]', uniqueTitle);
     await page.fill(
       'textarea[name="description"]',
       'Món bò xào lúc lắc đậm đà hương vị, giàu protein và vitamin từ rau củ tươi sạch.'
@@ -96,9 +97,9 @@ async function runTest() {
     await page.screenshot({ path: tab1ScreenshotPath, fullPage: false });
     console.log(`📸 Chụp ảnh Tab 1 lưu tại: ${tab1ScreenshotPath}`);
 
-    // 5. Chuyển sang Tab 2: Hình ảnh món ăn (Phương án 1)
-    console.log('🖼️ 4. Chuyển sang Tab 2 (Hình ảnh món ăn) và kiểm tra Phương án 1 Multi-Upload...');
-    await page.click('button:has-text("2. Hình ảnh món ăn")');
+    // 5. Chuyển sang Tab 2: Thư viện hình ảnh (Phương án 1)
+    console.log('🖼️ 4. Chuyển sang Tab 2 (Thư viện hình ảnh) và kiểm tra Phương án 1 Multi-Upload...');
+    await page.click('button:has-text("Thư viện hình ảnh")');
     await page.waitForTimeout(500);
 
     // Tải lên 2 file ảnh test vào dropzone
@@ -129,9 +130,9 @@ async function runTest() {
     await page.screenshot({ path: tab2ScreenshotPath, fullPage: false });
     console.log(`📸 Chụp ảnh Tab 2 lưu tại: ${tab2ScreenshotPath}`);
 
-    // 6. Chuyển sang Tab 3: Nguyên liệu chuẩn bị
-    console.log('🥩 5. Chuyển sang Tab 3 (Nguyên liệu chuẩn bị)...');
-    await page.click('button:has-text("3. Nguyên liệu")');
+    // 6. Chuyển sang Tab 3: Nguyên liệu
+    console.log('🥩 5. Chuyển sang Tab 3 (Nguyên liệu)...');
+    await page.click('button:has-text("Nguyên liệu")');
     await page.waitForTimeout(500);
 
     // Điền nguyên liệu 1
@@ -152,9 +153,9 @@ async function runTest() {
     await page.screenshot({ path: tab3ScreenshotPath, fullPage: false });
     console.log(`📸 Chụp ảnh Tab 3 lưu tại: ${tab3ScreenshotPath}`);
 
-    // 7. Chuyển sang Tab 4: Các bước nấu
-    console.log('🍳 6. Chuyển sang Tab 4 (Các bước nấu)...');
-    await page.click('button:has-text("4. Các bước nấu")');
+    // 7. Chuyển sang Tab 4: Các bước thực hiện
+    console.log('🍳 6. Chuyển sang Tab 4 (Các bước thực hiện)...');
+    await page.click('button:has-text("Các bước thực hiện")');
     await page.waitForTimeout(500);
 
     // Điền bước 1
@@ -179,20 +180,41 @@ async function runTest() {
     await page.screenshot({ path: tab4ScreenshotPath, fullPage: false });
     console.log(`📸 Chụp ảnh Tab 4 lưu tại: ${tab4ScreenshotPath}`);
 
-    // 8. Bấm "Tạo công thức ngay" và xác nhận quá trình submit
-    console.log('💾 7. Bấm nút "Tạo công thức ngay" và kiểm tra luồng tạo & upload ảnh phụ...');
-    await page.click('button[type="submit"]:has-text("Tạo công thức ngay")');
+    // 8. Chuyển sang Tab 5: Xem trước & Xuất bản (Bước 5 mới)
+    console.log('👁️ 7. Chuyển sang Tab 5 (Xem trước & Xuất bản) để kiểm tra giao diện bài viết thực tế...');
+    await page.click('button:has-text("Tiếp tục: Xem trước bài viết")');
+    await page.waitForTimeout(1000);
+
+    // Kiểm tra các phần tử hiển thị trong bản xem trước
+    await page.waitForSelector('text=Xem trước bài viết & Quyết định đăng tải');
+    await page.waitForSelector('text=Đủ điều kiện xuất bản công khai');
+    console.log('✅ Xác nhận Step 5 hiển thị đầy đủ Header và Checklist FR-RCP-005.');
+
+    // Kiểm tra nút Lưu bản nháp và Xuất bản công khai ngay
+    const draftBtn = page.locator('button:has-text("Lưu bản nháp")');
+    const publishBtn = page.locator('button:has-text("Xuất bản công khai ngay")');
+    const isDraftVisible = await draftBtn.isVisible();
+    const isPublishVisible = await publishBtn.isVisible();
+    console.log(`✅ Nút "Lưu bản nháp" hiển thị: ${isDraftVisible}, Nút "Xuất bản công khai ngay" hiển thị: ${isPublishVisible}`);
+
+    const tab5ScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_tab5_preview.png');
+    await page.screenshot({ path: tab5ScreenshotPath, fullPage: false });
+    console.log(`📸 Chụp ảnh Tab 5 (Xem trước & Quyết định) lưu tại: ${tab5ScreenshotPath}`);
+
+    // 9. Bấm "Lưu bản nháp" để kiểm tra luồng lưu an toàn vào Recipe Studio
+    console.log('💾 8. Bấm nút "Lưu bản nháp" để lưu trữ công thức và chuyển vào Recipe Studio...');
+    await draftBtn.click();
 
     // Chờ quá trình upload ảnh chính lên MinIO, tạo recipe, và tải ảnh phụ
     await page.waitForURL('**/dashboard?tab=recipes-edit**', { timeout: 30000 });
-    console.log('🎉 Đã tạo thành công và chuyển hướng vào Recipe Studio!');
+    console.log('🎉 Đã tạo công thức bản nháp thành công và chuyển hướng vào Recipe Studio!');
 
     await page.waitForTimeout(2000);
     const studioScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_recipe_created_in_studio.png');
     await page.screenshot({ path: studioScreenshotPath, fullPage: false });
     console.log(`📸 Chụp ảnh kết quả Recipe Studio lưu tại: ${studioScreenshotPath}`);
 
-    console.log('🌟 TẤT CẢ CÁC BƯỚC KIỂM THỬ E2E ĐÃ HOÀN TẤT THÀNH CÔNG 100%!');
+    console.log('🌟 TẤT CẢ CÁC BƯỚC KIỂM THỬ E2E (5 BƯỚC WIZARD + XEM TRƯỚC + LƯU NHÁP) ĐÃ HOÀN TẤT THÀNH CÔNG 100%!');
   } catch (error) {
     console.error('❌ Lỗi trong quá trình kiểm thử E2E:', error);
     const errorScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_error.png');

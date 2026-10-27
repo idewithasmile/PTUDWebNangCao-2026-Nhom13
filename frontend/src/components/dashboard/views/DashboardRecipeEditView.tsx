@@ -17,6 +17,7 @@ import StudioGalleryTab from '../studio/tabs/StudioGalleryTab';
 import StudioIngredientsTab from '../studio/tabs/StudioIngredientsTab';
 import StudioStepsTab from '../studio/tabs/StudioStepsTab';
 import Toast, { ToastMessage } from '@/components/common/Toast';
+import { Tabs, type TabItem } from '@/components/ui/tabs';
 import {
   FileText,
   Image as ImageIcon,
@@ -147,6 +148,44 @@ export default function DashboardRecipeEditView({
   const ingredientsCount = recipe.ingredients?.length ?? 0;
   const stepsCount = recipe.steps?.length ?? 0;
 
+  const studioTabs: TabItem[] = [
+    {
+      id: 'general',
+      label: 'Thông tin & Dinh dưỡng',
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      id: 'gallery',
+      label: 'Thư viện hình ảnh',
+      icon: <ImageIcon className="w-4 h-4" />,
+      badge: (
+        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
+          {imagesCount}
+        </span>
+      ),
+    },
+    {
+      id: 'ingredients',
+      label: 'Nguyên liệu',
+      icon: <Utensils className="w-4 h-4" />,
+      badge: (
+        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
+          {ingredientsCount}
+        </span>
+      ),
+    },
+    {
+      id: 'steps',
+      label: 'Các bước thực hiện',
+      icon: <CheckCircle2 className="w-4 h-4" />,
+      badge: (
+        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
+          {stepsCount}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Toast Notifications Container */}
@@ -173,58 +212,13 @@ export default function DashboardRecipeEditView({
       />
 
       {/* 2. Studio Tabs Navigation */}
-      <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs flex flex-wrap items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => handleTabChange('general')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-            activeTab === 'general'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>Thông tin chung & Dinh dưỡng</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('gallery')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-            activeTab === 'gallery'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>Thư viện ảnh ({imagesCount})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('ingredients')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-            activeTab === 'ingredients'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          <Utensils className="w-4 h-4" />
-          <span>Nguyên liệu chuẩn bị ({ingredientsCount})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('steps')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-            activeTab === 'steps'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Quy trình các bước ({stepsCount})</span>
-        </button>
+      <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs">
+        <Tabs
+          tabs={studioTabs}
+          activeTab={activeTab}
+          onTabChange={(id) => handleTabChange(id as StudioActiveTab)}
+          ariaLabel="Điều hướng Recipe Studio"
+        />
       </div>
 
       {/* 3. Tab Contents */}

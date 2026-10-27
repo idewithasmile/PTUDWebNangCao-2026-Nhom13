@@ -13,6 +13,8 @@ import {
 import { categoryService } from '@/lib/services/category-service';
 import type { RecipeSummaryDto, RecipeStatus, RecipeDifficulty } from '@/lib/types/category';
 import type { UserProfile } from '@/types/auth';
+import { toErrorMessage } from '@/features/auth/hooks';
+import { ConfirmDialog } from '@/components/ui/dialog';
 import DeleteRecipeModal from '@/components/recipes/DeleteRecipeModal';
 import Toast, { ToastMessage } from '@/components/common/Toast';
 import {
@@ -129,13 +131,18 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
   const archiveMutation = useArchiveRecipe();
   const deleteMutation = useDeleteRecipe();
 
+  const [actionConfirm, setActionConfirm] = useState<{
+    type: 'publish' | 'unpublish' | 'archive';
+    recipe: RecipeSummaryDto;
+  } | null>(null);
+
   const handlePublish = async (recipe: RecipeSummaryDto) => {
     try {
       await publishMutation.mutateAsync(recipe.id);
       addToast('success', 'Xuất bản thành công', `"${recipe.title}" đã được công khai trên hệ thống.`);
       refetch();
-    } catch {
-      addToast('error', 'Xuất bản thất bại', 'Công thức cần có ít nhất 1 bước thực hiện và 1 nguyên liệu.');
+    } catch (err: unknown) {
+      addToast('error', 'Xuất bản thất bại', toErrorMessage(err, 'Công thức cần có ít nhất 1 bước thực hiện và 1 nguyên liệu.'));
     }
   };
 
@@ -144,8 +151,8 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
       await unpublishMutation.mutateAsync(recipe.id);
       addToast('warning', 'Đã chuyển về bản nháp', `"${recipe.title}" không còn hiển thị công khai.`);
       refetch();
-    } catch {
-      addToast('error', 'Thao tác thất bại', 'Không thể chuyển trạng thái công thức.');
+    } catch (err: unknown) {
+      addToast('error', 'Thao tác thất bại', toErrorMessage(err, 'Không thể chuyển trạng thái công thức.'));
     }
   };
 
@@ -154,8 +161,8 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
       await archiveMutation.mutateAsync(recipe.id);
       addToast('success', 'Đã lưu trữ', `"${recipe.title}" đã được chuyển vào kho lưu trữ.`);
       refetch();
-    } catch {
-      addToast('error', 'Lưu trữ thất bại', 'Không thể lưu trữ công thức.');
+    } catch (err: unknown) {
+      addToast('error', 'Lưu trữ thất bại', toErrorMessage(err, 'Không thể lưu trữ công thức.'));
     }
   };
 
@@ -445,7 +452,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                             {recipe.status === 'Draft' && (
                               <button
                                 type="button"
-                                onClick={() => handlePublish(recipe)}
+                                onClick={() => setActionConfirm({ type: 'publish', recipe })}
                                 className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
                                 title="Xuất bản ngay"
                               >
@@ -456,7 +463,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                             {recipe.status === 'Published' && (
                               <button
                                 type="button"
-                                onClick={() => handleUnpublish(recipe)}
+                                onClick={() => setActionConfirm({ type: 'unpublish', recipe })}
                                 className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition"
                                 title="Gỡ bài về bản nháp"
                               >
@@ -467,7 +474,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                             {recipe.status !== 'Archived' && (
                               <button
                                 type="button"
-                                onClick={() => handleArchive(recipe)}
+                                onClick={() => setActionConfirm({ type: 'archive', recipe })}
                                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition"
                                 title="Lưu trữ bài viết"
                               >
@@ -475,11 +482,11 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                               </button>
                             )}
 
-                            {/* Sửa bài */}
+                            {/* Sửa bài trong Recipe Studio */}
                             <Link
-                              href={`/recipes/edit?id=${recipe.id}`}
+                              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(recipe.slug)}`}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition"
-                              title="Chỉnh sửa công thức"
+                              title="Chỉnh sửa công thức trong Studio"
                             >
                               <Edit className="w-3.5 h-3.5" />
                             </Link>
@@ -561,6 +568,67 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
           </button>
         </div>
       </div>
+
+      {/* Modal xác nhận thao tác trạng thái nhanh */}
+      {actionConfirm && (
+        <ConfirmDialog
+          isOpen={Boolean(actionConfirm)}
+          title={
+            actionConfirm.type === 'publish'
+              ? 'Xác nhận xuất bản công thức'
+              : actionConfirm.type === 'unpublish'
+              ? 'Xác nhận gỡ xuất bản'
+              : 'Xác nhận lưu trữ công thức'
+          }
+          subtitle={
+            actionConfirm.type === 'publish'
+              ? 'FR-RCP-005: Xuất bản công khai'
+              : actionConfirm.type === 'unpublish'
+              ? 'Đưa về trạng thái bản nháp'
+              : 'FR-RCP-006: Lưu trữ bài viết'
+          }
+          variant={
+            actionConfirm.type === 'publish'
+              ? 'success'
+              : actionConfirm.type === 'unpublish'
+              ? 'warning'
+              : 'info'
+          }
+          confirmLabel={
+            actionConfirm.type === 'publish'
+              ? 'Xuất bản ngay'
+              : actionConfirm.type === 'unpublish'
+              ? 'Gỡ về bản nháp'
+              : 'Lưu trữ'
+          }
+          isLoading={
+            publishMutation.isPending || unpublishMutation.isPending || archiveMutation.isPending
+          }
+          onClose={() => setActionConfirm(null)}
+          onConfirm={async () => {
+            const { type, recipe } = actionConfirm;
+            setActionConfirm(null);
+            if (type === 'publish') await handlePublish(recipe);
+            else if (type === 'unpublish') await handleUnpublish(recipe);
+            else if (type === 'archive') await handleArchive(recipe);
+          }}
+          description={
+            <div className="space-y-1.5">
+              <p>
+                Thực hiện thao tác đối với công thức: <strong>&quot;{actionConfirm.recipe.title}&quot;</strong>?
+              </p>
+              <p className="text-gray-500">
+                {actionConfirm.type === 'publish' &&
+                  'Sau khi xuất bản, công thức sẽ hiển thị công khai cho tất cả mọi người và được cập nhật vào chỉ mục tìm kiếm.'}
+                {actionConfirm.type === 'unpublish' &&
+                  'Công thức sẽ chuyển về bản nháp và chỉ tác giả hoặc quản trị viên mới thấy.'}
+                {actionConfirm.type === 'archive' &&
+                  'Công thức sẽ được đưa vào kho lưu trữ cá nhân.'}
+              </p>
+            </div>
+          }
+        />
+      )}
 
       {/* Modal xác nhận xóa mềm */}
       <DeleteRecipeModal

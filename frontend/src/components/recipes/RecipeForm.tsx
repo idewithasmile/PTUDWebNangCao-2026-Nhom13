@@ -9,6 +9,7 @@ import { categoryService } from '@/lib/services/category-service';
 import { fileService } from '@/lib/services/file-service';
 import { resolveMediaUrl } from '@/lib/utils';
 import type { CategoryDto } from '@/lib/types/category';
+import { Tabs, TabPanel, type TabItem } from '@/components/ui/tabs';
 import {
   Loader2,
   AlertCircle,
@@ -30,9 +31,19 @@ import {
   Star,
   FileText,
   Check,
+  Eye,
+  Tag,
+  ShoppingBag,
+  ChefHat,
+  Dumbbell,
+  Wheat,
+  Droplets,
+  Calendar,
+  User,
+  Lightbulb,
 } from 'lucide-react';
 
-export type RecipeFormTab = 'general' | 'gallery' | 'ingredients' | 'steps';
+export type RecipeFormTab = 'general' | 'gallery' | 'ingredients' | 'steps' | 'preview';
 
 export interface GalleryFileItem {
   id: string;
@@ -43,12 +54,23 @@ export interface GalleryFileItem {
   size?: number;
 }
 
+const difficultyLabels: Record<number, { label: string; color: string }> = {
+  1: { label: 'Dễ', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  2: { label: 'Trung bình', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  3: { label: 'Khó', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  4: { label: 'Chuyên gia', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+};
+
 interface RecipeFormProps {
   initialValues?: Partial<RecipeFormData>;
   isEdit?: boolean;
   isSubmitting: boolean;
   serverError?: string | null;
-  onSubmit: (data: RecipeFormData, secondaryFiles?: File[]) => Promise<void>;
+  onSubmit: (
+    data: RecipeFormData,
+    secondaryFiles?: File[],
+    targetStatus?: 'draft' | 'publish'
+  ) => Promise<void>;
 }
 
 // Một số URL ảnh món ăn chất lượng cao gợi ý nhanh
@@ -88,6 +110,8 @@ export default function RecipeForm({
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const [isUploadingPrimary, setIsUploadingPrimary] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
+  const [submitTarget, setSubmitTarget] = useState<'draft' | 'publish'>('draft');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -137,6 +161,20 @@ export default function RecipeForm({
   } = useFieldArray({ control, name: 'steps' });
 
   const watchedImageUrl = watch('primaryImageUrl');
+  const watchedTitle = watch('title');
+  const watchedDescription = watch('description');
+  const watchedCategoryId = watch('categoryId');
+  const watchedDifficulty = watch('difficulty');
+  const watchedPrepTime = watch('prepTimeMinutes');
+  const watchedCookTime = watch('cookTimeMinutes');
+  const watchedServings = watch('servings');
+  const watchedCalories = watch('calories');
+  const watchedProtein = watch('protein');
+  const watchedCarbs = watch('carbs');
+  const watchedFat = watch('fat');
+  const watchedInstructions = watch('instructions');
+  const watchedIngredients = watch('ingredients');
+  const watchedSteps = watch('steps');
 
   // Fetch danh mục từ backend
   useEffect(() => {
@@ -164,14 +202,17 @@ export default function RecipeForm({
 
     setUploadError(null);
     const newItems: GalleryFileItem[] = [];
-    const validFiles: File[] = [];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
     Array.from(selectedFiles).forEach((file) => {
       if (file.size > 5 * 1024 * 1024) {
         setUploadError(`Tệp "${file.name}" vượt quá kích thước tối đa 5MB.`);
         return;
       }
-      validFiles.push(file);
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        setUploadError(`Định dạng tệp "${file.name}" không hợp lệ. Hệ thống chỉ hỗ trợ JPEG, PNG, WebP hoặc AVIF.`);
+        return;
+      }
       const blobUrl = URL.createObjectURL(file);
       newItems.push({
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -307,8 +348,11 @@ export default function RecipeForm({
     }
   };
 
-  // Xử lý nộp form hoàn chỉnh (Phương án 1)
-  const handleFormSubmit = async (formData: RecipeFormData) => {
+  // Xử lý nộp form hoàn chỉnh với target 'draft' hoặc 'publish'
+  const executeFormSubmission = async (
+    formData: RecipeFormData,
+    target: 'draft' | 'publish'
+  ) => {
     setUploadError(null);
 
     // Xác định ảnh chính và các ảnh phụ
@@ -345,7 +389,15 @@ export default function RecipeForm({
       formData.primaryImageUrl = primaryItem.previewUrl;
     }
 
-    await onSubmit(formData, secondaryFiles);
+    await onSubmit(formData, secondaryFiles, target);
+  };
+
+  const triggerSubmitWithTarget = (target: 'draft' | 'publish') => {
+    setSubmitTarget(target);
+    handleSubmit(
+      (data) => executeFormSubmission(data, target),
+      onValidationError
+    )();
   };
 
   // Kiểm tra lỗi theo từng tab để hiển thị cảnh báo đỏ trên tab bar
@@ -367,8 +419,104 @@ export default function RecipeForm({
   const hasIngredientsErrors = Boolean(errors.ingredients);
   const hasStepsErrors = Boolean(errors.steps);
 
+  const isGeneralCompleted = Boolean(
+    (watchedTitle?.trim()?.length ?? 0) >= 5 &&
+    (watchedDescription?.trim()?.length ?? 0) >= 10 &&
+    watchedCategoryId
+  );
+  const isGalleryCompleted = Boolean(
+    galleryItems.length > 0 || watchedImageUrl
+  );
+  const isIngredientsCompleted = Boolean(
+    (watchedIngredients?.length ?? 0) > 0 &&
+    Boolean(watchedIngredients?.[0]?.name?.trim())
+  );
+  const isStepsCompleted = Boolean(
+    (watchedSteps?.length ?? 0) > 0 &&
+    Boolean(watchedSteps?.[0]?.description?.trim())
+  );
+
+  // Tính toán điều kiện sẵn sàng xuất bản (SRS FR-RCP-005)
+  const hasValidTitle = Boolean(watchedTitle && watchedTitle.trim().length >= 5);
+  const hasValidDescription = Boolean(watchedDescription && watchedDescription.trim().length >= 10);
+  const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
+  const categoryDisplayName = selectedCategory?.name || 'Chưa chọn danh mục';
+
+  const primaryGalleryItem = galleryItems.find((item) => item.isPrimary) || galleryItems[0];
+  const effectiveHeroImage =
+    selectedPreviewImage || primaryGalleryItem?.previewUrl || watchedImageUrl || '';
+
+  const hasHeroImage = Boolean(effectiveHeroImage);
+  const validIngredients = watchedIngredients?.filter((i) => i.name && i.name.trim().length > 0) || [];
+  const hasValidIngredients = validIngredients.length > 0;
+  const validSteps = watchedSteps?.filter((s) => s.description && s.description.trim().length > 0) || [];
+  const hasValidSteps = validSteps.length > 0;
+
+  // Điều kiện để được phép xuất bản bài viết công khai theo FR-RCP-005
+  const canPublish = hasValidTitle && hasValidIngredients && hasValidSteps;
+
+  const wizardTabs: TabItem[] = [
+    {
+      id: 'general',
+      label: 'Thông tin & Dinh dưỡng',
+      isCompleted: isGeneralCompleted,
+      badge: hasGeneralErrors ? (
+        <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-1 inline-block" />
+      ) : undefined,
+    },
+    {
+      id: 'gallery',
+      label: 'Thư viện hình ảnh',
+      isCompleted: isGalleryCompleted,
+      badge: galleryItems.length > 0 ? (
+        <span className="px-1.5 py-0.5 text-[10px] rounded-full font-bold bg-white/20 ml-1">
+          {galleryItems.length}
+        </span>
+      ) : hasGalleryErrors ? (
+        <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-1 inline-block" />
+      ) : undefined,
+    },
+    {
+      id: 'ingredients',
+      label: 'Nguyên liệu',
+      isCompleted: isIngredientsCompleted,
+      badge: ingredientFields.length > 0 ? (
+        <span className="px-1.5 py-0.5 text-[10px] rounded-full font-bold bg-white/20 ml-1">
+          {ingredientFields.length}
+        </span>
+      ) : hasIngredientsErrors ? (
+        <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-1 inline-block" />
+      ) : undefined,
+    },
+    {
+      id: 'steps',
+      label: 'Các bước thực hiện',
+      isCompleted: isStepsCompleted,
+      badge: stepFields.length > 0 ? (
+        <span className="px-1.5 py-0.5 text-[10px] rounded-full font-bold bg-white/20 ml-1">
+          {stepFields.length}
+        </span>
+      ) : hasStepsErrors ? (
+        <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-1 inline-block" />
+      ) : undefined,
+    },
+    {
+      id: 'preview',
+      label: 'Xem trước & Xuất bản',
+      isCompleted: canPublish,
+      badge: canPublish ? (
+        <span className="px-1.5 py-0.5 text-[10px] rounded-full font-bold bg-emerald-500 text-white ml-1">
+          Sẵn sàng
+        </span>
+      ) : undefined,
+    },
+  ];
+
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit, onValidationError)} className="space-y-6">
+    <form
+      onSubmit={handleSubmit((data) => executeFormSubmission(data, submitTarget), onValidationError)}
+      className="space-y-6"
+    >
       {/* Thông báo lỗi server (nếu có) */}
       {serverError && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm animate-fade-in">
@@ -391,20 +539,20 @@ export default function RecipeForm({
         </div>
       )}
 
-      {/* Hộp hỗ trợ nhanh: Điền dữ liệu mẫu */}
+      {/* Trợ giúp nhanh khi tạo công thức mới */}
       {!isEdit && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-2xs">
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2 text-amber-900 font-medium">
             <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
-            <span>Thử nghiệm nhanh: Bạn có thể tự động điền danh sách nguyên liệu và các bước làm chuẩn:</span>
+            <span>Gợi ý: Bạn có thể điền nhanh dữ liệu mẫu nguyên liệu và quy trình để thử nghiệm giao diện:</span>
           </div>
           <button
             type="button"
             onClick={handleFillSampleStepsAndIngredients}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition shrink-0 active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition shrink-0 active:scale-95"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Điền mẫu nguyên liệu & các bước</span>
+            <span>Điền mẫu nhanh</span>
           </button>
         </div>
       )}
@@ -412,104 +560,13 @@ export default function RecipeForm({
       {/* =========================================================================
           TAB NAVIGATION BAR - Đầy đủ 4 Tab tiêu chuẩn (FR-RCP)
           ========================================================================= */}
-      <div className="bg-gray-100/80 p-1.5 rounded-2xl border border-gray-200/80 shadow-2xs flex flex-wrap items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-            activeTab === 'general'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-gray-700 hover:text-gray-900 hover:bg-white/80'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>1. Thông tin chung & Dinh dưỡng</span>
-          {hasGeneralErrors && (
-            <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-0.5" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('gallery')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-            activeTab === 'gallery'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-gray-700 hover:text-gray-900 hover:bg-white/80'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>2. Hình ảnh món ăn</span>
-          {galleryItems.length > 0 && (
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
-                activeTab === 'gallery'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {galleryItems.length}
-            </span>
-          )}
-          {hasGalleryErrors && (
-            <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-0.5" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('ingredients')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-            activeTab === 'ingredients'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-gray-700 hover:text-gray-900 hover:bg-white/80'
-          }`}
-        >
-          <Utensils className="w-4 h-4" />
-          <span>3. Nguyên liệu</span>
-          {ingredientFields.length > 0 && (
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
-                activeTab === 'ingredients'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {ingredientFields.length}
-            </span>
-          )}
-          {hasIngredientsErrors && (
-            <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-0.5" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('steps')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-            activeTab === 'steps'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-gray-700 hover:text-gray-900 hover:bg-white/80'
-          }`}
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          <span>4. Các bước nấu</span>
-          {stepFields.length > 0 && (
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
-                activeTab === 'steps'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {stepFields.length}
-            </span>
-          )}
-          {hasStepsErrors && (
-            <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white ml-0.5" />
-          )}
-        </button>
-      </div>
+      <Tabs
+        tabs={wizardTabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as RecipeFormTab)}
+        variant="stepper"
+        ariaLabel="Quy trình 4 bước tạo và chỉnh sửa công thức"
+      />
 
       {/* =========================================================================
           TAB 1: THÔNG TIN CHUNG & DINH DƯỠNG
@@ -1155,70 +1212,581 @@ export default function RecipeForm({
       )}
 
       {/* =========================================================================
-          FOOTER ĐIỀU HƯỚNG TỪNG BƯỚC VÀ NÚT SUBMIT
+          TAB 5: XEM TRƯỚC BÀI VIẾT & QUYẾT ĐỊNH XUẤT BẢN / LƯU NHÁP (FR-RCP-005)
           ========================================================================= */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
+      {activeTab === 'preview' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* 1. Header Banner & Checklist Kiểm Tra Điều Kiện Xuất Bản (SRS FR-RCP-005) */}
+          <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-7 shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
+                    5
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-gray-900">
+                    Xem trước bài viết & Quyết định đăng tải
+                  </h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Mô phỏng thực tế</span>
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Kiểm tra toàn diện bố cục và nội dung bài viết trước khi quyết định lưu trữ bản nháp hoặc công khai trên Culinary Blog.
+                </p>
+              </div>
+
+              {/* Nút thao tác nhanh chuyển đến từng bước để sửa nếu muốn */}
+              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center">
+                <span className="text-[11px] font-semibold text-gray-400 mr-1">Chỉnh sửa nhanh:</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('general')}
+                  className="px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+                >
+                  1. Thông tin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('gallery')}
+                  className="px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+                >
+                  2. Ảnh ({galleryItems.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('ingredients')}
+                  className="px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+                >
+                  3. Nguyên liệu ({validIngredients.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('steps')}
+                  className="px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+                >
+                  4. Các bước ({validSteps.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Checklist 4 tiêu chuẩn chất lượng theo SRS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div
+                className={`p-3.5 rounded-2xl border ${
+                  hasValidTitle
+                    ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
+                    : 'bg-amber-50/50 border-amber-200 text-amber-900'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold">1. Tiêu đề món ăn</span>
+                  {hasValidTitle ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                  )}
+                </div>
+                <p className="text-[11px] mt-1 text-gray-600">
+                  {hasValidTitle ? 'Đạt chuẩn (≥ 5 ký tự)' : 'Cần tối thiểu 5 ký tự'}
+                </p>
+              </div>
+
+              <div
+                className={`p-3.5 rounded-2xl border ${
+                  hasHeroImage
+                    ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
+                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold">2. Hình ảnh món</span>
+                  {hasHeroImage ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+                <p className="text-[11px] mt-1 text-gray-600">
+                  {hasHeroImage ? `${galleryItems.length} ảnh trong thư viện` : 'Chưa có ảnh món ăn'}
+                </p>
+              </div>
+
+              <div
+                className={`p-3.5 rounded-2xl border ${
+                  hasValidIngredients
+                    ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
+                    : 'bg-red-50/50 border-red-200 text-red-900'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold">3. Danh sách nguyên liệu</span>
+                  {hasValidIngredients ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <p className="text-[11px] mt-1 text-gray-600">
+                  {hasValidIngredients ? `${validIngredients.length} nguyên liệu đã nhập` : 'Bắt buộc có ≥ 1 nguyên liệu'}
+                </p>
+              </div>
+
+              <div
+                className={`p-3.5 rounded-2xl border ${
+                  hasValidSteps
+                    ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
+                    : 'bg-red-50/50 border-red-200 text-red-900'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold">4. Quy trình chế biến</span>
+                  {hasValidSteps ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <p className="text-[11px] mt-1 text-gray-600">
+                  {hasValidSteps ? `${validSteps.length} bước thực hiện` : 'Bắt buộc có ≥ 1 bước làm'}
+                </p>
+              </div>
+            </div>
+
+            {/* Thông báo tình trạng sẵn sàng xuất bản */}
+            {canPublish ? (
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div className="flex-1">
+                  <span className="font-bold">Đủ điều kiện xuất bản công khai (SRS §FR-RCP-005): </span>
+                  <span>
+                    Bạn có thể chọn <strong>"Xuất bản công khai ngay"</strong> để người dùng đọc được ngay trên trang chủ, hoặc chọn <strong>"Lưu bản nháp"</strong> để tiếp tục hoàn thiện sau.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <div className="flex-1">
+                  <span className="font-bold">Chưa đủ điều kiện xuất bản công khai: </span>
+                  <span>
+                    Theo quy định SRS §FR-RCP-005, bài viết cần có tối thiểu 1 nguyên liệu và 1 bước nấu. Bạn vẫn có thể nhấn <strong>"Lưu bản nháp"</strong> để bảo toàn toàn bộ dữ liệu.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. MÔ PHỎNG CHI TIẾT BÀI VIẾT CÔNG KHAI (HIGH-FIDELITY ARTICLE PREVIEW) */}
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Thanh tag danh mục & độ khó */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">
+                  <Tag className="h-3.5 w-3.5" />
+                  {categoryDisplayName}
+                </span>
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                    difficultyLabels[watchedDifficulty || 2]?.color || 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  Độ khó: {difficultyLabels[watchedDifficulty || 2]?.label || 'Trung bình'}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-bold text-purple-700">
+                  <Eye className="w-3.5 h-3.5" />
+                  Chế độ xem trước
+                </span>
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-gray-900">
+                {watchedTitle?.trim() || 'Tiêu đề công thức món ăn (Chưa nhập)'}
+              </h1>
+
+              <p className="text-sm sm:text-base leading-relaxed text-gray-600">
+                {watchedDescription?.trim() || 'Chưa có phần giới thiệu, tóm tắt hương vị và điểm đặc sắc của món ăn...'}
+              </p>
+
+              {/* Tác giả & Ngày đăng mô phỏng */}
+              <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                  <User className="h-4 w-4 text-orange-500" />
+                  <span>Tác giả: Bạn (Đang tạo công thức)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span>Ngày đăng: Hôm nay (Sau khi xuất bản)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Khung ảnh chính & Thumbnail Gallery */}
+            <div className="space-y-3">
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm border border-gray-100">
+                {effectiveHeroImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={resolveMediaUrl(effectiveHeroImage)}
+                    alt={watchedTitle || 'Ảnh món ăn'}
+                    className="h-full w-full object-cover object-center transition-all duration-300"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full w-full bg-gradient-to-br from-orange-50 to-amber-50 text-orange-300 gap-2">
+                    <ImageIcon className="h-14 w-14" />
+                    <span className="text-xs text-orange-400 font-medium">Chưa có ảnh đại diện món ăn</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Dải ảnh Thumbnail (nếu có nhiều ảnh) */}
+              {galleryItems.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+                  <span className="text-[11px] font-bold text-gray-400 mr-1 shrink-0">
+                    Thư viện ({galleryItems.length}):
+                  </span>
+                  {galleryItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedPreviewImage(item.previewUrl)}
+                      className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                        effectiveHeroImage === item.previewUrl
+                          ? 'border-orange-500 scale-95 shadow-sm ring-2 ring-orange-200'
+                          : 'border-transparent opacity-70 hover:opacity-100'
+                      }`}
+                      title={item.name}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveMediaUrl(item.previewUrl)}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 4 Thẻ thông số tóm tắt (Chuẩn bị, Nấu, Tổng thời gian, Khẩu phần) */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Chuẩn bị</p>
+                  <p className="text-sm font-bold text-gray-900">{watchedPrepTime || 0} phút</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Utensils className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Thời gian nấu</p>
+                  <p className="text-sm font-bold text-gray-900">{watchedCookTime || 0} phút</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Tổng thời gian</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {(Number(watchedPrepTime) || 0) + (Number(watchedCookTime) || 0)} phút
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Khẩu phần</p>
+                  <p className="text-sm font-bold text-gray-900">{watchedServings || 1} người</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Thông tin dinh dưỡng (nếu có nhập) */}
+            {Boolean(
+              (watchedCalories && watchedCalories > 0) ||
+              (watchedProtein && watchedProtein > 0) ||
+              (watchedCarbs && watchedCarbs > 0) ||
+              (watchedFat && watchedFat > 0)
+            ) && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                  <h4 className="text-sm font-bold text-gray-900">Giá trị Dinh dưỡng (mỗi khẩu phần)</h4>
+                  <span className="text-[11px] text-gray-400 font-medium">Ước tính</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl border border-red-100 bg-red-50/50 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
+                      <Flame className="w-3.5 h-3.5" />
+                      <span>Năng lượng</span>
+                    </div>
+                    <p className="text-base font-black text-red-950 mt-1">{watchedCalories || 0} kcal</p>
+                  </div>
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+                      <Dumbbell className="w-3.5 h-3.5" />
+                      <span>Chất đạm</span>
+                    </div>
+                    <p className="text-base font-black text-blue-950 mt-1">{watchedProtein || 0} g</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+                      <Wheat className="w-3.5 h-3.5" />
+                      <span>Tinh bột</span>
+                    </div>
+                    <p className="text-base font-black text-amber-950 mt-1">{watchedCarbs || 0} g</p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                      <Droplets className="w-3.5 h-3.5" />
+                      <span>Chất béo</span>
+                    </div>
+                    <p className="text-base font-black text-emerald-950 mt-1">{watchedFat || 0} g</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bố cục 2 cột: Nguyên liệu & Các bước */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Cột 1: Danh sách nguyên liệu */}
+              <div className="md:col-span-1 space-y-4 rounded-2xl border border-gray-100 bg-gray-50/40 p-5">
+                <div className="flex items-center justify-between border-b border-gray-200/70 pb-3">
+                  <div className="flex items-center gap-2 font-bold text-gray-900">
+                    <ShoppingBag className="h-4 w-4 text-orange-500" />
+                    <h4 className="text-base">Nguyên liệu</h4>
+                  </div>
+                  <span className="rounded-full bg-orange-100/70 px-2.5 py-0.5 text-[11px] font-bold text-orange-800">
+                    {validIngredients.length} món
+                  </span>
+                </div>
+
+                {validIngredients.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-4 text-center">
+                    Chưa có nguyên liệu nào.
+                  </p>
+                ) : (
+                  <ul className="space-y-2.5 text-xs">
+                    {validIngredients.map((item, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start justify-between gap-2 bg-white p-2.5 rounded-xl border border-gray-100 shadow-2xs"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
+                          <div>
+                            <span className="font-semibold text-gray-800">{item.name}</span>
+                            {item.notes && (
+                              <p className="text-[10px] text-gray-400 italic">{item.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                        {(item.quantity != null || item.unit) && (
+                          <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg shrink-0">
+                            {item.quantity ?? ''} {item.unit ?? ''}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Cột 2: Các bước thực hiện & Ghi chú */}
+              <div className="md:col-span-2 space-y-5">
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-gray-900">
+                      <ChefHat className="h-5 w-5 text-orange-500" />
+                      <h4 className="text-base">Các bước thực hiện</h4>
+                    </div>
+                    <span className="rounded-full bg-orange-100/70 px-2.5 py-0.5 text-[11px] font-bold text-orange-800">
+                      {validSteps.length} bước
+                    </span>
+                  </div>
+
+                  {validSteps.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic py-4 text-center">
+                      Chưa có bước thực hiện nào.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {validSteps.map((step, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3.5 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/30"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-2xs">
+                            {idx + 1}
+                          </span>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h5 className="text-xs font-bold text-gray-900">
+                                {step.title || `Bước ${idx + 1}`}
+                              </h5>
+                              {step.timerMinutes != null && step.timerMinutes > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                                  <Clock className="w-3 h-3 text-orange-500" />
+                                  <span>{step.timerMinutes} phút</span>
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                              {step.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bí quyết & Lưu ý của tác giả (nếu có) */}
+                {watchedInstructions?.trim() && (
+                  <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4.5 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                      <Lightbulb className="w-4 h-4 text-amber-600" />
+                      <span>Bí quyết & Lưu ý từ tác giả</span>
+                    </div>
+                    <p className="text-xs text-amber-800/90 leading-relaxed whitespace-pre-line">
+                      {watchedInstructions}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          FOOTER ĐIỀU HƯỚNG TỪNG BƯỚC VÀ NÚT SUBMIT / XUẤT BẢN / LƯU NHÁP
+          ========================================================================= */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-gray-100 mt-6">
         <div>
-          {activeTab !== 'general' ? (
+          {activeTab !== 'general' && (
             <button
               type="button"
               onClick={() => {
                 if (activeTab === 'gallery') setActiveTab('general');
                 if (activeTab === 'ingredients') setActiveTab('gallery');
                 if (activeTab === 'steps') setActiveTab('ingredients');
+                if (activeTab === 'preview') setActiveTab('steps');
               }}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50 transition active:scale-95"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại tab trước</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50 transition active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Quay về</span>
+              <span>Quay lại bước trước</span>
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          {activeTab !== 'steps' && (
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Nút Tiếp tục cho các bước 1, 2, 3, 4 */}
+          {activeTab !== 'preview' && (
             <button
               type="button"
               onClick={() => {
                 if (activeTab === 'general') setActiveTab('gallery');
                 if (activeTab === 'gallery') setActiveTab('ingredients');
                 if (activeTab === 'ingredients') setActiveTab('steps');
+                if (activeTab === 'steps') setActiveTab('preview');
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50 transition active:scale-95"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs font-bold text-gray-800 shadow-2xs hover:bg-gray-50 hover:border-gray-400 transition active:scale-95"
             >
-              <span>Tiếp theo</span>
+              <span>
+                {activeTab === 'general' && 'Tiếp tục: Chọn ảnh món ăn'}
+                {activeTab === 'gallery' && 'Tiếp tục: Thêm nguyên liệu'}
+                {activeTab === 'ingredients' && 'Tiếp tục: Thêm các bước'}
+                {activeTab === 'steps' && 'Tiếp tục: Xem trước bài viết'}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting || isUploadingPrimary}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 active:scale-95 disabled:opacity-50"
-          >
-            {isSubmitting || isUploadingPrimary ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>
-                  {isUploadingPrimary ? 'Đang tải ảnh chính...' : 'Đang lưu công thức...'}
-                </span>
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                <span>{isEdit ? 'Lưu thay đổi' : 'Tạo công thức ngay'}</span>
-              </>
-            )}
-          </button>
+          {/* Khi ở Bước 5: Hai lựa chọn quyết định Lưu nháp hoặc Xuất bản */}
+          {activeTab === 'preview' && (
+            <>
+              {/* Lựa chọn 1: Lưu bản nháp (Draft) */}
+              <button
+                type="button"
+                disabled={isSubmitting || isUploadingPrimary}
+                onClick={() => triggerSubmitWithTarget('draft')}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-xs sm:text-sm font-bold text-gray-700 shadow-xs hover:bg-gray-50 hover:text-gray-900 active:scale-95 disabled:opacity-50 transition"
+              >
+                {isSubmitting && submitTarget === 'draft' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                    <span>Đang lưu bản nháp...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <span>Lưu bản nháp</span>
+                  </>
+                )}
+              </button>
+
+              {/* Lựa chọn 2: Xuất bản công khai ngay (Publish) */}
+              <button
+                type="button"
+                disabled={!canPublish || isSubmitting || isUploadingPrimary}
+                onClick={() => triggerSubmitWithTarget('publish')}
+                title={
+                  !canPublish
+                    ? 'Cần có tối thiểu 1 nguyên liệu và 1 bước làm để xuất bản công khai (FR-RCP-005)'
+                    : 'Xuất bản bài viết công khai lên Culinary Blog ngay bây giờ'
+                }
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:from-orange-600 hover:to-amber-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {isSubmitting && submitTarget === 'publish' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Đang xuất bản...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span>Xuất bản công khai ngay</span>
+                  </>
+                )}
+              </button>
+            </>
+          )}
+
+          {/* Dành cho chế độ edit trực tiếp nếu muốn lưu nhanh mà không cần sang Bước 5 */}
+          {isEdit && activeTab !== 'preview' && (
+            <button
+              type="button"
+              disabled={isSubmitting || isUploadingPrimary}
+              onClick={() => triggerSubmitWithTarget('draft')}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 active:scale-95 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>Lưu thay đổi</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </form>
