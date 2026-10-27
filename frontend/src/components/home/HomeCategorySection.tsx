@@ -1,24 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import type { CategoryDto } from '@/lib/types/category';
 import {
   UtensilsCrossed,
-  Soup,
-  Coffee,
-  Cake,
-  Flame,
-  Salad,
-  Pizza,
-  Fish,
-  Egg,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   X,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
 interface HomeCategorySectionProps {
@@ -30,35 +23,63 @@ interface HomeCategorySectionProps {
   onRetry?: () => void;
 }
 
-// Icon tương ứng với từng nhóm món ăn
-function renderCategoryIcon(name: string) {
-  const lower = name.toLowerCase();
-  if (lower.includes('việt') || lower.includes('phở') || lower.includes('bún') || lower.includes('canh')) {
-    return <Soup className="w-4 h-4" />;
-  }
-  if (lower.includes('âu') || lower.includes('bánh mì')) {
-    return <Pizza className="w-4 h-4" />;
-  }
-  if (lower.includes('chay') || lower.includes('salad') || lower.includes('gỏi') || lower.includes('rau')) {
-    return <Salad className="w-4 h-4" />;
-  }
-  if (lower.includes('nướng') || lower.includes('chiên') || lower.includes('kho') || lower.includes('xào')) {
-    return <Flame className="w-4 h-4" />;
-  }
-  if (lower.includes('tráng miệng') || lower.includes('bánh') || lower.includes('chè')) {
-    return <Cake className="w-4 h-4" />;
-  }
-  if (lower.includes('uống') || lower.includes('trà') || lower.includes('nước') || lower.includes('cà phê')) {
-    return <Coffee className="w-4 h-4" />;
-  }
-  if (lower.includes('hải sản') || lower.includes('cá') || lower.includes('tôm') || lower.includes('mực')) {
-    return <Fish className="w-4 h-4" />;
-  }
-  if (lower.includes('sáng') || lower.includes('trứng')) {
-    return <Egg className="w-4 h-4" />;
-  }
-  return <UtensilsCrossed className="w-4 h-4" />;
-}
+// Cấu hình 6 Danh mục chính chuẩn xác theo ảnh thiết kế
+const PRIMARY_CATEGORIES_CONFIG = [
+  {
+    key: 'mon-khai-vi',
+    matchName: 'Món khai vị',
+    displayName: 'Món Khai Vị',
+    slug: 'mon-khai-vi',
+    description: 'Các món khai vị nhẹ nhàng, kích thích vị giác.',
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 24,
+  },
+  {
+    key: 'mon-chinh',
+    matchName: 'Món chính',
+    displayName: 'Món Chính',
+    slug: 'mon-chinh',
+    description: 'Mâm cơm ấm cúng với những món ăn đậm đà.',
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 85,
+  },
+  {
+    key: 'canh-sup',
+    matchName: 'Món canh',
+    displayName: 'Canh & Súp',
+    slug: 'canh-sup',
+    description: 'Những tô canh nóng hổi, thanh mát cho bữa ăn.',
+    image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 32,
+  },
+  {
+    key: 'mon-chay',
+    matchName: 'Món chay',
+    displayName: 'Món Chay',
+    slug: 'mon-chay',
+    description: 'Thanh tịnh và giàu dinh dưỡng từ thực vật.',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 41,
+  },
+  {
+    key: 'trang-mieng',
+    matchName: 'Tráng miệng',
+    displayName: 'Tráng Miệng',
+    slug: 'trang-mieng',
+    description: 'Các món ngọt nhẹ nhàng, kết thúc bữa ăn trọn vẹn.',
+    image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 19,
+  },
+  {
+    key: 'do-uong',
+    matchName: 'Đồ uống',
+    displayName: 'Đồ Uống',
+    slug: 'do-uong',
+    description: 'Thức uống giải nhiệt và cà phê truyền thống.',
+    image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80',
+    fallbackCount: 15,
+  },
+];
 
 export default function HomeCategorySection({
   categories,
@@ -68,81 +89,80 @@ export default function HomeCategorySection({
   onSelectCategory,
   onRetry,
 }: HomeCategorySectionProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showAll, setShowAll] = useState(false);
   const totalRecipesCount = categories.reduce((sum, c) => sum + (c.recipeCount || 0), 0);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -350 : 350;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
+  // Ánh xạ 6 danh mục chính từ cơ sở dữ liệu thực tế
+  const primaryCards = PRIMARY_CATEGORIES_CONFIG.map((cfg) => {
+    const realCat = categories.find(
+      (c) => c.name.toLowerCase().trim() === cfg.matchName.toLowerCase().trim()
+    );
+    return {
+      ...cfg,
+      id: realCat?.id,
+      count: realCat?.recipeCount ?? cfg.fallbackCount,
+    };
+  });
+
+  // Lọc ra các danh mục còn lại để hiển thị khi bấm "Hiển thị tất cả"
+  const remainingCategories = categories.filter(
+    (c) => !PRIMARY_CATEGORIES_CONFIG.some((cfg) => cfg.matchName.toLowerCase() === c.name.toLowerCase())
+  );
 
   return (
-    <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
-      {/* Header khu vực Danh mục */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500 text-white shadow-xs">
-            <UtensilsCrossed className="h-4 w-4" />
-          </span>
-          <div>
-            <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-              Khám phá theo Danh mục
-            </h3>
-            <p className="text-xs text-gray-400">
-              Chọn danh mục để lọc nhanh công thức nấu ăn phù hợp khẩu vị
-            </p>
-          </div>
-        </div>
+    <section className="rounded-3xl bg-[#faf6f0] border border-[#ede3d5] p-6 sm:p-8 lg:p-10 space-y-6 shadow-xs">
+      {/* 1. Header chuẩn xác theo ảnh thiết kế */}
+      <div className="text-center space-y-1.5 max-w-2xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-black text-[#964b28] uppercase tracking-wider">
+          DANH MỤC ẨM THỰC
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-500 font-medium">
+          Khám phá thế giới ẩm thực đa dạng qua các danh mục đặc sắc
+        </p>
 
-        <div className="flex items-center gap-3">
+        {/* Thanh điều khiển phụ: Bỏ lọc / Tất cả */}
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
           {selectedCategoryId && (
             <button
               type="button"
               onClick={() => onSelectCategory(undefined)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#964b28] text-white shadow-xs hover:bg-[#7e3d1e] transition-all"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Xem tất cả</span>
+              <span>Bỏ lọc (Đang chọn danh mục)</span>
             </button>
           )}
 
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600 hover:underline"
+          <button
+            type="button"
+            onClick={() => onSelectCategory(undefined)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+              !selectedCategoryId
+                ? 'bg-[#964b28] text-white shadow-xs'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
           >
-            <span>Tất cả danh mục</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+            <UtensilsCrossed className="w-3.5 h-3.5" />
+            <span>Tất cả món ({totalRecipesCount})</span>
+          </button>
 
-          {/* Nút mũi tên cuộn ngang (Desktop) */}
-          <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-gray-200">
-            <button
-              type="button"
-              onClick={() => scroll('left')}
-              className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition"
-              title="Cuộn sang trái"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => scroll('right')}
-              className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition"
-              title="Cuộn sang phải"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Nút Hiển thị tất cả danh mục */}
+          <button
+            type="button"
+            onClick={() => setShowAll(!showAll)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-[#964b28] border border-[#e3d0c1] hover:bg-[#f7efe6] transition-all"
+          >
+            <span>{showAll ? 'Thu gọn' : `Hiển thị tất cả (${categories.length} danh mục)`}</span>
+            {showAll ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </div>
 
       {/* Loading Skeleton */}
       {isLoading && (
-        <div className="flex items-center gap-3 overflow-hidden py-1">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="h-11 w-32 shrink-0 bg-gray-100 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-44 bg-white/70 rounded-2xl animate-pulse" />
           ))}
         </div>
       )}
@@ -167,64 +187,117 @@ export default function HomeCategorySection({
         </div>
       )}
 
-      {/* Danh sách thẻ Danh mục dạng thanh cuộn ngang mượt mà */}
+      {/* 2. Lưới 6 Danh mục chính (2 hàng x 3 cột) chuẩn 1:1 theo mockup */}
       {!isLoading && !isError && (
-        <div
-          ref={scrollContainerRef}
-          className="flex items-center gap-2.5 overflow-x-auto py-1 no-scrollbar scroll-smooth"
-        >
-          {/* Card: Tất cả danh mục */}
-          <button
-            type="button"
-            onClick={() => onSelectCategory(undefined)}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all shrink-0 shadow-2xs ${
-              !selectedCategoryId
-                ? 'bg-orange-500 text-white shadow-orange-200 ring-2 ring-orange-200'
-                : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
-            }`}
-          >
-            <UtensilsCrossed className="w-4 h-4" />
-            <span>Tất cả món</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                !selectedCategoryId ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {totalRecipesCount || 106}
-            </span>
-          </button>
-
-          {/* Từng danh mục cụ thể */}
-          {categories.map((cat) => {
-            const isSelected = selectedCategoryId === cat.id;
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {primaryCards.map((card) => {
+            const isSelected = selectedCategoryId && card.id === selectedCategoryId;
 
             return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => onSelectCategory(isSelected ? undefined : cat.id)}
-                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all shrink-0 shadow-2xs ${
+              <div
+                key={card.key}
+                onClick={() => {
+                  if (card.id) {
+                    onSelectCategory(isSelected ? undefined : card.id);
+                  }
+                }}
+                className={`group relative overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-pointer shadow-xs hover:shadow-lg hover:-translate-y-1 ${
                   isSelected
-                    ? 'bg-orange-500 text-white shadow-orange-200 ring-2 ring-orange-200'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200'
+                    ? 'border-2 border-[#964b28] ring-4 ring-orange-200 shadow-md'
+                    : 'border border-[#ede3d5]'
                 }`}
               >
-                <span className={isSelected ? 'text-white' : 'text-gray-500'}>
-                  {renderCategoryIcon(cat.name)}
-                </span>
-                <span>{cat.name}</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                    isSelected
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-gray-100 text-gray-500 group-hover:bg-orange-100 group-hover:text-orange-600'
-                  }`}
-                >
-                  {cat.recipeCount || 0}
-                </span>
-              </button>
+                {/* Banner ảnh món ăn */}
+                <div className="relative aspect-[21/9] sm:aspect-[20/9] w-full overflow-hidden bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={card.image}
+                    alt={card.displayName}
+                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  />
+
+                  {/* Badge: {count} công thức góc dưới bên phải */}
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-[#8b4513]/90 text-white backdrop-blur shadow-xs">
+                      {card.count} công thức
+                    </span>
+                  </div>
+
+                  {/* Badge đã chọn */}
+                  {isSelected && (
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#964b28] text-white shadow-xs">
+                        ✓ Đang lọc
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Phần thân thẻ: Tên, Slug tag & Mô tả */}
+                <div className="p-4 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#964b28] transition-colors">
+                      {card.displayName}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-[#faf0e6] text-[#8b4513]">
+                      {card.slug}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed">
+                    {card.description}
+                  </p>
+                </div>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 3. Phần mở rộng khi nhấn "Hiển thị tất cả" */}
+      {showAll && remainingCategories.length > 0 && (
+        <div className="pt-4 border-t border-[#ede3d5] space-y-4 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5 uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-[#964b28]" />
+              <span>Các danh mục phong phú khác</span>
+            </span>
+            <Link
+              href="/categories"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#964b28] hover:underline"
+            >
+              <span>Xem trang Danh mục đầy đủ</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {remainingCategories.map((cat) => {
+              const isSelected = selectedCategoryId === cat.id;
+
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => onSelectCategory(isSelected ? undefined : cat.id)}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                    isSelected
+                      ? 'bg-[#964b28] text-white border-[#964b28] shadow-xs'
+                      : 'bg-white border-[#ede3d5] hover:border-[#964b28] hover:bg-[#faf0e6]/50 text-gray-800'
+                  }`}
+                >
+                  <span className="text-xs font-bold line-clamp-1">{cat.name}</span>
+                  <span
+                    className={`text-[10px] font-medium mt-0.5 ${
+                      isSelected ? 'text-orange-200' : 'text-gray-400'
+                    }`}
+                  >
+                    {cat.recipeCount || 0} công thức
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </section>

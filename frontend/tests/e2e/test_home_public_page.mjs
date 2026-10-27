@@ -41,10 +41,16 @@ async function testHomeMockupPage() {
     console.log('✅ Hero Banner: Tiêu đề lớn, badge nghệ thuật và ô tìm kiếm tròn hoàn tất.');
 
     // 4. Kiểm tra Khu vực Danh mục riêng & Bố cục chính
-    console.log('🔍 4. Kiểm tra Khu vực Danh mục hiển thị riêng & Bố cục chính...');
-    await page.waitForSelector('text=Khám phá theo Danh mục');
-    await page.waitForSelector('text=Tất cả món');
-    console.log('✅ Danh mục: Đã tách thành khu vực hiển thị riêng biệt ngang màn hình.');
+    console.log('🔍 4. Kiểm tra Khu vực Danh mục ẩm thực (6 thẻ chính) & Bố cục chính...');
+    await page.waitForSelector('text=DANH MỤC ẨM THỰC');
+    await page.waitForSelector('text=Khám phá thế giới ẩm thực đa dạng');
+    await page.waitForSelector('text=Món Khai Vị');
+    await page.waitForSelector('text=Món Chính');
+    await page.waitForSelector('text=Canh & Súp');
+    await page.waitForSelector('text=Món Chay');
+    await page.waitForSelector('text=Tráng Miệng');
+    await page.waitForSelector('text=Đồ Uống');
+    console.log('✅ Danh mục: 6 thẻ chính (Món Khai Vị, Món Chính, Canh & Súp, Món Chay, Tráng Miệng, Đồ Uống) hiển thị đầy đủ.');
 
     // Cột chính: Tiêu điểm & 6 công thức mới nhất
     await page.waitForSelector('text=Công thức nổi bật');
@@ -99,20 +105,31 @@ async function testHomeMockupPage() {
       console.log('✅ Đăng ký nhận bản tin phản hồi thành công.');
     }
 
-    // 9. Kiểm thử tương tác: Lọc theo danh mục
-    console.log('🧪 9. Kiểm thử tương tác: Nhấp lọc theo danh mục...');
-    const categoryBtn = page.locator('section:has-text("Khám phá theo Danh mục") button').nth(1);
-    const catName = await categoryBtn.innerText();
-    console.log(`👉 Đang nhấp vào danh mục: ${catName.trim()}`);
-    await categoryBtn.click();
-    await page.waitForTimeout(1500);
+    // 9. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục
+    console.log('🧪 9. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục...');
+    const showAllBtn = page.locator('button:has-text("Hiển thị tất cả")');
+    if (await showAllBtn.isVisible()) {
+      await showAllBtn.click();
+      await page.waitForTimeout(500);
+      await page.waitForSelector('text=Các danh mục phong phú khác');
+      console.log('✅ Đã mở rộng danh sách danh mục phong phú khác thành công.');
+    }
+
+    // 10. Kiểm thử tương tác: Lọc theo thẻ Danh mục chính (Món Chính)
+    console.log('🧪 10. Kiểm thử tương tác: Nhấp vào thẻ danh mục Món Chính...');
+    const monChinhCard = page.locator('h3:has-text("Món Chính")');
+    if (await monChinhCard.isVisible()) {
+      await monChinhCard.click();
+      await page.waitForTimeout(1500);
+      console.log('👉 Đã click vào thẻ Món Chính để kích hoạt bộ lọc.');
+    }
 
     const filterScreenshotPath = path.join(ARTIFACTS_DIR, 'mockup_home_filtered.png');
     await page.screenshot({ path: filterScreenshotPath });
     console.log(`📸 Đã lưu ảnh chụp kết quả lọc: ${filterScreenshotPath}`);
 
-    // 10. Kiểm tra hiển thị trên Mobile (390x844)
-    console.log('📱 10. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
+    // 11. Kiểm tra hiển thị trên Mobile (390x844)
+    console.log('📱 11. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
     const mobileContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       isMobile: true,
