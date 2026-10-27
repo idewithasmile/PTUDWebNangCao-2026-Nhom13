@@ -12,6 +12,7 @@ import {
   Search,
   Edit2,
   Trash2,
+  Eye,
   ChefHat,
   Loader2,
   ExternalLink,
@@ -20,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
+import CategoryDetailModal from '@/components/categories/CategoryDetailModal';
 
 export default function DashboardCategoriesPage() {
   const queryClient = useQueryClient();
@@ -30,6 +32,14 @@ export default function DashboardCategoriesPage() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryDto | null>(null);
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [categoryToView, setCategoryToView] = useState<CategoryDto | null>(null);
+
+  const handleOpenView = (category: CategoryDto) => {
+    setCategoryToView(category);
+    setIsDetailModalOpen(true);
+  };
 
   // State tìm kiếm & phân trang bảng
   const [searchTerm, setSearchTerm] = useState('');
@@ -306,6 +316,14 @@ export default function DashboardCategoriesPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => handleOpenView(category)}
+                          className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition shadow-sm"
+                          title="Xem chi tiết danh mục"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenEdit(category)}
                           className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 transition shadow-sm"
                           title="Chỉnh sửa danh mục"
@@ -394,6 +412,13 @@ export default function DashboardCategoriesPage() {
         onConfirmDelete={async (id) => {
           await deleteMutation.mutateAsync(id);
         }}
+      />
+
+      {/* Modal Xem chi tiết danh mục */}
+      <CategoryDetailModal
+        isOpen={isDetailModalOpen}
+        category={categoryToView}
+        onClose={() => setIsDetailModalOpen(false)}
       />
     </div>
   );

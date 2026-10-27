@@ -82,6 +82,12 @@ Trang xem danh mục được tái thiết kế toàn diện, đáp ứng đầy
 - Huy hiệu hiển thị số lượng công thức (`{count} món`) gắn cố định góc trên bên phải.
 - Chân thẻ có mũi tên tương tác dẫn hướng đến `/categories/[slug]`.
 
+#### f. Cơ chế Thoát Modal & Điều Hướng Thân Thiện (Modal Dismissal & Navigation)
+- **Hộp thoại Xem chi tiết Danh mục ([CategoryDetailModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryDetailModal.tsx)):** Cung cấp modal xem nhanh thông tin danh mục kèm nút Xem công thức và nút "Thoát / Đóng".
+- **Cơ chế nhấn ra ngoài (Click Outside Backdrop):** Toàn bộ các hộp thoại (`CategoryFormModal`, `DeleteCategoryModal`, `CategoryDetailModal`, `SearchModal`) đều được trang bị cơ chế đóng tự động khi nhấn vào lớp nền mờ bên ngoài (`backdrop onClick={onClose}` kết hợp `e.stopPropagation()` ở modal box).
+- **Phím tắt `Escape` toàn diện:** Lắng nghe sự kiện bàn phím phím `Esc` để đóng/thoát modal lập tức.
+- **Thanh điều hướng thoát trên trang chi tiết ([app/categories/[slug]/page.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/[slug]/page.tsx)):** Bổ sung nút bấm trực quan *"Quay lại tất cả danh mục (Thoát)"* đặt ngay đầu trang cạnh Breadcrumbs và nút *"Thoát về danh sách danh mục"* trong Hero banner.
+
 ---
 
 ## III. KẾT QUẢ KIỂM THỬ VÀ NGHIỆM THU (VERIFICATION & TESTING)

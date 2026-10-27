@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CategoryDto, ProblemDetails } from '@/lib/types/category';
 import { AlertTriangle, AlertCircle, Trash2, X, Loader2, ShieldAlert } from 'lucide-react';
 
@@ -22,6 +22,18 @@ export default function DeleteCategoryModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isHasRecipesConflict, setIsHasRecipesConflict] = useState(false);
+
+  // Phím tắt Escape để thoát modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !category) return null;
 
@@ -54,8 +66,16 @@ export default function DeleteCategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden border border-gray-100 animate-scale-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden border border-gray-100 animate-scale-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-rose-50/40">
           <div className="flex items-center gap-2.5">
@@ -71,6 +91,8 @@ export default function DeleteCategoryModal({
             type="button"
             onClick={onClose}
             className="rounded-xl p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            title="Thoát (Esc)"
+            aria-label="Thoát"
           >
             <X className="w-5 h-5" />
           </button>
