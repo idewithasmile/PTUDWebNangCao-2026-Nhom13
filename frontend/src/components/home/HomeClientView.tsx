@@ -7,7 +7,6 @@ import { useRecipes } from '@/features/recipes/hooks';
 import HomeHeroBanner from './HomeHeroBanner';
 import HomeCategorySection from './HomeCategorySection';
 import HomeLatestRecipes from './HomeLatestRecipes';
-import HomeRightSidebar from './HomeRightSidebar';
 import HomeWhyChooseUs from './HomeWhyChooseUs';
 
 export default function HomeClientView() {
@@ -64,10 +63,7 @@ export default function HomeClientView() {
         totalCount={totalCount}
       />
 
-      {/* 4. KHU VỰC CỘNG ĐỒNG & KHÁM PHÁ: XEM NHIỀU NHẤT + NGUYÊN LIỆU + BẢN TIN + MXH */}
-      <HomeRightSidebar topRecipes={recipes} />
-
-      {/* 5. KHU VỰC ĐẶC BIỆT: VÌ SAO NÊN CHỌN CULINARY BLOG? */}
+      {/* 4. KHU VỰC GIỚI THIỆU: VÌ SAO NÊN CHỌN CULINARY BLOG? */}
       <HomeWhyChooseUs />
     </div>
   );
