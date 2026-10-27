@@ -16,6 +16,7 @@ import StudioGeneralTab from '../studio/tabs/StudioGeneralTab';
 import StudioGalleryTab from '../studio/tabs/StudioGalleryTab';
 import StudioIngredientsTab from '../studio/tabs/StudioIngredientsTab';
 import StudioStepsTab from '../studio/tabs/StudioStepsTab';
+import StudioPreviewTab from '../studio/tabs/StudioPreviewTab';
 import Toast, { ToastMessage } from '@/components/common/Toast';
 import { Tabs, type TabItem } from '@/components/ui/tabs';
 import {
@@ -26,6 +27,7 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 
 interface DashboardRecipeEditViewProps {
@@ -33,7 +35,7 @@ interface DashboardRecipeEditViewProps {
   onSelectTab: (tab: DashboardTab) => void;
 }
 
-type StudioActiveTab = 'general' | 'gallery' | 'ingredients' | 'steps';
+type StudioActiveTab = 'general' | 'gallery' | 'ingredients' | 'steps' | 'preview';
 
 export default function DashboardRecipeEditView({
   slug,
@@ -184,6 +186,16 @@ export default function DashboardRecipeEditView({
         </span>
       ),
     },
+    {
+      id: 'preview',
+      label: 'Xem trước & Tổng quan',
+      icon: <Eye className="w-4 h-4" />,
+      badge: (
+        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+          Live
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -235,7 +247,25 @@ export default function DashboardRecipeEditView({
       )}
 
       {activeTab === 'steps' && (
-        <StudioStepsTab recipe={recipe} onRefresh={refetch} />
+        <StudioStepsTab
+          recipe={recipe}
+          onRefresh={refetch}
+          onSwitchTab={(tab) => handleTabChange(tab)}
+        />
+      )}
+
+      {activeTab === 'preview' && (
+        <StudioPreviewTab
+          recipe={recipe}
+          onRefresh={refetch}
+          onSwitchTab={(tab) => handleTabChange(tab)}
+          onPublish={handlePublish}
+          onUnpublish={handleUnpublish}
+          onArchive={handleArchive}
+          isPublishing={publishMutation.isPending}
+          isUnpublishing={unpublishMutation.isPending}
+          isArchiving={archiveMutation.isPending}
+        />
       )}
     </div>
   );

@@ -22,14 +22,17 @@ import {
   Loader2,
   AlertCircle,
   Upload,
+  Eye,
+  ArrowRight,
 } from 'lucide-react';
 
 interface StudioStepsTabProps {
   recipe: RecipeDetailDto;
   onRefresh: () => void;
+  onSwitchTab?: (tab: 'general' | 'gallery' | 'ingredients' | 'steps' | 'preview') => void;
 }
 
-export default function StudioStepsTab({ recipe, onRefresh }: StudioStepsTabProps) {
+export default function StudioStepsTab({ recipe, onRefresh, onSwitchTab }: StudioStepsTabProps) {
   const steps = recipe.steps ?? [];
 
   // Form Thêm Bước Mới
@@ -543,6 +546,34 @@ export default function StudioStepsTab({ recipe, onRefresh }: StudioStepsTabProp
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Chuyển hướng nhanh sang Tab 5: Xem trước & Tổng quan */}
+        {onSwitchTab && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-purple-50/70 to-blue-50/70 border border-purple-100 shadow-2xs mt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                <Eye className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-gray-900">
+                  Xem trước bài viết hoàn chỉnh & Quyết định xuất bản
+                </h4>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Kiểm tra toàn cảnh bài viết, ảnh, nguyên liệu và các bước thực tế trước khi xuất bản.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onSwitchTab('preview')}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs transition active:scale-95 shrink-0"
+            >
+              <span>Xem trước tổng quan</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
