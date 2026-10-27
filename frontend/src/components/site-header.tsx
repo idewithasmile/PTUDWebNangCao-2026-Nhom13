@@ -86,23 +86,6 @@ export default function SiteHeader() {
           </nav>
         </div>
 
-        {/* Search Quick Trigger Button (Desktop & Tablet) */}
-        <div className="hidden md:flex items-center">
-          <button
-            type="button"
-            onClick={() => setSearchModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-1.5 text-xs text-gray-500 hover:border-orange-300 hover:bg-orange-50/40 transition-all shadow-sm group"
-            title="Tìm kiếm công thức (Ctrl + K)"
-          >
-            <Search className="h-3.5 w-3.5 text-gray-400 group-hover:text-orange-500 transition-colors" />
-            <span className="hidden lg:inline text-gray-600">Tìm kiếm món ăn, nguyên liệu...</span>
-            <span className="lg:hidden text-gray-600">Tìm kiếm...</span>
-            <kbd className="rounded border border-gray-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-gray-400 shadow-2xs">
-              Ctrl K
-            </kbd>
-          </button>
-        </div>
-
         {/* Right Action / Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
           {/* Lối tắt Admin / Dashboard */}
