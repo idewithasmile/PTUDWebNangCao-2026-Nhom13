@@ -40,25 +40,25 @@ async function testHomeMockupPage() {
     await page.waitForSelector('text=Mỗi ngày ♡');
     console.log('✅ Hero Banner: Tiêu đề lớn, badge nghệ thuật và ô tìm kiếm tròn hoàn tất.');
 
-    // 4. Kiểm tra 3 Cột giao diện chính
-    console.log('🔍 4. Kiểm tra Bố cục 3 Cột (Left - Center - Right)...');
-    // Cột 1: Danh mục
-    await page.waitForSelector('text=Tất cả danh mục');
-    await page.waitForSelector('text=Nguyên liệu tươi ngon');
-    console.log('✅ Cột 1 (Trái): Danh mục kèm số lượng món và banner nguyên liệu tươi ngon.');
+    // 4. Kiểm tra Khu vực Danh mục riêng & Bố cục chính
+    console.log('🔍 4. Kiểm tra Khu vực Danh mục hiển thị riêng & Bố cục chính...');
+    await page.waitForSelector('text=Khám phá theo Danh mục');
+    await page.waitForSelector('text=Tất cả món');
+    console.log('✅ Danh mục: Đã tách thành khu vực hiển thị riêng biệt ngang màn hình.');
 
-    // Cột 2: Tiêu điểm & 6 công thức mới nhất
+    // Cột chính: Tiêu điểm & 6 công thức mới nhất
     await page.waitForSelector('text=Công thức nổi bật');
     await page.waitForSelector('text=Công thức mới nhất');
     const recipeCards = await page.locator('a[href^="/recipes/"]').count();
-    console.log(`✅ Cột 2 (Giữa): Tiêu điểm món ngon và ${recipeCards} thẻ công thức.`);
+    console.log(`✅ Cột chính (Trái): Tiêu điểm món ngon và ${recipeCards} thẻ công thức thông thoáng.`);
 
-    // Cột 3: Xem nhiều nhất, Nhận tin, MXH, Trích dẫn
+    // Cột phụ: Xem nhiều nhất, Promo, Nhận tin, MXH, Trích dẫn
     await page.waitForSelector('text=Công thức được xem nhiều');
+    await page.waitForSelector('text=Nguyên liệu tươi ngon');
     await page.waitForSelector('text=Đăng ký nhận công thức mới');
     await page.waitForSelector('text=Theo dõi chúng tôi');
     await page.waitForSelector('text=Nấu ăn không chỉ là kỹ năng');
-    console.log('✅ Cột 3 (Phải): Top 5 xem nhiều, đăng ký email, MXH và trích dẫn ấm áp.');
+    console.log('✅ Cột phụ (Phải): Top 5 xem nhiều, banner nguyên liệu, đăng ký email, MXH và trích dẫn.');
 
     // 5. Kiểm tra Banner "Vì sao nên chọn Culinary Blog?"
     console.log('🔍 5. Kiểm tra Banner Vì sao nên chọn Culinary Blog?...');
@@ -101,7 +101,7 @@ async function testHomeMockupPage() {
 
     // 9. Kiểm thử tương tác: Lọc theo danh mục
     console.log('🧪 9. Kiểm thử tương tác: Nhấp lọc theo danh mục...');
-    const categoryBtn = page.locator('aside button:visible').nth(1);
+    const categoryBtn = page.locator('section:has-text("Khám phá theo Danh mục") button').nth(1);
     const catName = await categoryBtn.innerText();
     console.log(`👉 Đang nhấp vào danh mục: ${catName.trim()}`);
     await categoryBtn.click();

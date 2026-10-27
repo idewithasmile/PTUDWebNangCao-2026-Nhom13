@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { RecipeSummaryDto } from '@/lib/types/category';
 import { resolveMediaUrl } from '@/lib/utils';
-import { Flame, Mail, ChefHat, CheckCircle2 } from 'lucide-react';
+import { Flame, Mail, ChefHat, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface HomeRightSidebarProps {
   topRecipes: RecipeSummaryDto[];
@@ -131,7 +131,37 @@ export default function HomeRightSidebar({ topRecipes }: HomeRightSidebarProps) 
       </div>
 
       {/* =========================================================
-          2. ĐĂNG KÝ NHẬN CÔNG THỨC MỚI (NEWSLETTER)
+          2. BANNER QUẢNG CÁO NGUYÊN LIỆU TƯƠI NGON
+          ========================================================= */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 p-4 shadow-sm group">
+        <div className="space-y-1.5 relative z-10 max-w-[160px]">
+          <h4 className="text-sm font-black text-gray-900 leading-snug">
+            Nguyên liệu tươi ngon
+          </h4>
+          <p className="text-[11px] text-gray-500 leading-tight">
+            Cho món ăn thêm trọn vị
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/recipes"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold shadow-xs transition-transform active:scale-95"
+            >
+              <span>Khám phá ngay</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=300&q=80"
+          alt="Nguyên liệu tươi ngon"
+          className="absolute -right-4 -bottom-4 w-28 h-28 object-cover rounded-full shadow-inner opacity-90 group-hover:scale-105 transition-transform"
+        />
+      </div>
+
+      {/* =========================================================
+          3. ĐĂNG KÝ NHẬN CÔNG THỨC MỚI (NEWSLETTER)
           ========================================================= */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
         <div className="flex items-center gap-2">

@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { categoryService } from '@/lib/services/category-service';
 import { useRecipes } from '@/features/recipes/hooks';
 import HomeHeroBanner from './HomeHeroBanner';
+import HomeCategorySection from './HomeCategorySection';
 import HomeFeaturedSpotlight from './HomeFeaturedSpotlight';
-import HomeCategorySidebar from './HomeCategorySidebar';
 import HomeLatestRecipes from './HomeLatestRecipes';
 import HomeRightSidebar from './HomeRightSidebar';
 import HomeWhyChooseUs from './HomeWhyChooseUs';
@@ -37,7 +37,7 @@ export default function HomeClientView() {
       sortBy: 'newest' as const,
       status: 'Published' as const,
       page,
-      pageSize: 6, // 6 công thức theo lưới 2 dòng x 3 cột chuẩn mockup
+      pageSize: 6, // 6 công thức theo lưới chuẩn
     }),
     [searchTerm, selectedCategoryId, page]
   );
@@ -88,26 +88,26 @@ export default function HomeClientView() {
 
   return (
     <div className="space-y-8 sm:space-y-10 py-2 pb-16">
-      {/* 1. KHU VỰC HERO BANNER KÈM BÁT PHỞ VÀ Ô TÌM KIẾM TRÒN SANG TRỌNG */}
+      {/* 1. KHU VỰC HERO BANNER KÈM BÁT PHỞ VÀ Ô TÌM KIẾM SANG TRỌNG */}
       <HomeHeroBanner
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onSearchSubmit={handleSearchSubmit}
       />
 
-      {/* 2. BỐ CỤC 3 CỘT CHUẨN DESIGN MOCKUP */}
-      <div className="flex flex-col lg:flex-row items-start gap-6">
-        {/* CỘT 1 (TRÁI): Danh mục món ăn + Promo Nguyên liệu tươi ngon */}
-        <HomeCategorySidebar
-          categories={categories}
-          isLoading={isCategoriesLoading}
-          isError={isCategoriesError}
-          selectedCategoryId={selectedCategoryId}
-          onSelectCategory={handleSelectCategory}
-          onRetry={refetchCategories}
-        />
+      {/* 2. KHU VỰC DANH MỤC TÁCH RIÊNG THÀNH 1 HÀNG HIỂN THỊ RỘNG RÃI */}
+      <HomeCategorySection
+        categories={categories}
+        isLoading={isCategoriesLoading}
+        isError={isCategoriesError}
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={handleSelectCategory}
+        onRetry={refetchCategories}
+      />
 
-        {/* CỘT 2 (GIỮA): Tiêu điểm món nổi bật + Lưới 6 công thức mới nhất */}
+      {/* 3. BỐ CỤC CHÍNH THÔNG THOÁNG: NỘI DUNG CÔNG THỨC (TRÁI) & SIDEBAR PHỤ (PHẢI) */}
+      <div className="flex flex-col lg:flex-row items-start gap-8">
+        {/* CỘT CHÍNH (TRÁI): Tiêu điểm món nổi bật + Lưới 6 công thức mới nhất */}
         <div className="flex-1 min-w-0 w-full space-y-6">
           {/* Spotlight Banner: Món ngon tiêu biểu */}
           {currentFeaturedRecipe && !searchTerm && !selectedCategoryId && (
@@ -130,17 +130,17 @@ export default function HomeClientView() {
             searchTerm={searchTerm}
             onPageChange={(newPage) => {
               setPage(newPage);
-              window.scrollTo({ top: 400, behavior: 'smooth' });
+              window.scrollTo({ top: 500, behavior: 'smooth' });
             }}
             onClearFilters={handleClearFilters}
           />
         </div>
 
-        {/* CỘT 3 (PHẢI): Xem nhiều nhất + Nhận bản tin + MXH + Trích dẫn ẩm thực */}
+        {/* CỘT PHỤ (PHẢI): Top 5 xem nhiều + Promo Nguyên liệu tươi ngon + Nhận bản tin + MXH + Trích dẫn */}
         <HomeRightSidebar topRecipes={recipes} />
       </div>
 
-      {/* 3. KHU VỰC ĐẶC BIỆT: VÌ SAO NÊN CHỌN CULINARY BLOG? */}
+      {/* 4. KHU VỰC ĐẶC BIỆT: VÌ SAO NÊN CHỌN CULINARY BLOG? */}
       <HomeWhyChooseUs />
     </div>
   );
