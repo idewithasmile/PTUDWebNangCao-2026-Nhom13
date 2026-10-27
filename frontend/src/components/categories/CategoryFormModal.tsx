@@ -23,8 +23,13 @@ const categorySchema = z.object({
     .or(z.literal('')),
   imageUrl: z
     .string()
-    .url('Đường dẫn ảnh phải là một URL hợp lệ (ví dụ https://...).')
     .max(500, 'Đường dẫn ảnh tối đa 500 ký tự.')
+    .refine(
+      (val) => !val || val.startsWith('/') || /^https?:\/\//i.test(val),
+      {
+        message: 'Đường dẫn ảnh phải là một URL hợp lệ (ví dụ https://...) hoặc đường dẫn ảnh (/...).',
+      }
+    )
     .optional()
     .or(z.literal('')),
   orderIndex: z.coerce

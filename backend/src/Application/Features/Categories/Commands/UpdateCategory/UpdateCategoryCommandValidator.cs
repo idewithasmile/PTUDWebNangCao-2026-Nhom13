@@ -25,7 +25,9 @@ public partial class UpdateCategoryCommandValidator : AbstractValidator<UpdateCa
 
         RuleFor(x => x.ImageUrl)
             .MaximumLength(500).WithMessage("Đường dẫn ảnh tối đa 500 ký tự.")
-            .Must(url => string.IsNullOrEmpty(url) || Uri.TryCreate(url, UriKind.Absolute, out _))
+            .Must(url => string.IsNullOrEmpty(url) ||
+                         (Uri.TryCreate(url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)) ||
+                         (url.StartsWith('/') && Uri.TryCreate(url, UriKind.Relative, out _)))
             .WithMessage("Đường dẫn ảnh không đúng định dạng URL hợp lệ.")
             .When(x => !string.IsNullOrEmpty(x.ImageUrl));
 
