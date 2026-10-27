@@ -8,7 +8,6 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
-  X,
   AlertCircle,
   RefreshCw,
   Sparkles,
@@ -19,7 +18,7 @@ interface HomeCategorySectionProps {
   isLoading: boolean;
   isError: boolean;
   selectedCategoryId?: string;
-  onSelectCategory: (categoryId?: string) => void;
+  onSelectCategory?: (categoryId?: string) => void;
   onRetry?: () => void;
 }
 
@@ -85,21 +84,27 @@ export default function HomeCategorySection({
   categories,
   isLoading,
   isError,
-  selectedCategoryId,
-  onSelectCategory,
   onRetry,
 }: HomeCategorySectionProps) {
   const [showAll, setShowAll] = useState(false);
   const totalRecipesCount = categories.reduce((sum, c) => sum + (c.recipeCount || 0), 0);
 
-  // Ánh xạ 6 danh mục chính từ cơ sở dữ liệu thực tế
+  // Ánh xạ 6 danh mục chính từ cơ sở dữ liệu thực tế kèm đường dẫn điều hướng trực tiếp
   const primaryCards = PRIMARY_CATEGORIES_CONFIG.map((cfg) => {
     const realCat = categories.find(
       (c) => c.name.toLowerCase().trim() === cfg.matchName.toLowerCase().trim()
     );
+    const destinationHref = realCat?.slug
+      ? `/categories/${encodeURIComponent(realCat.slug)}`
+      : realCat?.id
+        ? `/recipes?categoryId=${encodeURIComponent(realCat.id)}`
+        : '/categories';
+
     return {
       ...cfg,
       id: realCat?.id,
+      realSlug: realCat?.slug,
+      href: destinationHref,
       count: realCat?.recipeCount ?? cfg.fallbackCount,
     };
   });
@@ -120,39 +125,24 @@ export default function HomeCategorySection({
           Khám phá thế giới ẩm thực đa dạng qua các danh mục đặc sắc
         </p>
 
-        {/* Thanh điều khiển phụ: Bỏ lọc / Tất cả */}
+        {/* Thanh điều hướng: Khám phá tất cả món / Mở rộng danh mục */}
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-          {selectedCategoryId && (
-            <button
-              type="button"
-              onClick={() => onSelectCategory(undefined)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#964b28] text-white shadow-xs hover:bg-[#7e3d1e] transition-all"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Bỏ lọc (Đang chọn danh mục)</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => onSelectCategory(undefined)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-              !selectedCategoryId
-                ? 'bg-[#964b28] text-white shadow-xs'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-            }`}
+          {/* Nút Khám phá tất cả món ăn -> Chuyển thẳng sang trang /recipes */}
+          <Link
+            href="/recipes"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#964b28] text-white shadow-xs hover:bg-[#7e3d1e] transition-all"
           >
             <UtensilsCrossed className="w-3.5 h-3.5" />
             <span>Tất cả món ({totalRecipesCount})</span>
-          </button>
+          </Link>
 
-          {/* Nút Hiển thị tất cả danh mục */}
+          {/* Nút Hiển thị tất cả / Thu gọn danh mục */}
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-[#964b28] border border-[#e3d0c1] hover:bg-[#f7efe6] transition-all"
           >
-            <span>{showAll ? 'Thu gọn' : `Hiển thị tất cả (${categories.length} danh mục)`}</span>
+            <span>{showAll ? 'Thu gọn danh mục' : `Hiển thị tất cả (${categories.length} danh mục)`}</span>
             {showAll ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -187,70 +177,49 @@ export default function HomeCategorySection({
         </div>
       )}
 
-      {/* 2. Lưới 6 Danh mục chính (2 hàng x 3 cột) chuẩn 1:1 theo mockup */}
+      {/* 2. Lưới 6 Danh mục chính (2 hàng x 3 cột) - MỖI CARD LÀ LINK ĐIỀU HƯỚNG */}
       {!isLoading && !isError && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {primaryCards.map((card) => {
-            const isSelected = selectedCategoryId && card.id === selectedCategoryId;
+          {primaryCards.map((card) => (
+            <Link
+              key={card.key}
+              href={card.href}
+              className="group relative overflow-hidden rounded-2xl bg-white border border-[#ede3d5] transition-all duration-300 shadow-xs hover:shadow-lg hover:-translate-y-1 block"
+            >
+              {/* Banner ảnh món ăn */}
+              <div className="relative aspect-[21/9] sm:aspect-[20/9] w-full overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={card.image}
+                  alt={card.displayName}
+                  className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                />
 
-            return (
-              <div
-                key={card.key}
-                onClick={() => {
-                  if (card.id) {
-                    onSelectCategory(isSelected ? undefined : card.id);
-                  }
-                }}
-                className={`group relative overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-pointer shadow-xs hover:shadow-lg hover:-translate-y-1 ${
-                  isSelected
-                    ? 'border-2 border-[#964b28] ring-4 ring-orange-200 shadow-md'
-                    : 'border border-[#ede3d5]'
-                }`}
-              >
-                {/* Banner ảnh món ăn */}
-                <div className="relative aspect-[21/9] sm:aspect-[20/9] w-full overflow-hidden bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={card.image}
-                    alt={card.displayName}
-                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  />
-
-                  {/* Badge: {count} công thức góc dưới bên phải */}
-                  <div className="absolute bottom-2.5 right-2.5">
-                    <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-[#8b4513]/90 text-white backdrop-blur shadow-xs">
-                      {card.count} công thức
-                    </span>
-                  </div>
-
-                  {/* Badge đã chọn */}
-                  {isSelected && (
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#964b28] text-white shadow-xs">
-                        ✓ Đang lọc
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Phần thân thẻ: Tên, Slug tag & Mô tả */}
-                <div className="p-4 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#964b28] transition-colors">
-                      {card.displayName}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-[#faf0e6] text-[#8b4513]">
-                      {card.slug}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed">
-                    {card.description}
-                  </p>
+                {/* Badge: {count} công thức góc dưới bên phải */}
+                <div className="absolute bottom-2.5 right-2.5">
+                  <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-[#8b4513]/90 text-white backdrop-blur shadow-xs">
+                    {card.count} công thức
+                  </span>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Phần thân thẻ: Tên, Slug tag & Mô tả */}
+              <div className="p-4 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#964b28] transition-colors">
+                    {card.displayName}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-[#faf0e6] text-[#8b4513]">
+                    {card.slug}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed">
+                  {card.description}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
 
@@ -272,31 +241,20 @@ export default function HomeCategorySection({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {remainingCategories.map((cat) => {
-              const isSelected = selectedCategoryId === cat.id;
-
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => onSelectCategory(isSelected ? undefined : cat.id)}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                    isSelected
-                      ? 'bg-[#964b28] text-white border-[#964b28] shadow-xs'
-                      : 'bg-white border-[#ede3d5] hover:border-[#964b28] hover:bg-[#faf0e6]/50 text-gray-800'
-                  }`}
-                >
-                  <span className="text-xs font-bold line-clamp-1">{cat.name}</span>
-                  <span
-                    className={`text-[10px] font-medium mt-0.5 ${
-                      isSelected ? 'text-orange-200' : 'text-gray-400'
-                    }`}
-                  >
-                    {cat.recipeCount || 0} công thức
-                  </span>
-                </button>
-              );
-            })}
+            {remainingCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/categories/${encodeURIComponent(cat.slug)}`}
+                className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#ede3d5] bg-white hover:border-[#964b28] hover:bg-[#faf0e6]/50 text-gray-800 text-center transition-all shadow-2xs hover:shadow-xs group"
+              >
+                <span className="text-xs font-bold line-clamp-1 group-hover:text-[#964b28] transition-colors">
+                  {cat.name}
+                </span>
+                <span className="text-[10px] font-medium mt-0.5 text-gray-400">
+                  {cat.recipeCount || 0} công thức
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       )}

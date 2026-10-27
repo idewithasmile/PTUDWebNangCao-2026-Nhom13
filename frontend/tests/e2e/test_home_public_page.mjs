@@ -20,7 +20,7 @@ async function testHomeMockupPage() {
   try {
     // 1. Tải trang chủ http://localhost:3000/
     console.log('🌐 1. Truy cập trang chủ http://localhost:3000/...');
-    const response = await page.goto('http://localhost:3000/', { waitUntil: 'networkidle', timeout: 30000 });
+    const response = await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     console.log(`📡 HTTP Response: ${response.status()}`);
 
     await page.waitForSelector('text=Culinary', { timeout: 15000 });
@@ -115,28 +115,50 @@ async function testHomeMockupPage() {
       console.log('✅ Đã mở rộng danh sách danh mục phong phú khác thành công.');
     }
 
-    // 10. Kiểm thử tương tác: Lọc theo thẻ Danh mục chính (Món Chính)
-    console.log('🧪 10. Kiểm thử tương tác: Nhấp vào thẻ danh mục Món Chính...');
-    const monChinhCard = page.locator('h3:has-text("Món Chính")');
-    if (await monChinhCard.isVisible()) {
-      await monChinhCard.click();
-      await page.waitForTimeout(1500);
-      console.log('👉 Đã click vào thẻ Món Chính để kích hoạt bộ lọc.');
-    }
+    // 10. Kiểm thử điều hướng: Nhấp vào thẻ Danh mục chính (Món Khai Vị) để chuyển sang trang chi tiết danh mục
+    console.log('🧪 10. Kiểm thử điều hướng: Nhấp vào thẻ danh mục Món Khai Vị...');
+    const khaiViLink = page.locator('a:has(h3:has-text("Món Khai Vị"))');
+    await khaiViLink.waitFor({ state: 'visible', timeout: 5000 });
+    const targetHref = await khaiViLink.getAttribute('href');
+    console.log(`👉 Thẻ Món Khai Vị liên kết tới URL: ${targetHref}`);
+    
+    // Nhấp điều hướng
+    await khaiViLink.click();
+    await page.waitForURL(/categories/, { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    console.log(`✅ Đã điều hướng thành công sang trang danh mục: ${page.url()}`);
 
-    const filterScreenshotPath = path.join(ARTIFACTS_DIR, 'mockup_home_filtered.png');
-    await page.screenshot({ path: filterScreenshotPath });
-    console.log(`📸 Đã lưu ảnh chụp kết quả lọc: ${filterScreenshotPath}`);
+    const categoryNavPath = path.join(ARTIFACTS_DIR, 'mockup_category_navigated.png');
+    await page.screenshot({ path: categoryNavPath });
+    console.log(`📸 Đã lưu ảnh chụp trang danh mục được điều hướng: ${categoryNavPath}`);
 
-    // 11. Kiểm tra hiển thị trên Mobile (390x844)
-    console.log('📱 11. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
+    // Quay lại trang chủ để test tìm kiếm
+    await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(1500);
+
+    // 11. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner chuyển sang trang /recipes
+    console.log('🧪 11. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner...');
+    const heroSection = page.locator('section:has-text("Hàng ngàn công thức nấu ăn")');
+    const heroInput = heroSection.locator('input');
+    await heroInput.fill('Phở bò');
+    await heroSection.locator('button:has-text("Tìm kiếm")').click();
+    await page.waitForURL(/recipes\?searchTerm=/, { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    console.log(`✅ Đã điều hướng tìm kiếm thành công sang trang: ${page.url()}`);
+
+    const searchNavPath = path.join(ARTIFACTS_DIR, 'mockup_search_navigated.png');
+    await page.screenshot({ path: searchNavPath });
+    console.log(`📸 Đã lưu ảnh chụp trang kết quả tìm kiếm: ${searchNavPath}`);
+
+    // 12. Kiểm tra hiển thị trên Mobile (390x844)
+    console.log('📱 12. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
     const mobileContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       isMobile: true,
       hasTouch: true,
     });
     const mobilePage = await mobileContext.newPage();
-    await mobilePage.goto('http://localhost:3000/', { waitUntil: 'networkidle', timeout: 30000 });
+    await mobilePage.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await mobilePage.waitForTimeout(2000);
 
     const mobileScreenshotPath = path.join(ARTIFACTS_DIR, 'mockup_home_mobile.png');

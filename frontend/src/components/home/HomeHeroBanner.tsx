@@ -1,33 +1,42 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 
 interface HomeHeroBannerProps {
-  searchTerm: string;
-  onSearchChange: (term: string) => void;
-  onSearchSubmit: (term: string) => void;
+  searchTerm?: string;
+  onSearchChange?: (term: string) => void;
+  onSearchSubmit?: (term: string) => void;
 }
 
 const POPULAR_KEYWORDS = ['Phở bò', 'Bánh mì', 'Gà rán', 'Salad', 'Món chay'];
 
 export default function HomeHeroBanner({
-  searchTerm,
+  searchTerm = '',
   onSearchChange,
   onSearchSubmit,
 }: HomeHeroBannerProps) {
+  const router = useRouter();
   const [localInput, setLocalInput] = useState(searchTerm);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearchChange(localInput);
-    onSearchSubmit(localInput);
+    const query = localInput.trim();
+    if (query) {
+      router.push(`/recipes?searchTerm=${encodeURIComponent(query)}`);
+    } else {
+      router.push('/recipes');
+    }
+    onSearchChange?.(localInput);
+    onSearchSubmit?.(localInput);
   };
 
   const handleKeywordClick = (keyword: string) => {
     setLocalInput(keyword);
-    onSearchChange(keyword);
-    onSearchSubmit(keyword);
+    router.push(`/recipes?searchTerm=${encodeURIComponent(keyword)}`);
+    onSearchChange?.(keyword);
+    onSearchSubmit?.(keyword);
   };
 
   return (
@@ -95,8 +104,8 @@ export default function HomeHeroBanner({
                 type="button"
                 onClick={() => {
                   setLocalInput('');
-                  onSearchChange('');
-                  onSearchSubmit('');
+                  onSearchChange?.('');
+                  onSearchSubmit?.('');
                 }}
                 className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1"
               >

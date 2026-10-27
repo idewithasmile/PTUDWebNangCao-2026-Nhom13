@@ -27,7 +27,7 @@ interface HomeLatestRecipesProps {
   selectedCategoryName?: string;
   searchTerm?: string;
   onPageChange: (newPage: number) => void;
-  onClearFilters: () => void;
+  onClearFilters?: () => void;
 }
 
 const difficultyLabels: Record<number, string> = {
@@ -123,13 +123,12 @@ export default function HomeLatestRecipes({
       {!isLoading && !isError && recipes.length === 0 && (
         <div className="p-10 bg-white rounded-2xl border border-gray-100 text-center space-y-3">
           <p className="text-sm font-semibold text-gray-700">Chưa tìm thấy công thức phù hợp.</p>
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-xs"
+          <Link
+            href="/recipes"
+            className="inline-block px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-orange-600 transition"
           >
             Xem tất cả công thức
-          </button>
+          </Link>
         </div>
       )}
 
