@@ -1,4 +1,4 @@
-import { setAccessToken } from '@/features/auth/token-store';
+import { getAccessToken, setAccessToken } from '@/features/auth/token-store';
 import type { ProblemDetails } from './types/category';
 
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
@@ -26,6 +26,9 @@ export const SESSION_REVOKED_QUERY = 'reason=revoked';
 
 /** Event để các component (Header...) dọn cache React Query khi bị revoke. */
 export const SESSION_REVOKED_EVENT = 'auth:session-revoked';
+
+/** Event để các component cập nhật cache khi silent refresh thành công. */
+export const SESSION_REFRESHED_EVENT = 'auth:session-refreshed';
 
 const REVOKED_FLAG_KEY = 'auth:session-revoked-at';
 
@@ -71,6 +74,49 @@ function handleSessionRevoked(method: string, url: string): void {
   }
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Tự động làm mới Access Token bằng HttpOnly Cookie (FR-AUTH-004)
+ * Singleton Promise ngăn ngừa gọi trùng lặp refresh khi nhiều request bị 401 cùng lúc.
+ */
+export async function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 401 && (errorData as { type?: string }).type === SESSION_REVOKED_TYPE) {
+          handleSessionRevoked('POST', `${BASE_URL}/auth/refresh`);
+        }
+        return null;
+      }
+
+      const data = await res.json();
+      if (data?.accessToken) {
+        setAccessToken(data.accessToken);
+        window.dispatchEvent(new CustomEvent(SESSION_REFRESHED_EVENT, { detail: data }));
+        return data.accessToken as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // ---------------------------------------------------------------------------
 // FR-CAT — ApiError tương thích RFC 7807 cho module Category.
 // Giữ đồng thời contract Auth (throw object có `type/status/detail/errors` để
@@ -99,24 +145,38 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiClient<T>(
+  endpoint: string,
+  options: RequestInit & { _isRetry?: boolean; suppressLogError?: boolean } = {}
+): Promise<T> {
   const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
   const method = (options.method ?? 'GET').toUpperCase();
 
   let res: Response;
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const requestHeaders = new Headers(options.headers);
+
   try {
-    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-    const requestHeaders = new Headers(options.headers);
     if (!isFormData && !requestHeaders.has('Content-Type')) {
       requestHeaders.set('Content-Type', 'application/json');
     }
 
-    // Thiết lập timeout 2.5 giây khi gọi fetch để tránh treo build SSG khi Backend chưa khởi chạy
+    // Tự động gắn Bearer Token nếu có trong memory và headers chưa có
+    const currentToken = getAccessToken();
+    if (currentToken && !requestHeaders.has('Authorization')) {
+      requestHeaders.set('Authorization', `Bearer ${currentToken}`);
+    }
+
+    // Client-side / FormData (tải file) dùng timeout lớn (30s) để tránh ngắt quãng tải lên.
+    // Server-side / SSG dùng timeout ngắn (2.5s) để tránh treo build.
+    const isServer = typeof window === 'undefined';
+    const timeoutDuration = isServer ? 2500 : isFormData ? 30000 : 15000;
+
     const timeoutSignal =
       options.signal && typeof AbortSignal.any === 'function'
-        ? AbortSignal.any([options.signal, AbortSignal.timeout(2500)])
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(timeoutDuration)])
         : typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-          ? AbortSignal.timeout(2500)
+          ? AbortSignal.timeout(timeoutDuration)
           : options.signal;
 
     res = await fetch(url, {
@@ -149,12 +209,39 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     if (!('status' in errorData)) {
       errorData.status = res.status;
     }
-    if (process.env.NODE_ENV !== 'production' && !(options as { suppressLogError?: boolean }).suppressLogError) {
-      console.error(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
-    }
+
     // FR-AUTH-004: reuse token cũ → force logout + redirect, KHÔNG để UI tự quyết.
     if (res.status === 401 && errorData.type === SESSION_REVOKED_TYPE) {
       handleSessionRevoked(method, url);
+      throw new ApiError(res.status, errorData as unknown as ProblemDetails);
+    }
+
+    // Tự động silent refresh và retry 1 lần nếu gặp HTTP 401 ở client-side
+    const isAuthEndpoint =
+      endpoint.includes('/auth/login') ||
+      endpoint.includes('/auth/register') ||
+      endpoint.includes('/auth/refresh');
+    const isRetry = options._isRetry;
+
+    if (res.status === 401 && !isAuthEndpoint && !isRetry && typeof window !== 'undefined') {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        const retryHeaders = new Headers(options.headers);
+        retryHeaders.set('Authorization', `Bearer ${newToken}`);
+        if (!isFormData && !retryHeaders.has('Content-Type')) {
+          retryHeaders.set('Content-Type', 'application/json');
+        }
+
+        return apiClient<T>(endpoint, {
+          ...options,
+          headers: retryHeaders,
+          _isRetry: true,
+        });
+      }
+    }
+
+    if (process.env.NODE_ENV !== 'production' && !options.suppressLogError && res.status !== 401) {
+      console.error(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
     }
     throw new ApiError(res.status, errorData as unknown as ProblemDetails);
   }

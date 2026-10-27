@@ -51,9 +51,12 @@ export default function ImageUpload({
       const res = await fileService.uploadFile(file, folder);
       onChange(res.url);
     } catch (err: unknown) {
-      console.error('Lỗi tải ảnh lên:', err);
-      const error = err as { detail?: string; title?: string };
-      setErrorMessage(error.detail || error.title || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
+      const error = err as { detail?: string; title?: string; status?: number };
+      if (error.status === 401) {
+        setErrorMessage('Bạn cần đăng nhập bằng tài khoản Quản trị viên (Admin) để có quyền tải ảnh lên.');
+      } else {
+        setErrorMessage(error.detail || error.title || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setIsUploading(false);
     }
