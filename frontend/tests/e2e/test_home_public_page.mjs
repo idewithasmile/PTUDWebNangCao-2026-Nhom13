@@ -70,10 +70,10 @@ async function testHomeMockupPage() {
     console.log('✅ Banner 4 ưu điểm nổi bật hiển thị đầy đủ.');
 
     // 6. Kiểm tra Footer
-    console.log('🔍 6. Kiểm tra Footer nền tối hiện đại...');
+    console.log('🔍 6. Kiểm tra Footer...');
     await page.waitForSelector('footer');
-    await page.waitForSelector('text=Chính sách bảo mật');
-    console.log('✅ Footer: Điều hướng, bản quyền và nút cuộn lên đầu trang.');
+    await page.waitForSelector('text=Phát triển bởi Nhóm 13');
+    console.log('✅ Footer: Thông tin thương hiệu, các cột liên kết và bản quyền Nhóm 13.');
 
     // Lưu ảnh chụp Desktop toàn trang
     const fullDesktopPath = path.join(ARTIFACTS_DIR, 'mockup_home_desktop.png');
