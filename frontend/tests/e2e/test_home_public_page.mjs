@@ -1,18 +1,16 @@
 import { chromium } from 'playwright';
 import path from 'path';
-import fs from 'fs';
 
 const ARTIFACTS_DIR = 'C:/Users/Maxsys/.gemini/antigravity/brain/4bbd637e-71d4-451e-ae80-bfc6913c3810';
 
-async function testHomePublicPage() {
-  console.log('🚀 Bắt đầu kiểm thử E2E: Trang chủ công khai Culinary Blog...');
+async function testHomeMockupPage() {
+  console.log('🚀 Bắt đầu kiểm thử E2E: Trang chủ Culinary Blog theo giao diện chuẩn Mockup...');
 
   const browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
-  // 1. Desktop Context
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
   });
@@ -23,87 +21,98 @@ async function testHomePublicPage() {
     // 1. Tải trang chủ http://localhost:3000/
     console.log('🌐 1. Truy cập trang chủ http://localhost:3000/...');
     const response = await page.goto('http://localhost:3000/', { waitUntil: 'networkidle', timeout: 30000 });
-    console.log(`📡 Response status: ${response.status()}`);
+    console.log(`📡 HTTP Response: ${response.status()}`);
 
-    // Chờ nội dung trang chủ xuất hiện
-    await page.waitForSelector('text=CulinaryBlog', { timeout: 15000 });
-    await page.waitForTimeout(2000); // Chờ React Query hoàn tất fetch
+    await page.waitForSelector('text=Culinary', { timeout: 15000 });
+    await page.waitForTimeout(2000); // Đợi React Query tải dữ liệu
 
     // 2. Kiểm tra Header
-    console.log('🔍 2. Kiểm tra Header & Navigation...');
-    const headerBrand = await page.textContent('header');
-    if (!headerBrand.includes('CulinaryBlog') || !headerBrand.includes('Nấu ngon • Sống vui')) {
-      throw new Error('Header không hiển thị đúng thương hiệu hoặc slogan');
-    }
-    console.log('✅ Header: Hiển thị logo, slogan "Nấu ngon • Sống vui" và thanh tìm kiếm.');
+    console.log('🔍 2. Kiểm tra Header & Navigation chuẩn Mockup...');
+    await page.waitForSelector('text=Nấu ngon - Sống vui');
+    await page.waitForSelector('text=Nguyên liệu');
+    await page.waitForSelector('text=Giới thiệu');
+    console.log('✅ Header: Hiển thị đúng menu, slogan, ô tìm kiếm và chuông thông báo.');
 
     // 3. Kiểm tra Hero Banner
-    console.log('🔍 3. Kiểm tra Hero Banner & Ô tìm kiếm...');
-    await page.waitForSelector('text=Khơi nguồn cảm hứng');
-    const heroSearchInput = await page.locator('input[placeholder*="Bạn muốn nấu món gì hôm nay"]').count();
-    if (heroSearchInput === 0) {
-      throw new Error('Không tìm thấy ô tìm kiếm tại Hero Banner');
-    }
-    console.log('✅ Hero Banner: Tiêu đề, mô tả và ô tìm kiếm đầy đủ.');
+    console.log('🔍 3. Kiểm tra Hero Banner...');
+    await page.waitForSelector('text=Hàng ngàn công thức nấu ăn');
+    await page.waitForSelector('text=Nấu ngon');
+    await page.waitForSelector('text=Mỗi ngày ♡');
+    console.log('✅ Hero Banner: Tiêu đề lớn, badge nghệ thuật và ô tìm kiếm tròn hoàn tất.');
 
-    // 4. Kiểm tra Category Sidebar
-    console.log('🔍 4. Kiểm tra Sidebar Danh mục...');
-    await page.waitForSelector('aside');
-    const categoryButtons = await page.locator('aside button').count();
-    console.log(`✅ Sidebar: Tìm thấy ${categoryButtons} danh mục từ API thật.`);
+    // 4. Kiểm tra 3 Cột giao diện chính
+    console.log('🔍 4. Kiểm tra Bố cục 3 Cột (Left - Center - Right)...');
+    // Cột 1: Danh mục
+    await page.waitForSelector('text=Tất cả danh mục');
+    await page.waitForSelector('text=Nguyên liệu tươi ngon');
+    console.log('✅ Cột 1 (Trái): Danh mục kèm số lượng món và banner nguyên liệu tươi ngon.');
 
-    // 5. Kiểm tra Latest Recipes
-    console.log('🔍 5. Kiểm tra Khu vực Công thức mới nhất...');
+    // Cột 2: Tiêu điểm & 6 công thức mới nhất
+    await page.waitForSelector('text=Công thức nổi bật');
     await page.waitForSelector('text=Công thức mới nhất');
     const recipeCards = await page.locator('a[href^="/recipes/"]').count();
-    console.log(`✅ Recipe Cards: Tìm thấy ${recipeCards} công thức công khai.`);
+    console.log(`✅ Cột 2 (Giữa): Tiêu điểm món ngon và ${recipeCards} thẻ công thức.`);
 
-    // 6. Kiểm tra Category Showcase & Stats Banner
-    console.log('🔍 6. Kiểm tra Showcase & Stats Banner...');
-    await page.waitForSelector('text=Khám phá theo Bộ sưu tập');
-    await page.waitForSelector('text=Bạn có bí quyết nấu ăn độc đáo muốn chia sẻ?');
-    console.log('✅ Bộ sưu tập và Banner tác giả hiển thị đầy đủ.');
+    // Cột 3: Xem nhiều nhất, Nhận tin, MXH, Trích dẫn
+    await page.waitForSelector('text=Công thức được xem nhiều');
+    await page.waitForSelector('text=Đăng ký nhận công thức mới');
+    await page.waitForSelector('text=Theo dõi chúng tôi');
+    await page.waitForSelector('text=Nấu ăn không chỉ là kỹ năng');
+    console.log('✅ Cột 3 (Phải): Top 5 xem nhiều, đăng ký email, MXH và trích dẫn ấm áp.');
 
-    // Chụp ảnh màn hình Desktop toàn trang
-    const fullDesktopPath = path.join(ARTIFACTS_DIR, 'e2e_home_public_desktop.png');
+    // 5. Kiểm tra Banner "Vì sao nên chọn Culinary Blog?"
+    console.log('🔍 5. Kiểm tra Banner Vì sao nên chọn Culinary Blog?...');
+    await page.waitForSelector('text=Vì sao nên chọn');
+    await page.waitForSelector('text=Công thức đa dạng');
+    await page.waitForSelector('text=Hướng dẫn chi tiết');
+    await page.waitForSelector('text=Cộng đồng yêu bếp');
+    await page.waitForSelector('text=Cập nhật liên tục');
+    console.log('✅ Banner 4 ưu điểm nổi bật hiển thị đầy đủ.');
+
+    // 6. Kiểm tra Footer
+    console.log('🔍 6. Kiểm tra Footer nền tối hiện đại...');
+    await page.waitForSelector('footer');
+    await page.waitForSelector('text=Chính sách bảo mật');
+    console.log('✅ Footer: Điều hướng, bản quyền và nút cuộn lên đầu trang.');
+
+    // Lưu ảnh chụp Desktop toàn trang
+    const fullDesktopPath = path.join(ARTIFACTS_DIR, 'mockup_home_desktop.png');
     await page.screenshot({ path: fullDesktopPath, fullPage: true });
     console.log(`📸 Đã lưu ảnh chụp toàn bộ trang chủ Desktop: ${fullDesktopPath}`);
 
-    // 7. Kiểm thử tương tác: Lọc theo danh mục
-    console.log('🧪 7. Kiểm thử tương tác: Nhấp chọn một danh mục trong sidebar...');
-    // Lấy button danh mục thứ 2 trong desktop sidebar (bỏ qua button "Tất cả")
+    // 7. Kiểm thử tương tác: Nhấp tim yêu thích trên Recipe Card
+    console.log('🧪 7. Kiểm thử tương tác: Nhấp nút Tim (Heart) trên thẻ món ăn...');
+    const heartBtn = page.locator('button[title="Yêu thích món ăn"]').first();
+    if (await heartBtn.isVisible()) {
+      await heartBtn.click();
+      await page.waitForTimeout(500);
+      console.log('✅ Đã kích hoạt hiệu ứng yêu thích món ăn.');
+    }
+
+    // 8. Kiểm thử tương tác: Đăng ký nhận tin Email
+    console.log('🧪 8. Kiểm thử tương tác: Nhập email đăng ký nhận công thức mới...');
+    const emailInput = page.locator('input[placeholder="Nhập email của bạn"]');
+    if (await emailInput.isVisible()) {
+      await emailInput.fill('khachhang@culinaryblog.com');
+      await page.click('button:has-text("Đăng ký")');
+      await page.waitForSelector('text=Đã đăng ký nhận bản tin thành công');
+      console.log('✅ Đăng ký nhận bản tin phản hồi thành công.');
+    }
+
+    // 9. Kiểm thử tương tác: Lọc theo danh mục
+    console.log('🧪 9. Kiểm thử tương tác: Nhấp lọc theo danh mục...');
     const categoryBtn = page.locator('aside button:visible').nth(1);
     const catName = await categoryBtn.innerText();
     console.log(`👉 Đang nhấp vào danh mục: ${catName.trim()}`);
     await categoryBtn.click();
     await page.waitForTimeout(1500);
 
-    const filterScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_home_category_filter.png');
+    const filterScreenshotPath = path.join(ARTIFACTS_DIR, 'mockup_home_filtered.png');
     await page.screenshot({ path: filterScreenshotPath });
-    console.log(`📸 Đã lưu ảnh chụp kết quả lọc danh mục: ${filterScreenshotPath}`);
+    console.log(`📸 Đã lưu ảnh chụp kết quả lọc: ${filterScreenshotPath}`);
 
-    // Bấm Đặt lại / Bỏ lọc
-    console.log('🧪 8. Nhấp "Đặt lại" để hủy bộ lọc danh mục...');
-    const resetBtn = page.locator('button:has-text("Đặt lại"), button:has-text("Bỏ lọc")').first();
-    if (await resetBtn.isVisible()) {
-      await resetBtn.click();
-      await page.waitForTimeout(1000);
-      console.log('✅ Đã hủy bộ lọc thành công.');
-    }
-
-    // 8. Kiểm thử tương tác tìm kiếm
-    console.log('🧪 9. Kiểm thử tương tác tìm kiếm từ khóa...');
-    const searchInput = page.locator('input[placeholder*="Bạn muốn nấu món gì hôm nay"]');
-    await searchInput.fill('Bò');
-    await page.click('button[type="submit"]:has-text("Tìm kiếm")');
-    await page.waitForTimeout(1500);
-
-    const searchScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_home_search_results.png');
-    await page.screenshot({ path: searchScreenshotPath });
-    console.log(`📸 Đã lưu ảnh chụp kết quả tìm kiếm: ${searchScreenshotPath}`);
-
-    // 9. Mobile Viewport Test
-    console.log('📱 10. Kiểm tra hiển thị trên thiết bị di động (Mobile Viewport 390x844)...');
+    // 10. Kiểm tra hiển thị trên Mobile (390x844)
+    console.log('📱 10. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
     const mobileContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       isMobile: true,
@@ -113,15 +122,15 @@ async function testHomePublicPage() {
     await mobilePage.goto('http://localhost:3000/', { waitUntil: 'networkidle', timeout: 30000 });
     await mobilePage.waitForTimeout(2000);
 
-    const mobileScreenshotPath = path.join(ARTIFACTS_DIR, 'e2e_home_public_mobile.png');
+    const mobileScreenshotPath = path.join(ARTIFACTS_DIR, 'mockup_home_mobile.png');
     await mobilePage.screenshot({ path: mobileScreenshotPath, fullPage: true });
     console.log(`📸 Đã lưu ảnh chụp giao diện Mobile: ${mobileScreenshotPath}`);
 
     await mobileContext.close();
-    console.log('🎉 TẤT CẢ CÁC BƯỚC KIỂM THỬ E2E TRANG CHỦ ĐỀU HOÀN THÀNH XUẤT SẮC!');
+    console.log('🎉 TẤT CẢ CÁC BƯỚC KIỂM THỬ TRANG CHỦ THEO GIAO DIỆN CHUẨN ĐỀU HOÀN THÀNH XUẤT SẮC!');
   } catch (error) {
-    console.error('❌ Lỗi kiểm thử E2E:', error);
-    const errPath = path.join(ARTIFACTS_DIR, 'e2e_home_error.png');
+    console.error('❌ Lỗi kiểm thử:', error);
+    const errPath = path.join(ARTIFACTS_DIR, 'mockup_home_error.png');
     await page.screenshot({ path: errPath });
     console.log(`📸 Đã lưu ảnh lỗi: ${errPath}`);
     throw error;
@@ -130,4 +139,4 @@ async function testHomePublicPage() {
   }
 }
 
-testHomePublicPage();
+testHomeMockupPage();

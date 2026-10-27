@@ -1,19 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import type { RecipeSummaryDto } from '@/lib/types/category';
-import RecipeCard from '@/components/recipes/RecipeCard';
+import { resolveMediaUrl } from '@/lib/utils';
 import {
-  UtensilsCrossed,
-  Sparkles,
-  Clock,
+  Flame,
   ArrowRight,
+  Clock,
+  Utensils,
+  Heart,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  X,
   AlertCircle,
-  ChefHat,
+  X,
 } from 'lucide-react';
 
 interface HomeLatestRecipesProps {
@@ -26,13 +26,16 @@ interface HomeLatestRecipesProps {
   totalPages: number;
   selectedCategoryName?: string;
   searchTerm?: string;
-  selectedDifficulty?: number;
-  onSelectDifficulty: (diff?: number) => void;
-  maxTime?: number;
-  onSelectMaxTime: (time?: number) => void;
   onPageChange: (newPage: number) => void;
   onClearFilters: () => void;
 }
+
+const difficultyLabels: Record<number, string> = {
+  1: 'Dễ',
+  2: 'Trung bình',
+  3: 'Khó',
+  4: 'Chuyên gia',
+};
 
 export default function HomeLatestRecipes({
   recipes,
@@ -43,247 +46,204 @@ export default function HomeLatestRecipes({
   totalPages,
   selectedCategoryName,
   searchTerm,
-  selectedDifficulty,
-  onSelectDifficulty,
-  maxTime,
-  onSelectMaxTime,
   onPageChange,
   onClearFilters,
 }: HomeLatestRecipesProps) {
-  const hasActiveFilters = Boolean(searchTerm || selectedCategoryName || selectedDifficulty || maxTime);
+  const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
 
-  // Xác định tiêu đề hiển thị
-  let title = 'Công thức mới nhất';
-  if (searchTerm) {
-    title = `Kết quả tìm kiếm cho: "${searchTerm}"`;
-  } else if (selectedCategoryName) {
-    title = `Danh mục: ${selectedCategoryName}`;
-  }
+  const toggleLike = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLikedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const hasFilter = Boolean(selectedCategoryName || searchTerm);
 
   return (
-    <section className="space-y-6">
-      {/* =========================================================
-          1. HEADER KHU VỰC CÔNG THỨC & BỘ LỌC NHANH
-          ========================================================= */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-2xs p-5 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                <UtensilsCrossed className="w-3.5 h-3.5" />
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                {title}
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
-                {totalCount} món
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Được tuyển chọn và chia sẻ bởi các thành viên và đầu bếp cộng đồng Culinary Blog.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={onClearFilters}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Bỏ lọc</span>
-              </button>
-            )}
-            <Link
-              href="/recipes"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline px-3 py-1.5 rounded-xl hover:bg-orange-50 transition"
-            >
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Thanh chip lọc nhanh: Độ khó & Thời gian nấu */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs font-bold text-gray-400 flex items-center gap-1 mr-1">
-            <Filter className="w-3 h-3" />
-            <span>Lọc nhanh:</span>
+    <section className="space-y-4">
+      {/* Header khu vực: Icon lửa cam + "Công thức mới nhất" + "Xem tất cả ➔" */}
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+            <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
           </span>
-
-          {/* Tất cả */}
-          <button
-            type="button"
-            onClick={() => {
-              onSelectDifficulty(undefined);
-              onSelectMaxTime(undefined);
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedDifficulty === undefined && maxTime === undefined
-                ? 'bg-gray-900 text-white shadow-2xs'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Tất cả
-          </button>
-
-          {/* Dễ làm */}
-          <button
-            type="button"
-            onClick={() => onSelectDifficulty(selectedDifficulty === 1 ? undefined : 1)}
-            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedDifficulty === 1
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-            }`}
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>Dễ làm</span>
-          </button>
-
-          {/* Trung bình */}
-          <button
-            type="button"
-            onClick={() => onSelectDifficulty(selectedDifficulty === 2 ? undefined : 2)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedDifficulty === 2
-                ? 'bg-amber-600 text-white shadow-2xs'
-                : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
-            }`}
-          >
-            Trung bình
-          </button>
-
-          {/* Dưới 30 phút */}
-          <button
-            type="button"
-            onClick={() => onSelectMaxTime(maxTime === 30 ? undefined : 30)}
-            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              maxTime === 30
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'
-            }`}
-          >
-            <Clock className="w-3 h-3" />
-            <span>Nấu nhanh &lt; 30 phút</span>
-          </button>
-
-          {/* Dưới 60 phút */}
-          <button
-            type="button"
-            onClick={() => onSelectMaxTime(maxTime === 60 ? undefined : 60)}
-            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              maxTime === 60
-                ? 'bg-indigo-600 text-white shadow-2xs'
-                : 'bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100'
-            }`}
-          >
-            <Clock className="w-3 h-3" />
-            <span>Dưới 60 phút</span>
-          </button>
+          <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+            {searchTerm
+              ? `Kết quả tìm: "${searchTerm}"`
+              : selectedCategoryName
+              ? `Danh mục: ${selectedCategoryName}`
+              : 'Công thức mới nhất'}
+          </h3>
+          {hasFilter && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded-md ml-2"
+            >
+              <X className="w-3 h-3" />
+              <span>Bỏ lọc</span>
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* =========================================================
-          2. DANH SÁCH THẺ CÔNG THỨC (RECIPE CARDS GRID)
-          ========================================================= */}
+        <Link
+          href="/recipes"
+          className="inline-flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600 hover:underline"
+        >
+          <span>Xem tất cả</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
 
       {/* Loading Skeleton */}
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-2xs animate-pulse space-y-3 p-4"
-            >
-              <div className="aspect-[16/10] bg-gray-200 rounded-xl" />
-              <div className="h-4 bg-gray-200 rounded w-3/4" />
-              <div className="h-3 bg-gray-100 rounded w-full" />
-              <div className="h-3 bg-gray-100 rounded w-2/3" />
-              <div className="pt-2 flex justify-between">
-                <div className="h-3 bg-gray-200 rounded w-16" />
-                <div className="h-3 bg-gray-200 rounded w-16" />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse" />
           ))}
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error state */}
       {isError && (
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800 space-y-3">
-          <AlertCircle className="w-8 h-8 text-red-600 mx-auto" />
-          <h3 className="text-base font-bold">Không thể tải danh sách công thức</h3>
-          <p className="text-xs text-red-600 max-w-md mx-auto">
-            Đã xảy ra lỗi khi kết nối với máy chủ API. Vui lòng thử lại sau.
-          </p>
+        <div className="p-6 bg-red-50 text-red-700 rounded-2xl text-center space-y-2">
+          <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
+          <p className="text-sm font-bold">Không thể tải danh sách công thức</p>
+          <button
+            type="button"
+            onClick={() => onPageChange(1)}
+            className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl"
+          >
+            Tải lại
+          </button>
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && !isError && recipes.length === 0 && (
-        <div className="rounded-3xl border border-gray-100 bg-white p-12 text-center space-y-4 shadow-sm">
-          <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mx-auto">
-            <ChefHat className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-gray-900">Chưa tìm thấy món ăn nào phù hợp</h3>
-            <p className="text-xs text-gray-500 max-w-md mx-auto">
-              Không có công thức nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại của bạn.
-            </p>
-          </div>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={onClearFilters}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-orange-600 text-white text-xs font-bold shadow-xs hover:bg-orange-700 active:scale-95 transition"
-            >
-              <span>Xem tất cả công thức</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="p-10 bg-white rounded-2xl border border-gray-100 text-center space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Chưa tìm thấy công thức phù hợp.</p>
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-xs"
+          >
+            Xem tất cả công thức
+          </button>
         </div>
       )}
 
-      {/* Grid thẻ công thức thật */}
+      {/* Grid 6 Công thức (2 dòng x 3 cột) chuẩn mockup */}
       {!isLoading && !isError && recipes.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {recipes.slice(0, 6).map((recipe) => {
+            const isLiked = likedIds[recipe.id];
+            const diff = difficultyLabels[recipe.difficulty] || 'Trung bình';
+            const imgUrl = recipe.thumbnailUrl
+              ? resolveMediaUrl(recipe.thumbnailUrl)
+              : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+
+            return (
+              <Link
+                key={recipe.id}
+                href={`/recipes/${encodeURIComponent(recipe.slug)}`}
+                className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                {/* Ảnh món ăn kèm Category Pill & Nút Thích */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imgUrl}
+                    alt={recipe.title}
+                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+                    }}
+                  />
+
+                  {/* Badge Danh mục góc trên bên trái */}
+                  <div className="absolute top-2.5 left-2.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/90 text-orange-600 backdrop-blur shadow-2xs">
+                      {recipe.categoryName || 'Món ngon'}
+                    </span>
+                  </div>
+
+                  {/* Nút Thích (Trái tim) góc trên bên phải */}
+                  <button
+                    type="button"
+                    onClick={(e) => toggleLike(e, recipe.id)}
+                    className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/25 hover:bg-black/40 text-white backdrop-blur transition"
+                    title="Yêu thích món ăn"
+                  >
+                    <Heart
+                      className={`w-3.5 h-3.5 transition-colors ${
+                        isLiked ? 'fill-red-500 text-red-500' : 'text-white'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Thông tin mô tả món ăn */}
+                <div className="flex flex-1 flex-col p-3.5 space-y-1.5">
+                  <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+                    {recipe.title}
+                  </h4>
+
+                  <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
+                    {recipe.description || 'Hương vị thơm ngon đậm đà, chế biến đơn giản chuẩn vị.'}
+                  </p>
+
+                  {/* Thời gian & Độ khó */}
+                  <div className="pt-1.5 flex items-center gap-3 text-[11px] text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-gray-400" />
+                      <span>{recipe.totalTimeMinutes || 30} phút</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Utensils className="w-3 h-3 text-gray-400" />
+                      <span>{diff}</span>
+                    </div>
+                  </div>
+
+                  {/* Tác giả */}
+                  {recipe.authorName && (
+                    <div className="pt-2 border-t border-gray-50 flex items-center gap-1.5 text-[11px] text-gray-600">
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-100 text-[9px] font-bold text-orange-700">
+                        {recipe.authorName.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="truncate">{recipe.authorName}</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 
-      {/* =========================================================
-          3. ĐIỀU HƯỚNG PHÂN TRANG (PAGINATION CONTROLS)
-          ========================================================= */}
-      {!isLoading && !isError && totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-gray-100 shadow-2xs">
-          <div className="text-xs text-gray-500">
-            Hiển thị trang <span className="font-bold text-gray-900">{page}</span> /{' '}
-            <span className="font-bold text-gray-900">{totalPages}</span> ({totalCount} công thức)
-          </div>
-
-          <div className="flex items-center gap-2">
+      {/* Phân trang ngắn gọn nếu có nhiều hơn 1 trang */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-3 text-xs text-gray-500">
+          <span>
+            Trang {page} / {totalPages} ({totalCount} món)
+          </span>
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+              onClick={() => onPageChange(page - 1)}
+              className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Trang trước</span>
+              <ChevronLeft className="w-4 h-4" />
             </button>
-
             <button
               type="button"
-              onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+              onClick={() => onPageChange(page + 1)}
+              className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
             >
-              <span>Trang sau</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
