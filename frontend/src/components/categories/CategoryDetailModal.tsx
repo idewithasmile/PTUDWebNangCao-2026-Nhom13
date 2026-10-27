@@ -41,17 +41,17 @@ export default function CategoryDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div
-        className="w-full max-w-lg rounded-3xl bg-white shadow-2xl overflow-hidden border border-gray-100 animate-scale-up"
+        className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-gray-100 animate-scale-up overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/60">
+        {/* Modal Header - Pinned at top */}
+        <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/80">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
               <FolderOpen className="w-5 h-5" />
@@ -72,8 +72,8 @@ export default function CategoryDetailModal({
           </button>
         </div>
 
-        {/* Modal Content */}
-        <div className="p-6 space-y-5">
+        {/* Modal Content - Scrollable Body */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-5">
           {/* Ảnh Danh Mục */}
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 border border-gray-100">
             {category.imageUrl ? (
@@ -124,8 +124,8 @@ export default function CategoryDetailModal({
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/40 flex items-center justify-between">
+        {/* Modal Footer - Pinned at bottom */}
+        <div className="flex shrink-0 items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/80">
           <Link
             href={`/categories/${category.slug}`}
             onClick={onClose}
