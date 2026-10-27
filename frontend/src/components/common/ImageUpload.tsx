@@ -140,6 +140,7 @@ export default function ImageUpload({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFile(file);
+              e.target.value = '';
             }}
             disabled={disabled || isUploading}
           />
