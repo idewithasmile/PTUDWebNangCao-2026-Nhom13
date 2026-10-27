@@ -183,7 +183,7 @@ export default function CategoryFormModal({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <form onSubmit={handleSubmit(onFormSubmit)} noValidate className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {serverError && (
             <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
@@ -262,8 +262,8 @@ export default function CategoryFormModal({
                 Hoặc nhập đường dẫn ảnh trực tiếp (URL)
               </label>
               <input
-                type="url"
-                placeholder="https://example.com/images/category.jpg"
+                type="text"
+                placeholder="https://example.com/images/category.jpg hoặc /culinary-blog/..."
                 {...register('imageUrl')}
                 className={`w-full rounded-xl border px-3 py-2 text-xs transition focus:outline-none focus:ring-2 ${
                   errors.imageUrl

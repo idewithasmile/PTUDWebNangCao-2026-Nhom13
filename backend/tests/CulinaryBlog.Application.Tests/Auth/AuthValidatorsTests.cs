@@ -63,6 +63,7 @@ public sealed class AuthValidatorsTests
 
     [Theory]
     [InlineData("New Name", "https://cdn.example.com/a.png", "food lover", true)]
+    [InlineData("New Name", "/culinary-blog/avatars/user.png", "food lover", true)]
     [InlineData("A", null, null, false)]                       // displayName < 2
     [InlineData(null, "not-a-url", null, false)]               // avatarUrl sai
     [InlineData(null, "ftp://x/y.png", null, false)]           // scheme lạ
