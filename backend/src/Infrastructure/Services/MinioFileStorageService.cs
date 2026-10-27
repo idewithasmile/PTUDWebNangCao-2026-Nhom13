@@ -298,16 +298,25 @@ public class MinioFileStorageService : IFileStorageService
             throw new AppException("FILE_MIME_INVALID", "Định dạng tệp tin không được hỗ trợ hoặc tệp tin bị lỗi.", 400);
         }
 
-        var lowerMime = contentType.Trim().ToLowerInvariant();
-        var isValid = lowerMime switch
+        var cleanMime = contentType.Split(';')[0].Trim().ToLowerInvariant();
+        var isSupportedMime = cleanMime is "image/jpeg" or "image/jpg" or "image/pjpeg"
+            or "image/png" or "image/x-png"
+            or "image/webp"
+            or "image/avif";
+
+        if (!isSupportedMime)
         {
-            "image/jpeg" or "image/jpg" => header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
-            "image/png" => header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47,
-            "image/webp" => header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
-                            header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50,
-            "image/avif" => header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70,
-            _ => false
-        };
+            throw new AppException("FILE_MIME_INVALID", "Định dạng tệp tin không được hỗ trợ hoặc tệp tin bị lỗi.", 400);
+        }
+
+        bool isJpeg = header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+        bool isPng = header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+        bool isWebp = header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
+                      header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50;
+        bool isAvif = (header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70) ||
+                      (header[8] == 0x61 && header[9] == 0x76 && header[10] == 0x69 && header[11] == 0x66);
+
+        bool isValid = isJpeg || isPng || isWebp || isAvif;
 
         if (!isValid)
         {
