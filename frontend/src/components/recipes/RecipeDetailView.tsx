@@ -8,6 +8,7 @@ import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeActionButtons from '@/components/recipes/RecipeActionButtons';
+import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
 import { resolveMediaUrl } from '@/lib/utils';
 import {
   Clock,
@@ -34,7 +35,6 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 
 export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -90,11 +90,6 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
 
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
   const totalTime = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
-  const primaryImage =
-    recipe.images.find((img) => img.isPrimary)?.originalUrl ||
-    recipe.images[0]?.originalUrl;
-
-  const currentDisplayImage = selectedImageUrl || primaryImage;
 
   const formattedDate = recipe.publishedAt
     ? new Date(recipe.publishedAt).toLocaleDateString('vi-VN', {
@@ -155,48 +150,8 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
       {/* Thanh thao tác cho Owner / Admin */}
       <RecipeActionButtons recipe={recipe} />
 
-      {/* Khối Hình ảnh công thức */}
-      <div className="space-y-3">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm border border-gray-100">
-          {currentDisplayImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={resolveMediaUrl(currentDisplayImage)}
-              alt={recipe.title}
-              className="h-full w-full object-cover object-center transition-all duration-300"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
-              <UtensilsCrossed className="h-16 w-16 text-orange-300" />
-            </div>
-          )}
-        </div>
-
-        {/* Bộ sưu tập ảnh nhỏ (nếu có nhiều ảnh) */}
-        {recipe.images && recipe.images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {recipe.images.map((img) => (
-              <button
-                key={img.id}
-                type="button"
-                onClick={() => setSelectedImageUrl(img.originalUrl)}
-                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                  (selectedImageUrl || primaryImage) === img.originalUrl
-                    ? 'border-orange-500 scale-95 shadow-sm'
-                    : 'border-transparent opacity-70 hover:opacity-100'
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={resolveMediaUrl(img.thumbnailUrl || img.originalUrl)}
-                  alt={img.altText || recipe.title}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Khối Hình ảnh công thức chuẩn Gallery Mockup */}
+      <RecipeGalleryViewer images={recipe.images} recipeTitle={recipe.title} />
 
       {/* Các thẻ thông số tóm tắt (Thời gian, Khẩu phần) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
