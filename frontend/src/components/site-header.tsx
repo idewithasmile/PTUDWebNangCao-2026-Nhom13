@@ -50,8 +50,6 @@ export default function SiteHeader() {
     { href: '/', label: 'Trang chủ', active: pathname === '/' },
     { href: '/recipes', label: 'Công thức', active: (pathname?.startsWith('/recipes') ?? false) && !pathname?.startsWith('/recipes/create') && !pathname?.startsWith('/recipes/new') },
     { href: '/categories', label: 'Danh mục', active: pathname?.startsWith('/categories') ?? false },
-    { href: '/recipes?filter=ingredients', label: 'Nguyên liệu', active: false },
-    { href: '/about', label: 'Giới thiệu', active: pathname === '/about' },
   ];
 
   const isAdmin = user?.roles?.includes('Admin');

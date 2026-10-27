@@ -26,19 +26,13 @@ export default function SiteFooter() {
             </div>
           </Link>
 
-          {/* Menu Điều hướng ngang chuẩn Mockup */}
+          {/* Menu Điều hướng ngang */}
           <nav className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-gray-300">
             <Link href="/" className="hover:text-orange-400 transition">Trang chủ</Link>
             <span className="text-gray-700">|</span>
             <Link href="/recipes" className="hover:text-orange-400 transition">Công thức</Link>
             <span className="text-gray-700">|</span>
             <Link href="/categories" className="hover:text-orange-400 transition">Danh mục</Link>
-            <span className="text-gray-700">|</span>
-            <Link href="/recipes?filter=ingredients" className="hover:text-orange-400 transition">Nguyên liệu</Link>
-            <span className="text-gray-700">|</span>
-            <Link href="/about" className="hover:text-orange-400 transition">Giới thiệu</Link>
-            <span className="text-gray-700">|</span>
-            <Link href="/contact" className="hover:text-orange-400 transition">Liên hệ</Link>
           </nav>
 
           {/* Icon Mạng xã hội */}

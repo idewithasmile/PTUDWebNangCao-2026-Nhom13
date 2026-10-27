@@ -27,11 +27,11 @@ async function testHomeMockupPage() {
     await page.waitForTimeout(2000); // Đợi React Query tải dữ liệu
 
     // 2. Kiểm tra Header
-    console.log('🔍 2. Kiểm tra Header & Navigation chuẩn Mockup...');
+    console.log('🔍 2. Kiểm tra Header & Navigation...');
     await page.waitForSelector('text=Nấu ngon - Sống vui');
-    await page.waitForSelector('text=Nguyên liệu');
-    await page.waitForSelector('text=Giới thiệu');
-    console.log('✅ Header: Hiển thị đúng menu, slogan, ô tìm kiếm và chuông thông báo.');
+    await page.waitForSelector('text=Công thức');
+    await page.waitForSelector('text=Danh mục');
+    console.log('✅ Header: Hiển thị đúng menu cốt lõi, slogan, ô tìm kiếm và chuông thông báo.');
 
     // 3. Kiểm tra Hero Banner
     console.log('🔍 3. Kiểm tra Hero Banner...');
