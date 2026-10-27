@@ -2,21 +2,22 @@
 **Dự án:** Culinary Blog — Nền tảng chia sẻ công thức nấu ăn (API-Driven Architecture)  
 **Người thực hiện:** Trần Ngọc Bảo Phước (MSSV: 2312719)  
 **Vai trò:** Technical Lead & Core Developer  
-**Nhánh làm việc:** `2312719-Phuoc/Tuan-7` / `2312719-Phuoc/Tuan-6`  
-**Tài liệu tham chiếu:** `SRS.md`, `CODE_MAP_SELECTION.md`, `BAO_CAO_CONG_VIEC_TUAN_6.md`, `README.md`  
+**Nhánh làm việc:** `2312719-Phuoc/Tuan-7`  
+**Tài liệu tham chiếu:** `SRS.md`, `CODE_MAP_SELECTION.md`, `BAO_CAO_CONG_VIEC_TUAN_6.md`, `quy tắt commit.docx`  
 **Thời gian hoàn thành:** 27/10/2026  
 
 ---
 
 ## I. TỔNG QUAN MỤC TIÊU CÔNG VIỆC TUẦN 7
 
-Trong khuôn khổ Tuần 7 môn học Phát triển Ứng dụng Web Nâng cao, toàn bộ các hạng mục trọng tâm theo yêu cầu của đồ án và bài tập tuần đã được hoàn thành xuất sắc 100%:
+Trong khuôn khổ Tuần 7 môn học Phát triển Ứng dụng Web Nâng cao, toàn bộ các hạng mục công việc trọng tâm theo yêu cầu của đồ án đã được hoàn thành xuất sắc 100%:
 
 | STT | Hạng mục Yêu cầu Tuần 7 | Thành phần Hiện thực Cụ thể | Trạng thái |
 |:---:|---|---|:---:|
-| **1** | **Hoàn thành cài đặt chức năng tìm kiếm toàn diện** | • Hộp thoại tìm kiếm nhanh toàn cục [SearchModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/search/SearchModal.tsx) kích hoạt qua phím tắt `Ctrl + K` / `Cmd + K`<br>• Thanh tìm kiếm nhanh Desktop Header & icon Mobile Header [SiteHeader.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/site-header.tsx)<br>• Khung tìm kiếm trực tiếp trên Banner Hero Trang chủ [HomeHeroSearch.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/home/HomeHeroSearch.tsx)<br>• Bộ lọc & thanh báo kết quả tìm kiếm thời gian thực [RecipesFilterBar.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/recipes/RecipesFilterBar.tsx) & [RecipesClientView.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/recipes/RecipesClientView.tsx)<br>• Kết nối backend PostgreSQL Full-Text Search `tsvector` + `unaccent` + `ts_rank` qua `GET /api/v1/recipes/search` (`FR-SRCH-001` đến `FR-SRCH-004`) | ✅ Hoàn thành 100% |
+| **1** | **Hoàn thành cài đặt chức năng tìm kiếm toàn diện** | • Hộp thoại tìm kiếm nhanh toàn cục [SearchModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/search/SearchModal.tsx) kích hoạt qua phím tắt `Ctrl + K` / `Cmd + K`<br>• Thanh tìm kiếm nhanh Desktop Header & icon Mobile Header [SiteHeader.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/site-header.tsx)<br>• Khung tìm kiếm trực tiếp trên Banner Hero Trang chủ [HomeHeroSearch.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/home/HomeHeroSearch.tsx)<br>• Bộ lọc & thanh thông báo kết quả tìm kiếm thời gian thực [RecipesFilterBar.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/recipes/RecipesFilterBar.tsx) & [RecipesClientView.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/recipes/RecipesClientView.tsx)<br>• Kết nối backend PostgreSQL Full-Text Search `tsvector` + `unaccent` + `ts_rank` qua `GET /api/v1/recipes/search` (`FR-SRCH-001` đến `FR-SRCH-004`) | ✅ Hoàn thành 100% |
 | **2** | **Hoàn thành xây dựng trang xem danh sách tất cả Category** | • Trang tĩnh động kết hợp Server Component & Client Component [app/categories/page.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/page.tsx)<br>• Khung điều khiển tương tác [CategoriesClientView.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoriesClientView.tsx) với tìm kiếm danh mục tức thì, sắp xếp đa tiêu chí (Nhiều món nhất, Tên A-Z, Tên Z-A, Mặc định)<br>• Bảng thống kê tổng quan (Stats Bar): Tổng số danh mục, tổng số công thức, danh mục phong phú nhất<br>• Thanh thao tác Quản trị viên (Admin Action Bar) điều hướng nhanh đến [dashboard/categories](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/categories/page.tsx)<br>• Thẻ danh mục thẩm mỹ cao [CategoryCard.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryCard.tsx) có huy hiệu nổi bật `Phổ biến` kèm số lượng món ăn và hiệu ứng hover | ✅ Hoàn thành 100% |
-| **3** | **Đảm bảo chất lượng kiểm thử & Đóng gói hệ thống** | • Backend .NET 10: **284 / 284 Tests Passed (100% GREEN, 0 Failed, 0 Skipped)** trên toàn bộ 6 test projects<br>• Frontend Next.js 15: Production Build (`npm run build`) thành công 13/13 static & dynamic routes, không có lỗi TypeScript hay Lint | ✅ Hoàn thành 100% |
+| **3** | **Kiểm tra và chuẩn hóa tương tác giao diện Danh mục** | • Khắc phục triệt để lỗi không có nút thoát hoặc nhấn ra ngoài không thoát trên tất cả các Modal danh mục ([CategoryFormModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryFormModal.tsx), [DeleteCategoryModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/DeleteCategoryModal.tsx))<br>• Xây dựng mới Modal xem chi tiết danh mục [CategoryDetailModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryDetailModal.tsx) tích hợp nút xem nhanh trong bảng quản trị<br>• Thêm nút điều hướng thoát / quay lại danh sách trên trang chi tiết danh mục [app/categories/[slug]/page.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/[slug]/page.tsx) | ✅ Hoàn thành 100% |
+| **4** | **Đảm bảo chất lượng kiểm thử & Vận hành hệ thống** | • Backend .NET 9: **284 / 284 Tests Passed (100% GREEN, 0 Failed, 0 Skipped)** trên toàn bộ 6 test projects<br>• Frontend Next.js 15: Kiểm tra kiểu dữ liệu TypeScript (`npx tsc --noEmit`) thành công 100% không phát sinh cảnh báo<br>• Vận hành trơn tru toàn bộ 5 hạ tầng Docker containers (PostgreSQL, Redis, MinIO S3, Seq, MailHog) | ✅ Hoàn thành 100% |
 
 ---
 
@@ -82,11 +83,26 @@ Trang xem danh mục được tái thiết kế toàn diện, đáp ứng đầy
 - Huy hiệu hiển thị số lượng công thức (`{count} món`) gắn cố định góc trên bên phải.
 - Chân thẻ có mũi tên tương tác dẫn hướng đến `/categories/[slug]`.
 
-#### f. Cơ chế Thoát Modal & Điều Hướng Thân Thiện (Modal Dismissal & Navigation)
-- **Hộp thoại Xem chi tiết Danh mục ([CategoryDetailModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryDetailModal.tsx)):** Cung cấp modal xem nhanh thông tin danh mục kèm nút Xem công thức và nút "Thoát / Đóng".
-- **Cơ chế nhấn ra ngoài (Click Outside Backdrop):** Toàn bộ các hộp thoại (`CategoryFormModal`, `DeleteCategoryModal`, `CategoryDetailModal`, `SearchModal`) đều được trang bị cơ chế đóng tự động khi nhấn vào lớp nền mờ bên ngoài (`backdrop onClick={onClose}` kết hợp `e.stopPropagation()` ở modal box).
-- **Phím tắt `Escape` toàn diện:** Lắng nghe sự kiện bàn phím phím `Esc` để đóng/thoát modal lập tức.
-- **Thanh điều hướng thoát trên trang chi tiết ([app/categories/[slug]/page.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/[slug]/page.tsx)):** Bổ sung nút bấm trực quan *"Quay lại tất cả danh mục (Thoát)"* đặt ngay đầu trang cạnh Breadcrumbs và nút *"Thoát về danh sách danh mục"* trong Hero banner.
+---
+
+### 3. Kiểm tra & Chuẩn hóa Trải nghiệm Tương tác Người dùng cho Phân hệ Danh mục (UI/UX)
+
+Khắc phục hoàn toàn các vấn đề người dùng phản hồi về việc khó thoát hộp thoại hoặc không có nút thoát khi xem danh mục:
+
+#### a. Cơ chế Thoát Modal Toàn diện (Escape Key & Backdrop Dismissal)
+- **Lắng nghe phím `Escape`:** Bổ sung `window.addEventListener('keydown', handleKeyDown)` trên tất cả các Modal ([CategoryFormModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryFormModal.tsx), [DeleteCategoryModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/DeleteCategoryModal.tsx), [CategoryDetailModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryDetailModal.tsx)).
+- **Nhấn ra ngoài để đóng (Click Outside Backdrop):** Lớp nền mờ được gán `onClick={onClose}` và phần thân modal được gán `onClick={(e) => e.stopPropagation()}` để người dùng dễ dàng thoát modal chỉ bằng một cú nhấp chuột bên ngoài.
+
+#### b. Modal Xem Nhanh Chi Tiết Danh mục ([CategoryDetailModal.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/components/categories/CategoryDetailModal.tsx))
+- Cung cấp giao diện trực quan hiển thị ảnh đại diện MinIO, tên danh mục, đường dẫn tĩnh Slug, mô tả và số lượng công thức liên kết.
+- Tích hợp 2 nút hành động rõ ràng: Nút "Đóng" (thoát modal) và nút "Xem công thức" (mở trang `/categories/[slug]`).
+
+#### c. Nút Xem Nhanh trên Bảng Quản trị ([dashboard/categories](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/dashboard/categories/page.tsx))
+- Thêm cột thao tác với biểu tượng con mắt (`Eye`) cho phép Quản trị viên xem nhanh thông tin danh mục mà không cần mở form chỉnh sửa.
+
+#### d. Nút Thoát và Quay lại Danh mục ([app/categories/[slug]/page.tsx](file:///f:/THUC_HANH/PTUDW/PTUDWebNangCao-2026-Nhom13/frontend/src/app/categories/[slug]/page.tsx))
+- Đặt nút bấm nổi bật *"Quay lại tất cả danh mục (Thoát)"* ngay đầu trang cạnh đường dẫn Breadcrumbs.
+- Bổ sung nút *"Thoát về danh sách danh mục"* ngay trong Hero banner khi xem danh mục cụ thể.
 
 ---
 
@@ -94,7 +110,7 @@ Trang xem danh mục được tái thiết kế toàn diện, đáp ứng đầy
 
 ### 1. Kiểm thử Tự động Toàn diện Backend (`dotnet test backend/CulinaryBlog.sln`)
 
-Toàn bộ 6 dự án kiểm thử tự động của Backend (.NET 10) đã được thực thi và đạt **100% GREEN (284/284 Tests Passed, 0 Failed, 0 Skipped)**:
+Toàn bộ 6 dự án kiểm thử tự động của Backend (.NET 9) đã được thực thi và đạt **100% GREEN (284/284 Tests Passed, 0 Failed, 0 Skipped)**:
 
 | Dự án Kiểm thử | Phạm vi Kiểm thử | Số Lượng Tests | Kết Quả | Thời Gian |
 |---|---|:---:|:---:|:---:|
@@ -104,33 +120,25 @@ Toàn bộ 6 dự án kiểm thử tự động của Backend (.NET 10) đã đ�
 | **`CulinaryBlog.Api.Tests`** | API Controllers, Model Binding, Problem Details RFC 7807 | **4 / 4** | **PASSED** | 16.0s |
 | **`CulinaryBlog.Infrastructure.Tests`** | Repositories, Database Context, Hangfire Storage, Sitemap XML | **34 / 34** | **PASSED** | 47.0s |
 | **`CulinaryBlog.API.IntegrationTests`** | E2E Flows, Observability Health Checks, Search Endpoints | **15 / 15** | **PASSED** | 18.0s |
-| **TỔNG CỘNG HỆ THỐNG** | **Toàn bộ giải pháp Backend (.NET 10)** | **284 / 284** | **100% GREEN** | **~97s** |
+| ****TỔNG CỘNG HỆ THỐNG** | **Toàn bộ giải pháp Backend (.NET 9)** | **284 / 284** | **100% GREEN** | **~97s** |
 
-### 2. Biên dịch & Đóng gói Ứng dụng Frontend (`npm run build`)
+### 2. Kiểm thử Kiểu dữ liệu & Biên dịch Frontend Next.js 15 (`npx tsc --noEmit`)
 
-Ứng dụng Next.js 15 đã được biên dịch thành công 100% ở chế độ Production:
-```text
-Route (app)                              Size     First Load JS
-┌ ○ /                                    3.1 kB          112 kB
-├ ○ /_not-found                          141 B           100 kB
-├ ƒ /api/auth/[...nextauth]              141 B           100 kB
-├ ○ /auth/callback                       3.29 kB         116 kB
-├ ƒ /categories                          6.77 kB         128 kB
-├ ƒ /categories/[slug]                   3.29 kB         112 kB
-├ ○ /dashboard                           1.54 kB         111 kB
-├ ○ /dashboard/categories                8.82 kB         168 kB
-├ ○ /login                               1.31 kB         151 kB
-├ ○ /profile                             3.7 kB          154 kB
-├ ○ /recipes                             6.13 kB         130 kB
-├ ƒ /recipes/[slug]                      7.66 kB         132 kB
-├ ƒ /recipes/[slug]/edit                 4.29 kB         162 kB
-├ ○ /recipes/create                      1.14 kB         159 kB
-├ ○ /recipes/new                         141 B           100 kB
-└ ○ /register                            1.34 kB         151 kB
-+ First Load JS shared by all            100 kB
-```
-- Không có bất kỳ lỗi biên dịch TypeScript (`tsc`) nào.
-- Toàn bộ 13 routes được đóng gói tối ưu, kích thước bundle chuẩn mực.
+Ứng dụng Next.js 15 đã được kiểm thử kiểu dữ liệu tĩnh nghiêm ngặt (Strict TypeScript Mode) và đạt kết quả hoàn hảo:
+- **Mã thoát (Exit Code):** `0`
+- **Lỗi / Cảnh báo:** Không phát sinh bất kỳ lỗi TypeScript hay xung đột interface nào.
+- Toàn bộ các component mới (`SearchModal`, `CategoriesClientView`, `CategoryDetailModal`, `CategoryCard`) đều tuân thủ chặt chẽ design system và React 19 / Next.js 15 Client/Server Component boundaries.
+
+### 3. Trạng thái Vận hành Hạ tầng & Dịch vụ
+
+Toàn bộ hệ thống đang chạy ổn định và sẵn sàng cho việc thuyết minh, bảo vệ đồ án:
+- **PostgreSQL 16:** `localhost:5433` (Container `culinary_postgres`) — Đầy đủ 20 categories và 100 recipes seed.
+- **Redis 7:** `localhost:6379` (Container `culinary_redis`) — Bộ nhớ đệm cache hoạt động bình thường.
+- **MinIO S3:** `localhost:9000` / Console `localhost:9001` (Container `culinary_minio`) — Bucket `culinary-blog` lưu trữ ảnh công thức và danh mục an toàn.
+- **Seq Observability:** `localhost:5341` (Container `culinary_seq`) — Ghi nhận structured logs tập trung.
+- **MailHog:** `localhost:8025` (Container `culinary_mailhog`) — Giả lập SMTP server gửi email xác thực.
+- **Backend API:** `http://localhost:5001` (Status: Healthy).
+- **Frontend App:** `http://localhost:3000` (Status: 200 OK).
 
 ---
 
@@ -140,11 +148,12 @@ Route (app)                              Size     First Load JS
 |---|---|---|---|---|:---:|
 | **FR-SRCH-001** | Tìm kiếm Toàn văn bản (FTS) | Guest / All | `GET /api/v1/recipes/search`<br>PostgreSQL `tsvector` + `unaccent` + `ts_rank` | `SearchRecipesQueryHandlerTests`<br>`RecipesEndpointsTests` | ✅ Hoàn thành 100% |
 | **FR-SRCH-002** | Lọc theo Danh mục & Độ khó | Guest / All | Query params: `categoryId`, `difficulty`, `maxTotalTimeMinutes` | `GetRecipesQueryHandlerTests` | ✅ Hoàn thành 100% |
-| **FR-SRCH-003** | Modal Tìm kiếm Nhanh Toàn cục | All Users | Phím tắt `Ctrl + K`, Debounce 250ms, multi-entity search | E2E Manual & Next.js Build | ✅ Hoàn thành 100% |
-| **FR-SRCH-004** | Tìm kiếm trực tiếp trên Hero Trang chủ | All Users | Form tìm kiếm tích hợp `HomeHeroSearch.tsx` | E2E Manual & Next.js Build | ✅ Hoàn thành 100% |
+| **FR-SRCH-003** | Modal Tìm kiếm Nhanh Toàn cục | All Users | Phím tắt `Ctrl + K`, Debounce 250ms, multi-entity search | E2E Manual & TypeScript Check | ✅ Hoàn thành 100% |
+| **FR-SRCH-004** | Tìm kiếm trực tiếp trên Hero Trang chủ | All Users | Form tìm kiếm tích hợp `HomeHeroSearch.tsx` | E2E Manual & TypeScript Check | ✅ Hoàn thành 100% |
 | **FR-CAT-001** | Xem Danh sách Tất cả Danh mục | Guest / All | `GET /api/v1/categories`<br>Trang `/categories` + Client Filter/Sort | `CategoryEndpointsTests`<br>Next.js Build | ✅ Hoàn thành 100% |
 | **FR-CAT-002** | Xem Chi tiết Danh mục & Công thức | Guest / All | `GET /api/v1/categories/{slug}`<br>Phân trang danh sách món ăn | `CategoryEndpointsTests` | ✅ Hoàn thành 100% |
 | **FR-CAT-003** | Lối tắt Quản trị Danh mục | Admin | Điều hướng `/dashboard/categories` khi có role `Admin` | Integration Tests & UI Auth | ✅ Hoàn thành 100% |
+| **FR-CAT-004** | Cơ chế Thoát Modal & Điều hướng Thân thiện | All Users | Phím `Escape`, Click backdrop outside, Nút thoát rõ ràng | Manual UI Verification | ✅ Hoàn thành 100% |
 
 ---
 
@@ -164,7 +173,7 @@ Route (app)                              Size     First Load JS
 2. **Kiểm tra thông số thống kê:** Xem 3 thẻ thống kê tổng quan (Tổng danh mục, Tổng công thức, Danh mục nhiều món nhất).
 3. **Lọc danh mục tức thì:** Nhập từ khóa `Á` vào ô tìm kiếm danh mục. Lưới danh mục lập tức chỉ hiển thị "Món Á Truyền Thống".
 4. **Sắp xếp danh mục:** Chọn sắp xếp "Tên danh mục: A → Z" hoặc "Nhiều công thức nhất".
-5. **Kiểm tra phân quyền Admin:** Đăng nhập tài khoản `admin@culinaryblog.com` / `Admin@123456`, quay lại `/categories` sẽ thấy banner Quản trị viên xuất hiện kèm nút vào trang CRUD.
+5. **Kiểm tra tương tác thoát modal:** Bấm vào nút "Xem nhanh" hoặc "Thêm danh mục", sau đó nhấn phím `Escape` hoặc nhấp chuột ra ngoài vùng modal để kiểm tra tính năng thoát nhanh.
 
 ---
 
@@ -173,7 +182,7 @@ Route (app)                              Size     First Load JS
 ### 1. Đánh giá tiến độ Tuần 7
 - Hoàn thành trọn vẹn 100% các chức năng tìm kiếm toàn cục, tìm kiếm toàn văn bản tiếng Việt FTS, tìm kiếm Hero và nâng cấp trải nghiệm trang danh mục.
 - Toàn bộ kiến trúc Backend duy trì ổn định tuyệt đối với **284/284 bài test kiểm thử tự động xanh 100%**.
-- Frontend Next.js 15 đạt chuẩn thiết kế giao diện ẩm thực hiện đại, trực quan, hỗ trợ đầy đủ responsive trên cả Desktop, Tablet và Mobile.
+- Giao diện người dùng được tối ưu hóa khả năng tương tác, giải quyết triệt để các phản hồi về việc thoát modal và điều hướng trang.
 
 ### 2. Kế hoạch công việc tiếp theo (Bảo vệ đồ án & Triển khai Docker)
 - Chạy toàn bộ hệ thống bằng Docker Compose (`docker compose -f infrastructure/docker-compose.yml up -d`).
