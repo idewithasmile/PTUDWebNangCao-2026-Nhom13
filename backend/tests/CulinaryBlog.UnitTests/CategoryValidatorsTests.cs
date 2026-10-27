@@ -18,6 +18,28 @@ public class CategoryValidatorsTests
     }
 
     [Theory]
+    [InlineData("/culinary-blog/categories/58abf34d-4cb0-4039-b49d-e18156ab411b.png")]
+    [InlineData("https://example.com/image.webp")]
+    [InlineData("http://localhost:9000/culinary-blog/categories/pic.jpg")]
+    public void CreateCommand_WithValidImageUrl_ShouldPass(string imageUrl)
+    {
+        var command = new CreateCategoryCommand("Món nướng", "Mô tả món nướng", imageUrl, 1);
+        var result = _createValidator.Validate(command);
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("not-a-valid-url")]
+    [InlineData("ftp://invalid-scheme.com/file.jpg")]
+    public void CreateCommand_WithInvalidImageUrl_ShouldFail(string imageUrl)
+    {
+        var command = new CreateCategoryCommand("Món nướng", "Mô tả món nướng", imageUrl, 1);
+        var result = _createValidator.Validate(command);
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateCategoryCommand.ImageUrl));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData(" ")]
     [InlineData("A")] // less than 2 chars

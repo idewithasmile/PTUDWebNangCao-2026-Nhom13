@@ -23,8 +23,13 @@ const categorySchema = z.object({
     .or(z.literal('')),
   imageUrl: z
     .string()
-    .url('Đường dẫn ảnh phải là một URL hợp lệ (ví dụ https://...).')
     .max(500, 'Đường dẫn ảnh tối đa 500 ký tự.')
+    .refine(
+      (val) => !val || val.startsWith('/') || /^https?:\/\//i.test(val),
+      {
+        message: 'Đường dẫn ảnh phải là một URL hợp lệ (ví dụ https://...) hoặc đường dẫn ảnh (/...).',
+      }
+    )
     .optional()
     .or(z.literal('')),
   orderIndex: z.coerce
@@ -92,6 +97,18 @@ export default function CategoryFormModal({
     setServerError(null);
   }, [categoryToEdit, reset, isOpen]);
 
+  // Phím tắt Escape để thoát modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const onFormSubmit = async (data: CategoryFormData) => {
@@ -129,10 +146,18 @@ export default function CategoryFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl overflow-hidden border border-gray-100 animate-scale-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      onClick={onClose}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-gray-100 animate-scale-up overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/80">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
               <Sparkles className="w-5 h-5" />
@@ -150,13 +175,16 @@ export default function CategoryFormModal({
             type="button"
             onClick={onClose}
             className="rounded-xl p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            title="Thoát (Esc)"
+            aria-label="Thoát"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} noValidate className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {serverError && (
             <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
@@ -234,8 +262,8 @@ export default function CategoryFormModal({
                 Hoặc nhập đường dẫn ảnh trực tiếp (URL)
               </label>
               <input
-                type="url"
-                placeholder="https://example.com/images/category.jpg"
+                type="text"
+                placeholder="https://example.com/images/category.jpg hoặc /culinary-blog/..."
                 {...register('imageUrl')}
                 className={`w-full rounded-xl border px-3 py-2 text-xs transition focus:outline-none focus:ring-2 ${
                   errors.imageUrl
@@ -271,27 +299,28 @@ export default function CategoryFormModal({
               Số nhỏ hơn sẽ được ưu tiên hiển thị trước trên thanh điều hướng.
             </p>
           </div>
+        </div>
 
-          {/* Modal Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 transition disabled:opacity-50"
-            >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{isEdit ? 'Lưu thay đổi' : 'Tạo danh mục'}</span>
-            </button>
-          </div>
-        </form>
+        {/* Modal Footer - Pinned at bottom */}
+        <div className="flex shrink-0 items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 transition disabled:opacity-50"
+          >
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{isEdit ? 'Lưu thay đổi' : 'Tạo danh mục'}</span>
+          </button>
+        </div>
+      </form>
       </div>
     </div>
   );

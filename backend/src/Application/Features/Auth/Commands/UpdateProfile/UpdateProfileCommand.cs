@@ -25,10 +25,11 @@ public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProf
         RuleFor(x => x.DisplayName)
             .Length(2, 100).When(x => x.DisplayName is not null);
         RuleFor(x => x.AvatarUrl)
-            .Must(u => Uri.TryCreate(u, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            .Must(u => string.IsNullOrEmpty(u)
+                || (Uri.TryCreate(u, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                || (u.StartsWith('/') && Uri.TryCreate(u, UriKind.Relative, out _)))
             .When(x => x.AvatarUrl is not null)
-            .WithMessage("AvatarUrl must be a valid absolute http(s) URL.")
+            .WithMessage("AvatarUrl must be a valid http(s) URL or relative storage path.")
             .MaximumLength(500);
         RuleFor(x => x.Bio)
             .MaximumLength(2000).When(x => x.Bio is not null);

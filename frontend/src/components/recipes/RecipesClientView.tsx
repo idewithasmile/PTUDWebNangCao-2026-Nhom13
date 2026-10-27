@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
-import { UtensilsCrossed, AlertCircle, Loader2, Plus, ChefHat, BookOpen } from 'lucide-react';
+import { UtensilsCrossed, AlertCircle, Loader2, Plus, ChefHat, BookOpen, Search, X } from 'lucide-react';
 import { useRecipes } from '@/features/recipes/hooks';
 import { hasSession } from '@/features/auth/api';
 import type { GetRecipesParams, RecipeDifficulty } from '@/lib/types/recipe';
@@ -137,6 +137,28 @@ export default function RecipesClientView() {
         onResetFilters={handleResetFilters}
       />
 
+      {/* Thông báo kết quả tìm kiếm tích cực */}
+      {filters.searchTerm && !isLoading && (
+        <div className="flex items-center justify-between rounded-xl bg-orange-50/80 border border-orange-200 px-4 py-2.5 text-xs sm:text-sm text-orange-900 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-orange-600" />
+            <span>
+              Kết quả tìm kiếm cho <strong className="font-bold text-orange-800">&ldquo;{filters.searchTerm}&rdquo;</strong>:
+              {' '}<span className="font-semibold">{pagedResult?.totalCount ?? 0}</span> công thức nấu ăn
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ searchTerm: undefined, page: 1 })}
+            className="inline-flex items-center gap-1 font-semibold text-orange-700 hover:text-orange-900 hover:underline transition"
+            title="Xóa tìm kiếm"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>Xóa từ khóa</span>
+          </button>
+        </div>
+      )}
+
       {/* Trường hợp đang tải dữ liệu (Loading Skeleton) */}
       {isLoading && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -202,21 +224,36 @@ export default function RecipesClientView() {
       {!isLoading && !isError && recipes.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-12 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-            <UtensilsCrossed className="h-8 w-8" />
+            {filters.searchTerm ? <Search className="h-8 w-8" /> : <UtensilsCrossed className="h-8 w-8" />}
           </div>
           <h3 className="mt-4 text-base font-bold text-gray-900">
-            Không tìm thấy công thức nào
+            {filters.searchTerm
+              ? `Không tìm thấy công thức nào cho "${filters.searchTerm}"`
+              : 'Không tìm thấy công thức nào'}
           </h3>
-          <p className="mt-1 max-w-md text-sm text-gray-500">
-            Không có công thức nấu ăn nào phù hợp với bộ lọc hiện tại của bạn. Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc.
+          <p className="mt-1 max-w-md text-sm text-gray-500 leading-relaxed">
+            {filters.searchTerm
+              ? 'Thử kiểm tra lỗi chính tả, sử dụng từ khóa ngắn hơn hoặc tìm kiếm tiếng Việt không dấu (ví dụ: "pho bo" thay vì "phở bò tái lăn").'
+              : 'Không có công thức nấu ăn nào phù hợp với bộ lọc hiện tại của bạn. Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc.'}
           </p>
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50"
-          >
-            Xóa tất cả bộ lọc
-          </button>
+          <div className="mt-5 flex items-center gap-3">
+            {filters.searchTerm ? (
+              <button
+                type="button"
+                onClick={() => updateUrlParams({ searchTerm: undefined, page: 1 })}
+                className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-orange-700"
+              >
+                Xóa từ khóa tìm kiếm
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+            >
+              Đặt lại tất cả bộ lọc
+            </button>
+          </div>
         </div>
       )}
     </div>

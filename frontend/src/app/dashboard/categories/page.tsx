@@ -12,17 +12,26 @@ import {
   Search,
   Edit2,
   Trash2,
+  Eye,
   ChefHat,
   Loader2,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  ShieldAlert,
+  LogIn,
 } from 'lucide-react';
 import Link from 'next/link';
+import CategoryDetailModal from '@/components/categories/CategoryDetailModal';
+import { useMe } from '@/features/auth/hooks';
+import { hasSession } from '@/features/auth/api';
 
 export default function DashboardCategoriesPage() {
   const queryClient = useQueryClient();
+  const me = useMe(hasSession());
+  const user = me.data;
+  const isAdmin = user?.roles?.includes('Admin');
 
   // State quản lý Modal
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -30,6 +39,14 @@ export default function DashboardCategoriesPage() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryDto | null>(null);
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [categoryToView, setCategoryToView] = useState<CategoryDto | null>(null);
+
+  const handleOpenView = (category: CategoryDto) => {
+    setCategoryToView(category);
+    setIsDetailModalOpen(true);
+  };
 
   // State tìm kiếm & phân trang bảng
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,6 +197,44 @@ export default function DashboardCategoriesPage() {
         </div>
       </div>
 
+      {/* Cảnh báo trạng thái đăng nhập & phân quyền */}
+      {!me.isLoading && !user && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Chưa xác thực quyền Quản trị viên</p>
+              <p className="text-xs text-amber-700">
+                Bạn cần đăng nhập bằng tài khoản Admin để có quyền thêm mới, chỉnh sửa, xóa hoặc tải ảnh danh mục.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition shrink-0"
+          >
+            <LogIn className="h-4 w-4" />
+            <span>Đăng nhập Admin</span>
+          </Link>
+        </div>
+      )}
+
+      {!me.isLoading && user && !isAdmin && (
+        <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 flex items-center gap-3 text-rose-900 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+            <ShieldAlert className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Quyền hạn không đủ</p>
+            <p className="text-xs text-rose-700">
+              Tài khoản hiện tại ({user.email}) không có vai trò Quản trị viên (Admin). Bạn chỉ có thể xem danh mục.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Thanh tìm kiếm & bộ lọc */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:max-w-md">
@@ -306,6 +361,14 @@ export default function DashboardCategoriesPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => handleOpenView(category)}
+                          className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition shadow-sm"
+                          title="Xem chi tiết danh mục"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenEdit(category)}
                           className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 transition shadow-sm"
                           title="Chỉnh sửa danh mục"
@@ -394,6 +457,13 @@ export default function DashboardCategoriesPage() {
         onConfirmDelete={async (id) => {
           await deleteMutation.mutateAsync(id);
         }}
+      />
+
+      {/* Modal Xem chi tiết danh mục */}
+      <CategoryDetailModal
+        isOpen={isDetailModalOpen}
+        category={categoryToView}
+        onClose={() => setIsDetailModalOpen(false)}
       />
     </div>
   );

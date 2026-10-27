@@ -38,7 +38,14 @@ export const loginSchema = z.object({
 
 export const updateProfileSchema = z.object({
   displayName: displayNameSchema.optional(),
-  avatarUrl: z.string().url('Avatar phải là URL http(s) hợp lệ.').max(500).optional().or(z.literal('')),
+  avatarUrl: z
+    .string()
+    .max(500)
+    .refine((val) => !val || val.startsWith('/') || /^https?:\/\//i.test(val), {
+      message: 'Avatar phải là URL http(s) hợp lệ hoặc đường dẫn ảnh nội bộ (/...).',
+    })
+    .optional()
+    .or(z.literal('')),
   bio: z.string().max(2000, 'Bio tối đa 2000 ký tự.').optional(),
 });
 

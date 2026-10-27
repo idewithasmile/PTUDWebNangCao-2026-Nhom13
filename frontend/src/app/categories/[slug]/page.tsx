@@ -60,18 +60,30 @@ export default async function CategoryDetailPage({ params, searchParams }: PageP
 
   return (
     <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-6">
-        <Link href="/" className="hover:text-orange-600 transition-colors">
-          Trang chủ
+      {/* Top Navigation & Exit Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+          <Link href="/" className="hover:text-orange-600 transition-colors">
+            Trang chủ
+          </Link>
+          <span>/</span>
+          <Link href="/categories" className="hover:text-orange-600 transition-colors">
+            Danh mục
+          </Link>
+          <span>/</span>
+          <span className="font-semibold text-gray-900 truncate max-w-[200px]">{category.name}</span>
+        </nav>
+
+        {/* Nút Thoát / Quay lại danh sách danh mục */}
+        <Link
+          href="/categories"
+          className="inline-flex items-center gap-2 self-start sm:self-auto px-4 py-2 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition shadow-2xs group"
+          title="Thoát chế độ xem danh mục"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Quay lại tất cả danh mục (Thoát)</span>
         </Link>
-        <span>/</span>
-        <Link href="/categories" className="hover:text-orange-600 transition-colors">
-          Danh mục
-        </Link>
-        <span>/</span>
-        <span className="font-semibold text-gray-900 truncate max-w-[200px]">{category.name}</span>
-      </nav>
+      </div>
 
       {/* Banner Danh mục */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700 text-white p-8 sm:p-12 mb-10 shadow-lg">
@@ -89,13 +101,14 @@ export default async function CategoryDetailPage({ params, searchParams }: PageP
             </p>
           )}
 
-          <div className="mt-6 flex items-center gap-4">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href="/categories"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-white/90 hover:text-white underline underline-offset-4"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-md px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-white/30 transition shadow-sm"
+              title="Thoát về danh sách danh mục"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Xem tất cả danh mục khác</span>
+              <span>Thoát về danh sách danh mục</span>
             </Link>
           </div>
         </div>

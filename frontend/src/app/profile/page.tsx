@@ -165,9 +165,9 @@ export default function ProfilePage() {
           />
           <input
             id="avatarUrl"
-            type="url"
+            type="text"
             className="mt-1 w-full rounded border p-2"
-            placeholder="https://…"
+            placeholder="https://… hoặc /culinary-blog/..."
             {...register('avatarUrl')}
           />
           {errors.avatarUrl && <p className="text-sm text-red-600">{errors.avatarUrl.message}</p>}

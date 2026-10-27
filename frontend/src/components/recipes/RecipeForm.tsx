@@ -184,7 +184,7 @@ export default function RecipeForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
       {/* Thông báo lỗi server (nếu có) */}
       {serverError && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
@@ -373,10 +373,10 @@ export default function RecipeForm({
                 ) : (
                   <div className="space-y-2">
                     <input
-                      type="url"
+                      type="text"
                       {...register('primaryImageUrl')}
                       disabled={isSubmitting}
-                      placeholder="Dán đường dẫn ảnh: https://example.com/anh-mon-an.jpg"
+                      placeholder="Dán đường dẫn ảnh: https://example.com/anh-mon-an.jpg hoặc /culinary-blog/..."
                       className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 disabled:bg-gray-50"
                     />
                     {/* Gợi ý ảnh nhanh */}

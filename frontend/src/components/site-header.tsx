@@ -7,7 +7,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SESSION_REVOKED_EVENT } from '@/lib/api-client';
 import { authKeys, toErrorMessage, useLogout, useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
-import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard, Search } from 'lucide-react';
+import { useUIStore } from '@/stores/ui-store';
+import SearchModal from '@/components/search/SearchModal';
 
 export default function SiteHeader() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function SiteHeader() {
   const qc = useQueryClient();
   const logout = useLogout();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { setSearchModalOpen } = useUIStore();
 
   // Chỉ fetch /me khi có access token in-memory (tránh 401 thừa sau reload).
   const me = useMe(hasSession());
@@ -164,8 +167,17 @@ export default function SiteHeader() {
           )}
         </div>
 
-        {/* Mobile Menu Toggle Button */}
-        <div className="flex items-center gap-2 md:hidden">
+        {/* Mobile Menu Toggle Button & Mobile Search Button */}
+        <div className="flex items-center gap-1.5 md:hidden">
+          <button
+            type="button"
+            onClick={() => setSearchModalOpen(true)}
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+            aria-label="Tìm kiếm nhanh"
+            title="Tìm kiếm nhanh"
+          >
+            <Search className="h-5 w-5 text-gray-700" />
+          </button>
           {user && (
             <Link
               href="/recipes/create"
@@ -288,6 +300,9 @@ export default function SiteHeader() {
           </nav>
         </div>
       )}
+
+      {/* Global Quick Search Modal (Ctrl + K) */}
+      <SearchModal />
     </header>
   );
 }
