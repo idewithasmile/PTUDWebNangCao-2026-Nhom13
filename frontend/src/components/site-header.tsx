@@ -7,7 +7,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SESSION_REVOKED_EVENT } from '@/lib/api-client';
 import { authKeys, toErrorMessage, useLogout, useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
-import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { PlusCircle, Menu, X, ChefHat, ShieldCheck, LayoutDashboard, Search } from 'lucide-react';
+import { useUIStore } from '@/stores/ui-store';
+import SearchModal from '@/components/search/SearchModal';
 
 export default function SiteHeader() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function SiteHeader() {
   const qc = useQueryClient();
   const logout = useLogout();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { setSearchModalOpen } = useUIStore();
 
   // Chỉ fetch /me khi có access token in-memory (tránh 401 thừa sau reload).
   const me = useMe(hasSession());
@@ -81,6 +84,23 @@ export default function SiteHeader() {
               </Link>
             ))}
           </nav>
+        </div>
+
+        {/* Search Quick Trigger Button (Desktop & Tablet) */}
+        <div className="hidden md:flex items-center">
+          <button
+            type="button"
+            onClick={() => setSearchModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-1.5 text-xs text-gray-500 hover:border-orange-300 hover:bg-orange-50/40 transition-all shadow-sm group"
+            title="Tìm kiếm công thức (Ctrl + K)"
+          >
+            <Search className="h-3.5 w-3.5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+            <span className="hidden lg:inline text-gray-600">Tìm kiếm món ăn, nguyên liệu...</span>
+            <span className="lg:hidden text-gray-600">Tìm kiếm...</span>
+            <kbd className="rounded border border-gray-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-gray-400 shadow-2xs">
+              Ctrl K
+            </kbd>
+          </button>
         </div>
 
         {/* Right Action / Auth Buttons */}
@@ -164,8 +184,17 @@ export default function SiteHeader() {
           )}
         </div>
 
-        {/* Mobile Menu Toggle Button */}
-        <div className="flex items-center gap-2 md:hidden">
+        {/* Mobile Menu Toggle Button & Mobile Search Button */}
+        <div className="flex items-center gap-1.5 md:hidden">
+          <button
+            type="button"
+            onClick={() => setSearchModalOpen(true)}
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+            aria-label="Tìm kiếm nhanh"
+            title="Tìm kiếm nhanh"
+          >
+            <Search className="h-5 w-5 text-gray-700" />
+          </button>
           {user && (
             <Link
               href="/recipes/create"
@@ -288,6 +317,9 @@ export default function SiteHeader() {
           </nav>
         </div>
       )}
+
+      {/* Global Quick Search Modal (Ctrl + K) */}
+      <SearchModal />
     </header>
   );
 }

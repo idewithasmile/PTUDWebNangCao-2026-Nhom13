@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import HomeHeroSearch from '@/components/home/HomeHeroSearch';
 import {
   UtensilsCrossed,
   ArrowRight,
@@ -35,7 +36,10 @@ export default function Home() {
             Cùng học hỏi, sáng tạo và chia sẻ niềm đam mê ẩm thực mỗi ngày.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          {/* Quick Hero Search Bar */}
+          <HomeHeroSearch />
+
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Link
               href="/recipes"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-orange-600 shadow-md transition-all hover:bg-orange-50 hover:shadow-lg active:scale-95"
