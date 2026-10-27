@@ -52,22 +52,27 @@ async function testHomeMockupPage() {
     await page.waitForSelector('text=Đồ Uống');
     console.log('✅ Danh mục: 6 thẻ chính (Món Khai Vị, Món Chính, Canh & Súp, Món Chay, Tráng Miệng, Đồ Uống) hiển thị đầy đủ.');
 
-    // Cột chính: Tiêu điểm & 6 công thức mới nhất
-    await page.waitForSelector('text=Công thức nổi bật');
-    await page.waitForSelector('text=Công thức mới nhất');
-    const recipeCards = await page.locator('a[href^="/recipes/"]').count();
-    console.log(`✅ Cột chính (Trái): Tiêu điểm món ngon và ${recipeCards} thẻ công thức thông thoáng.`);
+    // 5. Kiểm tra Khu vực Công thức mới nhất (1 Thẻ lớn Món Hot + Lưới 2x2 4 thẻ)
+    console.log('🔍 5. Kiểm tra Khu vực Công thức mới nhất (1 Thẻ lớn Món Hot + Lưới 2x2)...');
+    await page.waitForSelector('text=CÔNG THỨC MỚI NHẤT');
+    await page.waitForSelector('text=MÓN HOT TUẦN NÀY');
+    await page.waitForSelector('text=Xem công thức');
+    await page.waitForSelector('text=Nấu ngay');
+    await page.waitForSelector('text=Xem chi tiết');
+    const recipeLinks = await page.locator('a[href^="/recipes/"]').count();
+    console.log(`✅ Công thức mới nhất: 1 Thẻ lớn Món Hot + Lưới 4 thẻ với ${recipeLinks} liên kết hợp lệ.`);
 
-    // Cột phụ: Xem nhiều nhất, Promo, Nhận tin, MXH, Trích dẫn
+    // 6. Khu vực Cộng đồng & Khám phá: Xem nhiều nhất, Promo, Nhận tin, MXH, Trích dẫn
+    console.log('🔍 6. Kiểm tra Khu vực Cộng đồng & Khám phá...');
     await page.waitForSelector('text=Công thức được xem nhiều');
     await page.waitForSelector('text=Nguyên liệu tươi ngon');
     await page.waitForSelector('text=Đăng ký nhận công thức mới');
     await page.waitForSelector('text=Theo dõi chúng tôi');
     await page.waitForSelector('text=Nấu ăn không chỉ là kỹ năng');
-    console.log('✅ Cột phụ (Phải): Top 5 xem nhiều, banner nguyên liệu, đăng ký email, MXH và trích dẫn.');
+    console.log('✅ Khám phá & Cộng đồng: Top xem nhiều, banner nguyên liệu, đăng ký email, MXH và trích dẫn.');
 
-    // 5. Kiểm tra Banner "Vì sao nên chọn Culinary Blog?"
-    console.log('🔍 5. Kiểm tra Banner Vì sao nên chọn Culinary Blog?...');
+    // 7. Kiểm tra Banner "Vì sao nên chọn Culinary Blog?"
+    console.log('🔍 7. Kiểm tra Banner Vì sao nên chọn Culinary Blog?...');
     await page.waitForSelector('text=Vì sao nên chọn');
     await page.waitForSelector('text=Công thức đa dạng');
     await page.waitForSelector('text=Hướng dẫn chi tiết');
@@ -75,8 +80,8 @@ async function testHomeMockupPage() {
     await page.waitForSelector('text=Cập nhật liên tục');
     console.log('✅ Banner 4 ưu điểm nổi bật hiển thị đầy đủ.');
 
-    // 6. Kiểm tra Footer
-    console.log('🔍 6. Kiểm tra Footer...');
+    // 8. Kiểm tra Footer
+    console.log('🔍 8. Kiểm tra Footer...');
     await page.waitForSelector('footer');
     await page.waitForSelector('text=Phát triển bởi Nhóm 13');
     console.log('✅ Footer: Thông tin thương hiệu, các cột liên kết và bản quyền Nhóm 13.');
@@ -86,8 +91,8 @@ async function testHomeMockupPage() {
     await page.screenshot({ path: fullDesktopPath, fullPage: true });
     console.log(`📸 Đã lưu ảnh chụp toàn bộ trang chủ Desktop: ${fullDesktopPath}`);
 
-    // 7. Kiểm thử tương tác: Nhấp tim yêu thích trên Recipe Card
-    console.log('🧪 7. Kiểm thử tương tác: Nhấp nút Tim (Heart) trên thẻ món ăn...');
+    // 9. Kiểm thử tương tác: Nhấp tim yêu thích trên Recipe Card
+    console.log('🧪 9. Kiểm thử tương tác: Nhấp nút Tim (Heart) trên thẻ món ăn...');
     const heartBtn = page.locator('button[title="Yêu thích món ăn"]').first();
     if (await heartBtn.isVisible()) {
       await heartBtn.click();
@@ -95,8 +100,8 @@ async function testHomeMockupPage() {
       console.log('✅ Đã kích hoạt hiệu ứng yêu thích món ăn.');
     }
 
-    // 8. Kiểm thử tương tác: Đăng ký nhận tin Email
-    console.log('🧪 8. Kiểm thử tương tác: Nhập email đăng ký nhận công thức mới...');
+    // 10. Kiểm thử tương tác: Đăng ký nhận tin Email
+    console.log('🧪 10. Kiểm thử tương tác: Nhập email đăng ký nhận công thức mới...');
     const emailInput = page.locator('input[placeholder="Nhập email của bạn"]');
     if (await emailInput.isVisible()) {
       await emailInput.fill('khachhang@culinaryblog.com');
@@ -105,8 +110,8 @@ async function testHomeMockupPage() {
       console.log('✅ Đăng ký nhận bản tin phản hồi thành công.');
     }
 
-    // 9. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục
-    console.log('🧪 9. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục...');
+    // 11. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục
+    console.log('🧪 11. Kiểm thử tương tác: Nhấp mở rộng "Hiển thị tất cả" danh mục...');
     const showAllBtn = page.locator('button:has-text("Hiển thị tất cả")');
     if (await showAllBtn.isVisible()) {
       await showAllBtn.click();
@@ -115,8 +120,8 @@ async function testHomeMockupPage() {
       console.log('✅ Đã mở rộng danh sách danh mục phong phú khác thành công.');
     }
 
-    // 10. Kiểm thử điều hướng: Nhấp vào thẻ Danh mục chính (Món Khai Vị) để chuyển sang trang chi tiết danh mục
-    console.log('🧪 10. Kiểm thử điều hướng: Nhấp vào thẻ danh mục Món Khai Vị...');
+    // 12. Kiểm thử điều hướng: Nhấp vào thẻ Danh mục chính (Món Khai Vị) để chuyển sang trang chi tiết danh mục
+    console.log('🧪 12. Kiểm thử điều hướng: Nhấp vào thẻ danh mục Món Khai Vị...');
     const khaiViLink = page.locator('a:has(h3:has-text("Món Khai Vị"))');
     await khaiViLink.waitFor({ state: 'visible', timeout: 5000 });
     const targetHref = await khaiViLink.getAttribute('href');
@@ -124,7 +129,7 @@ async function testHomeMockupPage() {
     
     // Nhấp điều hướng
     await khaiViLink.click();
-    await page.waitForURL(/categories/, { timeout: 10000 });
+    await page.waitForURL(/categories/, { timeout: 10000, waitUntil: 'commit' });
     await page.waitForTimeout(2000);
     console.log(`✅ Đã điều hướng thành công sang trang danh mục: ${page.url()}`);
 
@@ -136,13 +141,13 @@ async function testHomeMockupPage() {
     await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(1500);
 
-    // 11. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner chuyển sang trang /recipes
-    console.log('🧪 11. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner...');
+    // 13. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner chuyển sang trang /recipes
+    console.log('🧪 13. Kiểm thử điều hướng: Tìm kiếm từ Hero Banner...');
     const heroSection = page.locator('section:has-text("Hàng ngàn công thức nấu ăn")');
     const heroInput = heroSection.locator('input');
     await heroInput.fill('Phở bò');
     await heroSection.locator('button:has-text("Tìm kiếm")').click();
-    await page.waitForURL(/recipes\?searchTerm=/, { timeout: 10000 });
+    await page.waitForURL(/recipes\?searchTerm=/, { timeout: 10000, waitUntil: 'commit' });
     await page.waitForTimeout(2000);
     console.log(`✅ Đã điều hướng tìm kiếm thành công sang trang: ${page.url()}`);
 
@@ -150,8 +155,8 @@ async function testHomeMockupPage() {
     await page.screenshot({ path: searchNavPath });
     console.log(`📸 Đã lưu ảnh chụp trang kết quả tìm kiếm: ${searchNavPath}`);
 
-    // 12. Kiểm tra hiển thị trên Mobile (390x844)
-    console.log('📱 12. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
+    // 14. Kiểm tra hiển thị trên Mobile (390x844)
+    console.log('📱 14. Kiểm tra hiển thị Responsive trên Mobile (390x844)...');
     const mobileContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       isMobile: true,

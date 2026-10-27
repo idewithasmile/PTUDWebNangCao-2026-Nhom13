@@ -65,13 +65,13 @@ export default function HomeRightSidebar({ topRecipes }: HomeRightSidebarProps) 
     : DEFAULT_MOST_VIEWED;
 
   return (
-    <aside className="w-full lg:w-[280px] xl:w-[300px] shrink-0 space-y-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
       {/* =========================================================
-          1. CÔNG THỨC ĐƯỢC XEM NHIỀU (TOP 5)
+          CỘT 1: CÔNG THỨC ĐƯỢC XEM NHIỀU (TOP 5)
           ========================================================= */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3.5">
-        <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+      <div className="bg-white rounded-3xl border border-stone-200/80 shadow-xs p-5 space-y-4 flex flex-col justify-between">
+        <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+          <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-50 text-orange-500 shadow-2xs">
             <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
           </span>
           <h3 className="text-sm font-black text-gray-900 tracking-tight">
@@ -79,7 +79,7 @@ export default function HomeRightSidebar({ topRecipes }: HomeRightSidebarProps) 
           </h3>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3.5 flex-1">
           {items.map((item, index) => {
             const rank = index + 1;
             const isTop3 = rank <= 3;
@@ -131,154 +131,157 @@ export default function HomeRightSidebar({ topRecipes }: HomeRightSidebarProps) 
       </div>
 
       {/* =========================================================
-          2. BANNER QUẢNG CÁO NGUYÊN LIỆU TƯƠI NGON
+          CỘT 2: NGUYÊN LIỆU TƯƠI NGON & ĐĂNG KÝ NHẬN TIN
           ========================================================= */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 p-4 shadow-sm group">
-        <div className="space-y-1.5 relative z-10 max-w-[160px]">
-          <h4 className="text-sm font-black text-gray-900 leading-snug">
-            Nguyên liệu tươi ngon
-          </h4>
-          <p className="text-[11px] text-gray-500 leading-tight">
-            Cho món ăn thêm trọn vị
+      <div className="space-y-5 flex flex-col justify-between">
+        {/* Banner Quảng cáo Nguyên liệu */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 p-5 shadow-xs group flex-1 flex flex-col justify-center">
+          <div className="space-y-2 relative z-10 max-w-[200px]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-100/80 px-2.5 py-0.5 rounded-full">
+              Khám phá
+            </span>
+            <h4 className="text-base font-black text-gray-900 leading-snug">
+              Nguyên liệu tươi ngon
+            </h4>
+            <p className="text-xs text-gray-600 leading-tight">
+              Bí quyết chọn thực phẩm sạch cho món ăn thêm trọn vị mỗi ngày.
+            </p>
+            <div className="pt-1">
+              <Link
+                href="/recipes"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition-transform active:scale-95"
+              >
+                <span>Khám phá ngay</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=300&q=80"
+            alt="Nguyên liệu tươi ngon"
+            className="absolute -right-4 -bottom-4 w-32 h-32 object-cover rounded-full shadow-inner opacity-90 group-hover:scale-105 transition-transform"
+          />
+        </div>
+
+        {/* Form Đăng ký nhận tin */}
+        <div className="bg-white rounded-3xl border border-stone-200/80 shadow-xs p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-50 text-orange-500 shadow-2xs">
+              <Mail className="w-4 h-4" />
+            </span>
+            <h3 className="text-sm font-black text-gray-900 tracking-tight">
+              Đăng ký nhận công thức mới
+            </h3>
+          </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Nhận ngay những công thức ngon nhất mỗi tuần vào hộp thư của bạn!
           </p>
-          <div className="pt-2">
-            <Link
-              href="/recipes"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold shadow-xs transition-transform active:scale-95"
-            >
-              <span>Khám phá ngay</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=300&q=80"
-          alt="Nguyên liệu tươi ngon"
-          className="absolute -right-4 -bottom-4 w-28 h-28 object-cover rounded-full shadow-inner opacity-90 group-hover:scale-105 transition-transform"
-        />
+          {isSubscribed ? (
+            <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Đã đăng ký nhận bản tin thành công!</span>
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} className="space-y-2">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Nhập email của bạn"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
+              />
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+              >
+                Đăng ký ngay
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* =========================================================
-          3. ĐĂNG KÝ NHẬN CÔNG THỨC MỚI (NEWSLETTER)
+          CỘT 3: THEO DÕI MẠNG XÃ HỘI & TRÍCH DẪN ẨM THỰC
           ========================================================= */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
-            <Mail className="w-3.5 h-3.5" />
+      <div className="space-y-5 flex flex-col justify-between">
+        {/* Theo dõi chúng tôi */}
+        <div className="bg-white rounded-3xl border border-stone-200/80 shadow-xs p-5 space-y-3">
+          <h4 className="text-xs font-black uppercase tracking-wider text-gray-700">
+            Theo dõi chúng tôi
+          </h4>
+          <p className="text-xs text-gray-500">
+            Kết nối với cộng đồng yêu bếp trên các nền tảng mạng xã hội:
+          </p>
+
+          <div className="flex items-center gap-2.5 pt-1">
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#1877F2] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
+              title="Facebook"
+            >
+              f
+            </a>
+            <a
+              href="https://youtube.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FF0000] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
+              title="YouTube"
+            >
+              ▶
+            </a>
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FD1D1D] via-[#E1306C] to-[#405DE6] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
+              title="Instagram"
+            >
+              📷
+            </a>
+            <a
+              href="https://tiktok.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-black text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
+              title="TikTok"
+            >
+              🎵
+            </a>
+            <a
+              href="https://pinterest.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#E60023] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
+              title="Pinterest"
+            >
+              P
+            </a>
+          </div>
+        </div>
+
+        {/* Trích dẫn ẩm thực */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#fbf7f2] to-[#f5ede2] border border-[#eee2d3] p-5 space-y-3 flex-1 flex flex-col justify-center">
+          <span className="font-serif text-4xl font-black text-orange-400 leading-none block">
+            “
           </span>
-          <h3 className="text-sm font-black text-gray-900 tracking-tight">
-            Đăng ký nhận công thức mới
-          </h3>
-        </div>
-
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Nhận ngay những công thức ngon nhất vào hộp thư của bạn!
-        </p>
-
-        {isSubscribed ? (
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Đã đăng ký nhận bản tin thành công!</span>
+          <p className="text-xs sm:text-sm italic text-gray-700 leading-relaxed font-medium">
+            Nấu ăn không chỉ là kỹ năng, mà còn là cách <strong className="text-gray-900 not-italic font-bold">chúng ta thể hiện tình yêu thương</strong> và kết nối gia đình.
+          </p>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] font-bold text-gray-500">- Culinary Blog -</span>
+            <ChefHat className="w-6 h-6 text-orange-300" />
           </div>
-        ) : (
-          <form onSubmit={handleSubscribe} className="space-y-2">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Nhập email của bạn"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
-            />
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
-            >
-              Đăng ký
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* =========================================================
-          3. THEO DÕI CHÚNG TÔI (SOCIAL MEDIA LINKS)
-          ========================================================= */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-        <h4 className="text-xs font-black uppercase tracking-wider text-gray-700">
-          Theo dõi chúng tôi
-        </h4>
-
-        <div className="flex items-center gap-2.5">
-          {/* Facebook */}
-          <a
-            href="https://facebook.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1877F2] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
-            title="Facebook"
-          >
-            f
-          </a>
-          {/* YouTube */}
-          <a
-            href="https://youtube.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF0000] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
-            title="YouTube"
-          >
-            ▶
-          </a>
-          {/* Instagram */}
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#FD1D1D] via-[#E1306C] to-[#405DE6] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
-            title="Instagram"
-          >
-            📷
-          </a>
-          {/* TikTok */}
-          <a
-            href="https://tiktok.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
-            title="TikTok"
-          >
-            🎵
-          </a>
-          {/* Pinterest */}
-          <a
-            href="https://pinterest.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E60023] text-white hover:opacity-90 transition shadow-xs text-xs font-bold"
-            title="Pinterest"
-          >
-            P
-          </a>
         </div>
       </div>
-
-      {/* =========================================================
-          4. TRÍCH DẪN ẨM THỰC (CULINARY QUOTE CARD)
-          ========================================================= */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fbf7f2] to-[#f5ede2] border border-[#eee2d3] p-5 space-y-3">
-        <span className="font-serif text-3xl font-black text-orange-400 leading-none block">
-          “
-        </span>
-        <p className="text-xs italic text-gray-700 leading-relaxed font-medium">
-          Nấu ăn không chỉ là kỹ năng, mà còn là cách <strong className="text-gray-900 not-italic">chúng ta thể hiện tình yêu thương</strong>.
-        </p>
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-[11px] font-bold text-gray-500">- Culinary Blog -</span>
-          <ChefHat className="w-6 h-6 text-orange-300" />
-        </div>
-      </div>
-    </aside>
+    </div>
   );
 }
