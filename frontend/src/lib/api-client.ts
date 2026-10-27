@@ -241,7 +241,11 @@ export async function apiClient<T>(
     }
 
     if (process.env.NODE_ENV !== 'production' && !options.suppressLogError && res.status !== 401) {
-      console.error(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
+      if (res.status >= 500) {
+        console.error(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
+      } else {
+        console.warn(`[api-client] HTTP ${res.status} ${method} ${url}`, errorData);
+      }
     }
     throw new ApiError(res.status, errorData as unknown as ProblemDetails);
   }
