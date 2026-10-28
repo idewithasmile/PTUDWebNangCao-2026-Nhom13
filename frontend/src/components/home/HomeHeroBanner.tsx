@@ -55,10 +55,10 @@ export default function HomeHeroBanner({
       {/* Badge nghệ thuật "Nấu ngon Mỗi ngày ♡" ở góc trên bên phải */}
       <div className="absolute top-6 right-6 lg:top-8 lg:right-12 hidden sm:block rotate-3 z-10">
         <div className="relative text-right">
-          <span className="font-serif italic text-2xl lg:text-3xl text-white font-extrabold drop-shadow-md tracking-wider block">
+          <span className="font-sans italic text-2xl lg:text-3xl text-white font-black drop-shadow-md tracking-tight block">
             Nấu ngon
           </span>
-          <span className="font-serif italic text-3xl lg:text-4xl text-orange-400 font-black drop-shadow-md block">
+          <span className="font-sans italic text-3xl lg:text-4xl text-orange-400 font-black drop-shadow-md tracking-tight block">
             Mỗi ngày ♡
           </span>
         </div>

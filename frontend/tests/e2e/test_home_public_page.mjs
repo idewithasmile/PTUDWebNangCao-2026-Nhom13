@@ -77,6 +77,18 @@ async function testHomeMockupPage() {
     await page.waitForSelector('text=Phát triển bởi Nhóm 13');
     console.log('✅ Footer: Thông tin thương hiệu, các cột liên kết và bản quyền Nhóm 13.');
 
+    // Chờ 3.5s để toàn bộ ảnh đại diện ẩm thực từ Unsplash tải xong
+    console.log('⏳ Chờ các ảnh món ăn hoàn tất tải...');
+    await page.waitForTimeout(3500);
+
+    // Chụp riêng phần Công thức mới nhất
+    const latestSection = page.locator('section:has-text("CÔNG THỨC MỚI NHẤT")');
+    if (await latestSection.isVisible()) {
+      const sectionPath = path.join(ARTIFACTS_DIR, 'mockup_home_latest_section.png');
+      await latestSection.screenshot({ path: sectionPath });
+      console.log(`📸 Đã lưu ảnh chụp khu vực Công thức mới nhất: ${sectionPath}`);
+    }
+
     // Lưu ảnh chụp Desktop toàn trang
     const fullDesktopPath = path.join(ARTIFACTS_DIR, 'mockup_home_desktop.png');
     await page.screenshot({ path: fullDesktopPath, fullPage: true });

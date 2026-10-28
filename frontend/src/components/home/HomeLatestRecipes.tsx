@@ -5,6 +5,11 @@ import { useState } from 'react';
 import type { RecipeSummaryDto } from '@/lib/types/category';
 import { resolveMediaUrl } from '@/lib/utils';
 import {
+  cleanRecipeTitle,
+  getRecipeDisplayImage,
+  FALLBACK_RECIPE_IMAGES,
+} from '@/lib/recipe-ui-helpers';
+import {
   ChefHat,
   Flame,
   Leaf,
@@ -39,15 +44,6 @@ const difficultyLabels: Record<number, string> = {
   3: 'Khó',
   4: 'Chuyên gia',
 };
-
-// Fallback ảnh ẩm thực đẹp mắt tương ứng
-const FALLBACK_RECIPE_IMAGES = [
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80', // Bò xào lúc lắc
-  'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80', // Phở bò
-  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=600&q=80', // Cá hồi
-  'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80', // Bánh mì
-  'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80', // Sốt vang
-];
 
 function getCategoryPill(categoryName?: string) {
   const name = categoryName?.toLowerCase() || '';
@@ -120,10 +116,10 @@ export default function HomeLatestRecipes({
         {/* Chữ script nghệ thuật: "Nấu ngon Mỗi ngày ♡" góc trên bên phải */}
         <div className="absolute top-6 right-6 lg:right-10 hidden sm:block rotate-6 select-none pointer-events-none z-10">
           <div className="text-right">
-            <span className="font-serif italic text-xl lg:text-2xl text-white font-extrabold block drop-shadow-md">
+            <span className="font-sans italic text-xl lg:text-2xl text-white font-black tracking-tight block drop-shadow-md">
               Nấu ngon
             </span>
-            <span className="font-serif italic text-2xl lg:text-3xl text-orange-400 font-black block drop-shadow-md">
+            <span className="font-sans italic text-2xl lg:text-3xl text-orange-400 font-black tracking-tight block drop-shadow-md">
               Mỗi ngày ♡
             </span>
           </div>
@@ -208,9 +204,8 @@ export default function HomeLatestRecipes({
               const diffText = difficultyLabels[hotRecipe.difficulty] || 'Trung bình';
               const cookTime = hotRecipe.totalTimeMinutes || 35;
               const servingsText = hotRecipe.servings ? `${hotRecipe.servings} người` : '2-3 người';
-              const imgUrl = hotRecipe.thumbnailUrl
-                ? resolveMediaUrl(hotRecipe.thumbnailUrl)
-                : FALLBACK_RECIPE_IMAGES[0];
+              const imgUrl = getRecipeDisplayImage(hotRecipe, 0);
+              const title = cleanRecipeTitle(hotRecipe.title);
 
               return (
                 <div className="group relative rounded-3xl bg-[#171311] border border-stone-800 shadow-xl overflow-hidden flex flex-col justify-between flex-1 hover:border-orange-500/40 transition-all duration-300">
@@ -219,14 +214,14 @@ export default function HomeLatestRecipes({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imgUrl}
-                      alt={hotRecipe.title}
+                      alt={title}
                       className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = FALLBACK_RECIPE_IMAGES[0];
                       }}
                     />
                     {/* Gradient chuyển mượt từ ảnh sang thân tối */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#171311] via-transparent to-black/40" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#171311] via-transparent to-black/30 pointer-events-none" />
 
                     {/* Badge 1: MÓN HOT TUẦN NÀY */}
                     <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-2">
@@ -262,7 +257,7 @@ export default function HomeLatestRecipes({
                     <div className="space-y-2">
                       <Link href={`/recipes/${encodeURIComponent(hotRecipe.slug)}`} className="block">
                         <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-orange-400 transition-colors line-clamp-2 leading-tight">
-                          {hotRecipe.title}
+                          {title}
                         </h3>
                       </Link>
 
@@ -339,9 +334,8 @@ export default function HomeLatestRecipes({
               const servingsText = recipe.servings
                 ? `${recipe.servings} người`
                 : `${(index + 3) * 140} kcal`;
-              const imgUrl = recipe.thumbnailUrl
-                ? resolveMediaUrl(recipe.thumbnailUrl)
-                : FALLBACK_RECIPE_IMAGES[(index + 1) % FALLBACK_RECIPE_IMAGES.length];
+              const imgUrl = getRecipeDisplayImage(recipe, index + 1);
+              const title = cleanRecipeTitle(recipe.title);
               const badge = getCategoryPill(recipe.categoryName);
               const BadgeIcon = badge.icon;
 
@@ -355,7 +349,7 @@ export default function HomeLatestRecipes({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imgUrl}
-                      alt={recipe.title}
+                      alt={title}
                       className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
@@ -394,7 +388,7 @@ export default function HomeLatestRecipes({
                       {/* Tiêu đề món ăn */}
                       <Link href={`/recipes/${encodeURIComponent(recipe.slug)}`} className="block">
                         <h4 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1 leading-snug">
-                          {recipe.title}
+                          {title}
                         </h4>
                       </Link>
 
