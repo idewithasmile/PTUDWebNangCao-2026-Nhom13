@@ -10,7 +10,7 @@ export default function ProfileRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard?tab=settings');
+    router.replace('/dashboard?tab=profile');
   }, [router]);
 
   return (

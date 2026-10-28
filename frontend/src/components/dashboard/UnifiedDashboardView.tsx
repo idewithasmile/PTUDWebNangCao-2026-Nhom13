@@ -77,6 +77,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         user={user}
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
+        stats={currentStats}
       />
 
       {/* 2. Cột phải: Toàn bộ nội dung Bảng điều khiển (Dashboard Canvas) */}
@@ -87,7 +88,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
           isStudioMode={activeTab === 'recipes-create' || activeTab === 'recipes-edit'}
         />
 
-        {/* Chuyển đổi linh hoạt giữa 9 khu vực quản lý bên trong Dashboard */}
+        {/* Chuyển đổi linh hoạt giữa các khu vực quản lý bên trong Dashboard */}
         {activeTab === 'overview' && (
           <DashboardOverviewView
             user={user}
@@ -105,8 +106,16 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
           <DashboardRecipesView user={user} subFilter="mine" />
         )}
 
+        {activeTab === 'recipes-published' && (
+          <DashboardRecipesView user={user} subFilter="published" />
+        )}
+
         {activeTab === 'recipes-draft' && (
           <DashboardRecipesView user={user} subFilter="draft" />
+        )}
+
+        {activeTab === 'recipes-archived' && (
+          <DashboardRecipesView user={user} subFilter="archived" />
         )}
 
         {activeTab === 'recipes-create' && (
@@ -119,7 +128,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
 
         {activeTab === 'categories' && isAdmin && <DashboardCategoriesView />}
 
-        {activeTab === 'settings' && (
+        {(activeTab === 'settings' || activeTab === 'profile') && (
           <DashboardProfileSettingsView currentUser={user} />
         )}
       </div>

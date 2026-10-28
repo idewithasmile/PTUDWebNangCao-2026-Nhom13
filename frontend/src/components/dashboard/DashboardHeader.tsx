@@ -167,12 +167,12 @@ export default function DashboardHeader({ user, isStudioMode = false }: Dashboar
                 </div>
 
                 <Link
-                  href="/dashboard?tab=settings"
+                  href="/dashboard?tab=profile"
                   onClick={() => setIsUserMenuOpen(false)}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
                 >
                   <User className="w-4 h-4" />
-                  <span>Hồ sơ & Cài đặt</span>
+                  <span>Hồ sơ cá nhân</span>
                 </Link>
 
                 <div className="border-t border-gray-100 my-1" />

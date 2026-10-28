@@ -201,54 +201,30 @@ export default function DashboardProfileSettingsView({
           </div>
         </div>
 
-        {/* Cột phải: Form Chỉnh Sửa Hồ Sơ */}
-        <div className="lg:col-span-8">
+        {/* Cột phải: 2 Phần rõ ràng theo yêu cầu SRS (1. Hồ sơ tác giả, 2. Tài khoản & Xác thực Google) */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Card 1: Hồ sơ tác giả (GET/PATCH /api/v1/auth/me - FR-AUTH-006, FR-AUTH-007) */}
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-2xs space-y-5"
             noValidate
           >
-            <h3 className="text-sm font-bold text-gray-900 pb-3 border-b border-gray-100 flex items-center gap-2">
-              <span>Thông tin định danh</span>
-            </h3>
-
-            {/* Hàng 1: Email & Tên đăng nhập (Readonly) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Địa chỉ Email</span>
-                  <span className="text-[10px] text-gray-400 font-normal">(Cố định)</span>
-                </label>
-                <input
-                  type="email"
-                  value={user.email}
-                  disabled
-                  readOnly
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-500 cursor-not-allowed font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                  <AtSign className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Tên đăng nhập (Username)</span>
-                  <span className="text-[10px] text-gray-400 font-normal">(Cố định)</span>
-                </label>
-                <input
-                  type="text"
-                  value={user.userName}
-                  disabled
-                  readOnly
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-500 cursor-not-allowed font-medium"
-                />
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  <span>Hồ sơ tác giả</span>
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Chỉnh sửa tên hiển thị công khai, ảnh đại diện và tiểu sử ẩm thực (FR-AUTH-006, FR-AUTH-007)
+                </p>
               </div>
             </div>
 
-            {/* Hàng 2: Tên hiển thị */}
+            {/* Tên hiển thị */}
             <div>
               <label htmlFor="displayName" className="block text-xs font-bold text-gray-700 mb-1.5">
-                Tên hiển thị công khai <span className="text-rose-500">*</span>
+                Tên hiển thị công khai (DisplayName) <span className="text-rose-500">*</span>
               </label>
               <input
                 id="displayName"
@@ -264,7 +240,7 @@ export default function DashboardProfileSettingsView({
               )}
             </div>
 
-            {/* Hàng 3: Avatar URL */}
+            {/* Avatar URL */}
             <div>
               <label htmlFor="avatarUrl" className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
@@ -284,7 +260,7 @@ export default function DashboardProfileSettingsView({
               )}
             </div>
 
-            {/* Hàng 4: Tiểu sử (Bio) */}
+            {/* Tiểu sử (Bio) */}
             <div>
               <label htmlFor="bio" className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-gray-400" />
@@ -303,7 +279,7 @@ export default function DashboardProfileSettingsView({
             </div>
 
             {/* Nút Submit */}
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
               <button
                 type="submit"
                 disabled={update.isPending}
@@ -317,12 +293,58 @@ export default function DashboardProfileSettingsView({
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>Lưu cập nhật hồ sơ</span>
+                    <span>Lưu thông tin tác giả</span>
                   </>
                 )}
               </button>
             </div>
           </form>
+
+          {/* Card 2: Tài khoản & Liên kết Google (FR-AUTH-003, Policy VerifiedAuthor) */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-2xs space-y-4">
+            <div className="pb-3 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-600" />
+                <span>Tài khoản & Xác thực (FR-AUTH-003)</span>
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                Thông tin định danh hệ thống, trạng thái xác thực tác giả và liên kết tài khoản
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-gray-500">Địa chỉ Email</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    VerifiedAuthor
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-gray-900">{user.email}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                <span className="text-[11px] font-bold text-gray-500">Tên đăng nhập hệ thống</span>
+                <p className="text-xs font-semibold text-gray-900">@{user.userName}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                <span className="text-[11px] font-bold text-gray-500">Liên kết Google OAuth (FR-AUTH-003)</span>
+                <p className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Sẵn sàng xác thực (PKCE Flow)
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                <span className="text-[11px] font-bold text-gray-500">Vai trò phân quyền (Role)</span>
+                <p className="text-xs font-semibold text-blue-700">
+                  {isAdmin ? 'Quản Trị Viên (Admin)' : 'Tác Giả Ẩm Thực (Author)'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

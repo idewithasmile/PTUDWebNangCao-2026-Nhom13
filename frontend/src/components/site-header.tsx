@@ -170,11 +170,11 @@ export default function SiteHeader() {
                     <span>✏️ Viết công thức mới</span>
                   </Link>
                   <Link
-                    href="/dashboard?tab=settings"
+                    href="/dashboard?tab=profile"
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition"
                   >
-                    <span>⚙️ Cài đặt tài khoản</span>
+                    <span>👤 Hồ sơ cá nhân</span>
                   </Link>
                   <div className="border-t border-gray-100 my-1" />
                   <button

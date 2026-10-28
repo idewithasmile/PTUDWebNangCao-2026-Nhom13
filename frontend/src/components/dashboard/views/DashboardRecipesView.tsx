@@ -42,7 +42,7 @@ import {
 
 interface DashboardRecipesViewProps {
   user: UserProfile;
-  subFilter?: 'all' | 'mine' | 'draft';
+  subFilter?: 'all' | 'mine' | 'published' | 'draft' | 'archived';
 }
 
 export default function DashboardRecipesView({ user, subFilter = 'all' }: DashboardRecipesViewProps) {
@@ -57,9 +57,12 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<string>(
-    subFilter === 'draft' ? '0' : 'ALL'
-  );
+  const [selectedStatus, setSelectedStatus] = useState<string>(() => {
+    if (subFilter === 'draft') return '0';
+    if (subFilter === 'published') return '1';
+    if (subFilter === 'archived') return '2';
+    return 'ALL';
+  });
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
   const [selectedMaxTime, setSelectedMaxTime] = useState<string>('');
   const [selectedSortBy, setSelectedSortBy] = useState<'newest' | 'oldest' | 'time_asc' | 'time_desc'>('newest');
@@ -67,6 +70,8 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
 
   useEffect(() => {
     if (subFilter === 'draft') setSelectedStatus('0');
+    else if (subFilter === 'published') setSelectedStatus('1');
+    else if (subFilter === 'archived') setSelectedStatus('2');
     else setSelectedStatus('ALL');
     setPage(1);
   }, [subFilter]);
@@ -89,8 +94,8 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
 
   // Query bài viết
   const queryParams = useMemo(() => {
-    // Nếu không phải Admin, BẮT BUỘC chỉ được lấy bài viết của chính tác giả (onlyMine = true)
-    const onlyMine = !isAdmin || subFilter === 'mine';
+    // Nếu không phải Admin hoặc đang lọc theo trạng thái tác giả thì lấy bài viết của chính tác giả (onlyMine = true)
+    const onlyMine = !isAdmin || subFilter !== 'all';
     return {
       page,
       pageSize,
@@ -381,28 +386,42 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
         ))}
       </div>
 
-      {/* Header Danh sách bài viết (Khớp Screen 2) */}
+      {/* Header Danh sách bài viết (Khớp Screen 2 & SRS FR-RCP) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <span>Bài viết</span>
+            <span>
+              {subFilter === 'published'
+                ? 'Công thức đã xuất bản'
+                : subFilter === 'draft'
+                ? 'Bản nháp'
+                : subFilter === 'archived'
+                ? 'Công thức đã lưu trữ'
+                : subFilter === 'mine'
+                ? 'Công thức của tôi'
+                : 'Tất cả công thức'}
+            </span>
             {isFetching && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            {subFilter === 'mine' || !isAdmin
-              ? 'Danh sách các công thức do chính bạn sáng tạo'
+            {subFilter === 'published'
+              ? 'Danh sách các công thức đã xuất bản công khai trên Culinary Blog'
               : subFilter === 'draft'
-              ? 'Danh sách các bản nháp đang hoàn thiện'
+              ? 'Danh sách các bản nháp đang trong quá trình biên soạn'
+              : subFilter === 'archived'
+              ? 'Danh sách các công thức đã lưu trữ / ẩn tạm thời khỏi trang công khai'
+              : subFilter === 'mine' || !isAdmin
+              ? 'Danh sách các công thức do chính bạn sáng tạo'
               : 'Quản lý toàn bộ công thức và bài viết ẩm thực trên toàn hệ thống'}
           </p>
         </div>
 
         <Link
-          href="/recipes/create"
+          href="/dashboard?tab=recipes-create"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition active:scale-95 shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Thêm bài viết</span>
+          <span>Đăng công thức mới</span>
         </Link>
       </div>
 
