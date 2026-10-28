@@ -14,6 +14,10 @@ import type {
   UpdateStepRequest,
   GetRecipesParams,
   SearchRecipesParams,
+  AddRecipeIngredientRequest,
+  UpdateRecipeIngredientRequest,
+  AddRecipeStepRequest,
+  UpdateRecipeStepRequest,
 } from '@/lib/types/recipe';
 import type { RecipeSummaryDto, PagedResult } from '@/lib/types/category';
 
@@ -35,7 +39,7 @@ export const recipeService = {
     const qs = new URLSearchParams();
     if (params.searchTerm) qs.set('searchTerm', params.searchTerm);
     if (params.categoryId) qs.set('categoryId', params.categoryId);
-    if (params.difficulty) qs.set('difficulty', String(params.difficulty));
+    if (params.difficulty !== undefined) qs.set('difficulty', String(params.difficulty));
     if (params.maxTotalTimeMinutes) qs.set('maxTotalTimeMinutes', String(params.maxTotalTimeMinutes));
     if (params.sortBy) qs.set('sortBy', params.sortBy);
     if (params.onlyMine) qs.set('onlyMine', 'true');
@@ -111,8 +115,12 @@ export const recipeService = {
     return apiClient<void>(`/recipes/${id}`, withAuth({ method: 'DELETE' }));
   },
 
+  // ---------------------------------------------------------------------------
+  // FR-RCP-008: Quản lý Thư viện ảnh (Images Gallery & Primary Image)
+  // ---------------------------------------------------------------------------
+
   /**
-   * FR-RCP-008: POST /recipes/{id}/images — Tải ảnh cho công thức nấu ăn
+   * Tải ảnh công thức lên qua Proxy Backend -> MinIO (FR-RCP-008)
    */
   async uploadRecipeImage(recipeId: string, file: File, altText?: string): Promise<RecipeImageDto> {
     const formData = new FormData();
@@ -127,16 +135,23 @@ export const recipeService = {
   },
 
   /**
-   * FR-RCP-008: PATCH /recipes/{id}/images/{imageId}/primary — Đặt làm ảnh chính
+   * Đặt ảnh làm ảnh đại diện chính (Primary Image) (FR-RCP-008)
    */
-  async setPrimaryRecipeImage(recipeId: string, imageId: string): Promise<RecipeImageDto> {
+  async setPrimaryImage(recipeId: string, imageId: string): Promise<RecipeImageDto> {
     return apiClient<RecipeImageDto>(`/recipes/${recipeId}/images/${imageId}/primary`, withAuth({
       method: 'PATCH',
     }));
   },
 
   /**
-   * FR-RCP-008: DELETE /recipes/{id}/images/{imageId} — Xóa ảnh công thức
+   * Alias tương thích ngược cho FR-RCP-008
+   */
+  async setPrimaryRecipeImage(recipeId: string, imageId: string): Promise<RecipeImageDto> {
+    return this.setPrimaryImage(recipeId, imageId);
+  },
+
+  /**
+   * Xóa ảnh khỏi thư viện công thức (FR-RCP-008)
    */
   async deleteRecipeImage(recipeId: string, imageId: string): Promise<void> {
     return apiClient<void>(`/recipes/${recipeId}/images/${imageId}`, withAuth({
@@ -144,61 +159,125 @@ export const recipeService = {
     }));
   },
 
+  // ---------------------------------------------------------------------------
+  // FR-RCP-009: Quản lý Nguyên liệu nấu ăn (Ingredients CRUD độc lập)
+  // ---------------------------------------------------------------------------
+
   /**
-   * FR-RCP-009: POST /recipes/{id}/ingredients — Thêm nguyên liệu
+   * Thêm nguyên liệu mới vào công thức (FR-RCP-009)
    */
-  async addIngredient(recipeId: string, data: AddIngredientRequest): Promise<RecipeIngredientDto> {
+  async addRecipeIngredient(
+    recipeId: string,
+    data: Omit<AddRecipeIngredientRequest, 'recipeId'> | AddIngredientRequest
+  ): Promise<RecipeIngredientDto> {
     return apiClient<RecipeIngredientDto>(`/recipes/${recipeId}/ingredients`, withAuth({
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, recipeId }),
     }));
   },
 
   /**
-   * FR-RCP-009: PUT /recipes/{id}/ingredients/{ingId} — Cập nhật nguyên liệu
+   * Alias ngắn gọn cho FR-RCP-009
    */
-  async updateIngredient(recipeId: string, ingredientId: string, data: UpdateIngredientRequest): Promise<RecipeIngredientDto> {
+  async addIngredient(recipeId: string, data: AddIngredientRequest): Promise<RecipeIngredientDto> {
+    return this.addRecipeIngredient(recipeId, data);
+  },
+
+  /**
+   * Cập nhật nguyên liệu theo Id (FR-RCP-009)
+   */
+  async updateRecipeIngredient(
+    recipeId: string,
+    ingredientId: string,
+    data: Omit<UpdateRecipeIngredientRequest, 'recipeId' | 'ingredientId'> | UpdateIngredientRequest
+  ): Promise<RecipeIngredientDto> {
     return apiClient<RecipeIngredientDto>(`/recipes/${recipeId}/ingredients/${ingredientId}`, withAuth({
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, recipeId, ingredientId }),
     }));
   },
 
   /**
-   * FR-RCP-009: DELETE /recipes/{id}/ingredients/{ingId} — Xóa nguyên liệu
+   * Alias ngắn gọn cho FR-RCP-009
    */
-  async deleteIngredient(recipeId: string, ingredientId: string): Promise<void> {
+  async updateIngredient(recipeId: string, ingredientId: string, data: UpdateIngredientRequest): Promise<RecipeIngredientDto> {
+    return this.updateRecipeIngredient(recipeId, ingredientId, data);
+  },
+
+  /**
+   * Xóa nguyên liệu khỏi công thức (FR-RCP-009)
+   */
+  async deleteRecipeIngredient(recipeId: string, ingredientId: string): Promise<void> {
     return apiClient<void>(`/recipes/${recipeId}/ingredients/${ingredientId}`, withAuth({
       method: 'DELETE',
     }));
   },
 
   /**
-   * FR-RCP-010: POST /recipes/{id}/steps — Thêm bước thực hiện
+   * Alias ngắn gọn cho FR-RCP-009
    */
-  async addStep(recipeId: string, data: AddStepRequest): Promise<RecipeStepDto> {
+  async deleteIngredient(recipeId: string, ingredientId: string): Promise<void> {
+    return this.deleteRecipeIngredient(recipeId, ingredientId);
+  },
+
+  // ---------------------------------------------------------------------------
+  // FR-RCP-010: Quản lý Các bước thực hiện (Steps CRUD độc lập)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Thêm bước mới vào công thức (FR-RCP-010)
+   */
+  async addRecipeStep(
+    recipeId: string,
+    data: Omit<AddRecipeStepRequest, 'recipeId'> | AddStepRequest
+  ): Promise<RecipeStepDto> {
     return apiClient<RecipeStepDto>(`/recipes/${recipeId}/steps`, withAuth({
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, recipeId }),
     }));
   },
 
   /**
-   * FR-RCP-010: PUT /recipes/{id}/steps/{stepId} — Cập nhật bước thực hiện
+   * Alias ngắn gọn cho FR-RCP-010
    */
-  async updateStep(recipeId: string, stepId: string, data: UpdateStepRequest): Promise<RecipeStepDto> {
+  async addStep(recipeId: string, data: AddStepRequest): Promise<RecipeStepDto> {
+    return this.addRecipeStep(recipeId, data);
+  },
+
+  /**
+   * Cập nhật bước thực hiện theo Id (FR-RCP-010)
+   */
+  async updateRecipeStep(
+    recipeId: string,
+    stepId: string,
+    data: Omit<UpdateRecipeStepRequest, 'recipeId' | 'stepId'> | UpdateStepRequest
+  ): Promise<RecipeStepDto> {
     return apiClient<RecipeStepDto>(`/recipes/${recipeId}/steps/${stepId}`, withAuth({
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, recipeId, stepId }),
     }));
   },
 
   /**
-   * FR-RCP-010: DELETE /recipes/{id}/steps/{stepId} — Xóa bước thực hiện
+   * Alias ngắn gọn cho FR-RCP-010
    */
-  async deleteStep(recipeId: string, stepId: string): Promise<void> {
+  async updateStep(recipeId: string, stepId: string, data: UpdateStepRequest): Promise<RecipeStepDto> {
+    return this.updateRecipeStep(recipeId, stepId, data);
+  },
+
+  /**
+   * Xóa bước thực hiện (Backend tự renumber các bước còn lại) (FR-RCP-010)
+   */
+  async deleteRecipeStep(recipeId: string, stepId: string): Promise<void> {
     return apiClient<void>(`/recipes/${recipeId}/steps/${stepId}`, withAuth({
       method: 'DELETE',
     }));
+  },
+
+  /**
+   * Alias ngắn gọn cho FR-RCP-010
+   */
+  async deleteStep(recipeId: string, stepId: string): Promise<void> {
+    return this.deleteRecipeStep(recipeId, stepId);
   },
 };

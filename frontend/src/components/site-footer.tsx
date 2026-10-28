@@ -60,7 +60,7 @@ export default function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/profile" className="transition hover:text-orange-600">
+                <Link href="/dashboard?tab=settings" className="transition hover:text-orange-600">
                   Hồ sơ cá nhân
                 </Link>
               </li>

@@ -1,8 +1,7 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Providers from './providers';
-import SiteHeader from '@/components/site-header';
-import SiteFooter from '@/components/site-footer';
+import AppShell from '@/components/layout/AppShell';
 
 // Cấu hình phông chữ Inter chuẩn với subset 'vietnamese' và 'latin' để hiển thị tiếng Việt sắc nét,
 // khắc phục hoàn toàn lỗi vỡ phông và hiển thị dấu hỏi trên các trình duyệt
@@ -24,9 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Áp dụng class phông chữ Inter vào thẻ body cùng flex column để sticky footer */}
       <body className={`${inter.className} min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-orange-500 selection:text-white`}>
         <Providers>
-          <SiteHeader />
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">{children}</main>
-          <SiteFooter />
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>

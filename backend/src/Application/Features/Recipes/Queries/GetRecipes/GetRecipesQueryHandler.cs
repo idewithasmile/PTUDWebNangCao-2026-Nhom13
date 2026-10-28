@@ -22,6 +22,8 @@ public class GetRecipesQueryHandler(
 
         // 1. Authorization & Ownership Filter
         var userId = currentUser.UserId;
+        var isAdmin = currentUser.IsAdmin;
+
         if (request.OnlyMine == true)
         {
             if (string.IsNullOrEmpty(userId))
@@ -37,7 +39,11 @@ public class GetRecipesQueryHandler(
         }
         else
         {
-            if (string.IsNullOrEmpty(userId))
+            if (isAdmin)
+            {
+                // Admin xem được toàn bộ bài viết trên hệ thống (Published, Draft, Archived)
+            }
+            else if (string.IsNullOrEmpty(userId))
             {
                 // Guest chỉ thấy bài Published
                 queryable = queryable.Where(r => r.Status == RecipeStatus.Published);

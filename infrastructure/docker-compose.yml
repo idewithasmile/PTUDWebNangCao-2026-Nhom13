@@ -22,9 +22,10 @@ services:
       - redisdata:/data
 
   minio:
-    image: bitnamilegacy/minio:latest
+    image: cleanstart/minio:latest
     container_name: culinary_minio
-    command: minio server /bitnami/minio/data --console-address ":9001"
+    user: "0:0"
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadminpassword
@@ -32,7 +33,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - miniodata:/bitnami/minio/data
+      - miniodata:/data
 
   seq:
     image: datalust/seq:latest

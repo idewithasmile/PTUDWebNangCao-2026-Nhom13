@@ -30,3 +30,22 @@ export function formatDate(dateString: string | Date): string {
     year: 'numeric',
   }).format(date);
 }
+
+/**
+ * Chuẩn hóa URL hình ảnh (hỗ trợ cả đường dẫn MinIO cục bộ lẫn URL tuyệt đối bên ngoài)
+ */
+export function resolveMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  // Chuẩn hóa đường dẫn tương đối MinIO S3 bucket (/culinary-blog/...)
+  if (url.startsWith('/culinary-blog/')) {
+    const minioHost = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MINIO_URL
+      ? process.env.NEXT_PUBLIC_MINIO_URL
+      : 'http://localhost:9000';
+    return `${minioHost}${url}`;
+  }
+  return url;
+}
+

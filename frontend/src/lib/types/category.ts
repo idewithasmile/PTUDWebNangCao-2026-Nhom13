@@ -17,14 +17,17 @@ export interface RecipeSummaryDto {
   title: string;
   slug: string;
   description: string;
-  totalTimeMinutes: number;
+  totalTimeMinutes?: number;
+  prepTime?: number;
+  cookTime?: number;
   servings: number;
   difficulty: RecipeDifficulty;
-  status: RecipeStatus;
-  categoryName: string;
-  authorId: string;
-  authorName: string;
+  status?: RecipeStatus;
+  categoryName?: string;
+  authorId?: string;
+  authorName?: string;
   createdAt: string;
+  publishedAt?: string | null;
   thumbnailUrl: string | null;
 }
 
