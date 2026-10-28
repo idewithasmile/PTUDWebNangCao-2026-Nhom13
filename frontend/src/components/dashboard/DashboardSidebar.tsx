@@ -152,22 +152,24 @@ export default function DashboardSidebar({ user, activeTab, onSelectTab }: Dashb
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
 
-          {/* 3. Danh mục */}
-          <button
-            type="button"
-            onClick={() => onSelectTab('categories')}
-            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-              activeTab === 'categories'
-                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <FolderTree className="w-4 h-4 shrink-0" />
-              <span>Danh mục</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          {/* 3. Danh mục - Chỉ dành cho Quản Trị Viên (Admin), Author không quản lý danh mục theo SRS FR-CAT */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => onSelectTab('categories')}
+              className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
+                activeTab === 'categories'
+                  ? 'bg-[#2563eb] text-white font-bold shadow-xs'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <FolderTree className="w-4 h-4 shrink-0" />
+                <span>Danh mục</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* 4. Cài đặt hồ sơ & tài khoản */}
           <button

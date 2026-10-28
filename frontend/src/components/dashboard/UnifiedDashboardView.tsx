@@ -22,22 +22,37 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
   const searchParams = useSearchParams();
   const tabParam = (searchParams.get('tab') as DashboardTab) || 'overview';
   const slugParam = searchParams.get('slug') || '';
+  const isAdmin = user.roles?.includes('Admin') ?? false;
 
   const [activeTab, setActiveTab] = useState<DashboardTab>(tabParam);
 
   // Sync state if URL search query changes
   useEffect(() => {
     if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+      if (!isAdmin && tabParam === 'categories') {
+        setActiveTab('overview');
+        router.replace('/dashboard?tab=overview', { scroll: false });
+      } else {
+        setActiveTab(tabParam);
+      }
     }
-  }, [tabParam]);
+  }, [tabParam, activeTab, isAdmin, router]);
+
+  // FR-CAT: Chỉ Admin mới có quyền quản lý danh mục. Tự động chuyển về 'overview' nếu Author truy cập.
+  useEffect(() => {
+    if (!isAdmin && activeTab === 'categories') {
+      setActiveTab('overview');
+      router.replace('/dashboard?tab=overview', { scroll: false });
+    }
+  }, [isAdmin, activeTab, router]);
 
   const handleSelectTab = (tab: DashboardTab) => {
+    if (!isAdmin && tab === 'categories') {
+      return;
+    }
     setActiveTab(tab);
     router.push(`/dashboard?tab=${tab}`, { scroll: false });
   };
-
-  const isAdmin = user.roles?.includes('Admin') ?? false;
 
   // Lấy dữ liệu thống kê từ API REST (/api/v1/dashboard/stats)
   const { data: stats, isLoading: isStatsLoading } = useDashboardStats(!isAdmin);
@@ -102,7 +117,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
           <DashboardRecipeEditView slug={slugParam} onSelectTab={handleSelectTab} />
         )}
 
-        {activeTab === 'categories' && <DashboardCategoriesView />}
+        {activeTab === 'categories' && isAdmin && <DashboardCategoriesView />}
 
         {activeTab === 'settings' && (
           <DashboardProfileSettingsView currentUser={user} />
