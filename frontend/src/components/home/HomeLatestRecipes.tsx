@@ -7,6 +7,7 @@ import { resolveMediaUrl } from '@/lib/utils';
 import {
   cleanRecipeTitle,
   getRecipeDisplayImage,
+  formatRecipeDate,
   FALLBACK_RECIPE_IMAGES,
 } from '@/lib/recipe-ui-helpers';
 import {
@@ -17,6 +18,7 @@ import {
   Clock,
   BarChart2,
   Users,
+  Calendar,
   Bookmark,
   ArrowRight,
   AlertCircle,
@@ -283,15 +285,23 @@ export default function HomeLatestRecipes({
                       </div>
                     </div>
 
-                    {/* Hàng Tác giả & Nút Lưu lại */}
+                    {/* Hàng Tác giả & Ngày đăng & Nút Lưu lại */}
                     <div className="flex items-center justify-between pt-2 border-t border-stone-800">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/40 flex items-center justify-center text-xs font-black">
+                        <div className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/40 flex items-center justify-center text-xs font-black shrink-0">
                           {hotRecipe.authorName ? hotRecipe.authorName.charAt(0) : 'C'}
                         </div>
-                        <span className="text-xs font-bold text-gray-200">
-                          {hotRecipe.authorName || 'Đầu bếp Chuẩn Vị'}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-200">
+                            {hotRecipe.authorName || 'Đầu bếp Chuẩn Vị'}
+                          </span>
+                          {hotRecipe.createdAt && (
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <Calendar className="w-2.5 h-2.5 text-gray-400" />
+                              {formatRecipeDate(hotRecipe.createdAt)}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <button
@@ -408,14 +418,22 @@ export default function HomeLatestRecipes({
                         </div>
                       </div>
 
-                      {/* Tác giả */}
-                      <div className="flex items-center gap-2 pt-2 text-xs text-gray-600 font-medium">
-                        <div className="w-5 h-5 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-bold">
-                          {recipe.authorName ? recipe.authorName.charAt(0) : 'C'}
+                      {/* Tác giả & Ngày đăng */}
+                      <div className="flex items-center justify-between pt-2 text-xs text-gray-600 font-medium">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-5 h-5 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {recipe.authorName ? recipe.authorName.charAt(0) : 'C'}
+                          </div>
+                          <span className="truncate text-[11px]">
+                            {recipe.authorName || 'Đầu bếp Chuẩn Vị'}
+                          </span>
                         </div>
-                        <span className="line-clamp-1 text-[11px]">
-                          {recipe.authorName || 'Đầu bếp Chuẩn Vị'}
-                        </span>
+                        {recipe.createdAt && (
+                          <div className="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <span>{formatRecipeDate(recipe.createdAt)}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

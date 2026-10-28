@@ -68,3 +68,55 @@ export function getRecipeDisplayImage(recipe: { title?: string; thumbnailUrl?: s
 
   return FALLBACK_RECIPE_IMAGES[fallbackIndex % FALLBACK_RECIPE_IMAGES.length];
 }
+
+/**
+ * Định dạng ngày tạo/xuất bản chuẩn Việt Nam (DD/MM/YYYY)
+ */
+export function formatRecipeDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Trả về thông tin hiển thị avatar, màu nhận diện và chữ cái đầu của tác giả
+ */
+export function getAuthorAvatarInfo(name?: string | null) {
+  const trimmed = name?.trim() || 'Tác giả';
+  const initial = trimmed.charAt(0).toUpperCase();
+
+  // Bảng màu gradient cao cấp xác định theo mã màu hex để luôn hiển thị chuẩn 100%
+  const gradientMap: Record<string, string> = {
+    A: 'linear-gradient(135deg, #f97316 0%, #f59e0b 100%)',
+    B: 'linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)',
+    C: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
+    D: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+    Đ: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+    H: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+    K: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+    L: 'linear-gradient(135deg, #d946ef 0%, #c026d3 100%)',
+    M: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+    N: 'linear-gradient(135deg, #10b981 0%, #15803d 100%)',
+    P: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+    Q: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+    T: 'linear-gradient(135deg, #ea580c 0%, #d97706 100%)',
+    V: 'linear-gradient(135deg, #14b8a6 0%, #059669 100%)',
+  };
+
+  const gradient =
+    gradientMap[initial] || 'linear-gradient(135deg, #f97316 0%, #f59e0b 100%)';
+
+  return {
+    name: trimmed,
+    initial,
+    gradient,
+  };
+}
