@@ -7,11 +7,6 @@ import {
   FileText,
   UtensilsCrossed,
   FolderTree,
-  Users,
-  MessageSquare,
-  HardDrive,
-  Cpu,
-  BarChart3,
   Settings,
   ChefHat,
   ChevronDown,
@@ -24,16 +19,9 @@ export type DashboardTab =
   | 'recipes'
   | 'recipes-mine'
   | 'recipes-draft'
-  | 'recipes-scheduled'
-  | 'recipes-trash'
   | 'recipes-create'
   | 'recipes-edit'
   | 'categories'
-  | 'authors'
-  | 'comments'
-  | 'files'
-  | 'jobs'
-  | 'analytics'
   | 'settings';
 
 interface DashboardSidebarProps {
@@ -143,28 +131,6 @@ export default function DashboardSidebar({ user, activeTab, onSelectTab }: Dashb
                 >
                   Bài nháp
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('recipes-scheduled')}
-                  className={`block w-full text-left py-1.5 px-2 rounded-lg transition ${
-                    activeTab === 'recipes-scheduled'
-                      ? 'bg-blue-600/30 text-blue-400 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                  }`}
-                >
-                  Đã lên lịch
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('recipes-trash')}
-                  className={`block w-full text-left py-1.5 px-2 rounded-lg transition ${
-                    activeTab === 'recipes-trash'
-                      ? 'bg-blue-600/30 text-blue-400 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                  }`}
-                >
-                  Thùng rác
-                </button>
               </div>
             )}
           </div>
@@ -186,7 +152,7 @@ export default function DashboardSidebar({ user, activeTab, onSelectTab }: Dashb
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
 
-          {/* 4. Danh mục */}
+          {/* 3. Danh mục */}
           <button
             type="button"
             onClick={() => onSelectTab('categories')}
@@ -203,96 +169,7 @@ export default function DashboardSidebar({ user, activeTab, onSelectTab }: Dashb
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
 
-          {/* 5. Tác giả (Chỉ Admin) */}
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => onSelectTab('authors')}
-              className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-                activeTab === 'authors'
-                  ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-4 h-4 shrink-0" />
-                <span>Tác giả</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* 6. Bình luận */}
-          <button
-            type="button"
-            onClick={() => onSelectTab('comments')}
-            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-              activeTab === 'comments'
-                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span>Bình luận</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-
-          {/* 7. Tệp tin */}
-          <button
-            type="button"
-            onClick={() => onSelectTab('files')}
-            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-              activeTab === 'files'
-                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <HardDrive className="w-4 h-4 shrink-0" />
-              <span>Tệp tin</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-
-          {/* 8. Công việc (Job - Chỉ Admin) */}
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => onSelectTab('jobs')}
-              className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-                activeTab === 'jobs'
-                  ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Cpu className="w-4 h-4 shrink-0" />
-                <span>Công việc (Job)</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* 9. Thống kê */}
-          <button
-            type="button"
-            onClick={() => onSelectTab('analytics')}
-            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
-              activeTab === 'analytics'
-                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <BarChart3 className="w-4 h-4 shrink-0" />
-              <span>Thống kê</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Cài đặt */}
+          {/* 4. Cài đặt hồ sơ & tài khoản */}
           <button
             type="button"
             onClick={() => onSelectTab('settings')}

@@ -42,7 +42,7 @@ import {
 
 interface DashboardRecipesViewProps {
   user: UserProfile;
-  subFilter?: 'all' | 'mine' | 'draft' | 'scheduled' | 'trash';
+  subFilter?: 'all' | 'mine' | 'draft';
 }
 
 export default function DashboardRecipesView({ user, subFilter = 'all' }: DashboardRecipesViewProps) {
@@ -67,7 +67,6 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
 
   useEffect(() => {
     if (subFilter === 'draft') setSelectedStatus('0');
-    else if (subFilter === 'trash') setSelectedStatus('2');
     else setSelectedStatus('ALL');
     setPage(1);
   }, [subFilter]);
@@ -109,7 +108,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     setSearchTerm('');
     setDebouncedSearch('');
     setSelectedCategory('');
-    setSelectedStatus(subFilter === 'draft' ? '0' : subFilter === 'trash' ? '2' : 'ALL');
+    setSelectedStatus(subFilter === 'draft' ? '0' : 'ALL');
     setSelectedDifficulty('');
     setSelectedMaxTime('');
     setSelectedSortBy('newest');
@@ -122,7 +121,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     selectedDifficulty !== '' ||
     selectedMaxTime ||
     selectedSortBy !== 'newest' ||
-    (selectedStatus !== 'ALL' && subFilter !== 'draft' && subFilter !== 'trash')
+    (selectedStatus !== 'ALL' && subFilter !== 'draft')
   );
 
   const {
@@ -231,13 +230,13 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
             </span>
 
             <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5 text-gray-400" />
-              5.432 lượt xem
+              <Clock className="w-3.5 h-3.5 text-orange-500" />
+              {selectedRecipe.totalTimeMinutes || 35} phút
             </span>
 
             <span className="flex items-center gap-1">
-              <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-              234 bình luận
+              <ChefHat className="w-3.5 h-3.5 text-orange-500" />
+              {selectedRecipe.servings || 4} phần
             </span>
           </div>
         </div>
@@ -335,28 +334,31 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
               </div>
             </div>
 
-            {/* Box 2: File đính kèm */}
+            {/* Box 2: Thông số chế biến */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4 text-xs">
               <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                File đính kèm
+                Thông số chế biến
               </h3>
 
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100/80 transition">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileText className="w-4 h-4 text-rose-500 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-bold text-gray-800 truncate">pho-bo-hanoi.jpg</p>
-                    <p className="text-[10px] text-gray-400">2.4 MB</p>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Thời gian nấu</span>
+                  <span className="font-bold text-gray-900">
+                    {selectedRecipe.totalTimeMinutes || 35} phút
+                  </span>
                 </div>
-
-                <button
-                  type="button"
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 transition"
-                  title="Tải về"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Khẩu phần</span>
+                  <span className="font-bold text-gray-900">
+                    {selectedRecipe.servings || 4} phần
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Độ khó</span>
+                  <span className="font-bold text-orange-600">
+                    {selectedRecipe.difficulty === 1 ? 'Dễ' : selectedRecipe.difficulty === 2 ? 'Trung bình' : selectedRecipe.difficulty === 3 ? 'Khó' : 'Chuyên gia'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -561,7 +563,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
                 <th className="py-3 px-4 min-w-[240px]">Tiêu đề</th>
                 <th className="py-3 px-4 min-w-[120px]">Danh mục</th>
                 <th className="py-3 px-4 min-w-[140px]">Tác giả</th>
-                <th className="py-3 px-4 text-center w-24">Lượt xem</th>
+                <th className="py-3 px-4 text-center w-24">Thời gian</th>
                 <th className="py-3 px-4 text-center w-28">Trạng thái</th>
                 <th className="py-3 px-4 w-28">Ngày tạo</th>
                 <th className="py-3 px-4 text-right w-24">Thao tác</th>
@@ -662,9 +664,9 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
                         )}
                       </td>
 
-                      {/* Lượt xem */}
-                      <td className="py-3 px-4 text-center font-bold text-gray-800">
-                        {(5.4 - idx * 0.4).toFixed(3)}
+                      {/* Thời gian */}
+                      <td className="py-3 px-4 text-center font-bold text-gray-700">
+                        {recipe.totalTimeMinutes || 30} phút
                       </td>
 
                       {/* Trạng thái */}

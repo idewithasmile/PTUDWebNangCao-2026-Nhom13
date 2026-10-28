@@ -9,11 +9,6 @@ import DashboardHeader from './DashboardHeader';
 import DashboardOverviewView from './views/DashboardOverviewView';
 import DashboardRecipesView from './views/DashboardRecipesView';
 import DashboardCategoriesView from './views/DashboardCategoriesView';
-import DashboardAuthorsView from './views/DashboardAuthorsView';
-import DashboardCommentsView from './views/DashboardCommentsView';
-import DashboardFilesView from './views/DashboardFilesView';
-import DashboardJobsView from './views/DashboardJobsView';
-import DashboardAnalyticsView from './views/DashboardAnalyticsView';
 import DashboardRecipeCreateView from './views/DashboardRecipeCreateView';
 import DashboardRecipeEditView from './views/DashboardRecipeEditView';
 import DashboardProfileSettingsView from './views/DashboardProfileSettingsView';
@@ -99,14 +94,6 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
           <DashboardRecipesView user={user} subFilter="draft" />
         )}
 
-        {activeTab === 'recipes-scheduled' && (
-          <DashboardRecipesView user={user} subFilter="scheduled" />
-        )}
-
-        {activeTab === 'recipes-trash' && (
-          <DashboardRecipesView user={user} subFilter="trash" />
-        )}
-
         {activeTab === 'recipes-create' && (
           <DashboardRecipeCreateView user={user} onSelectTab={handleSelectTab} />
         )}
@@ -116,28 +103,6 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         )}
 
         {activeTab === 'categories' && <DashboardCategoriesView />}
-
-        {activeTab === 'authors' && (
-          isAdmin ? (
-            <DashboardAuthorsView currentUser={user} />
-          ) : (
-            <DashboardRecipesView user={user} subFilter="mine" />
-          )
-        )}
-
-        {activeTab === 'comments' && <DashboardCommentsView />}
-
-        {activeTab === 'files' && <DashboardFilesView />}
-
-        {activeTab === 'jobs' && (
-          isAdmin ? (
-            <DashboardJobsView />
-          ) : (
-            <DashboardRecipesView user={user} subFilter="mine" />
-          )
-        )}
-
-        {activeTab === 'analytics' && <DashboardAnalyticsView />}
 
         {activeTab === 'settings' && (
           <DashboardProfileSettingsView currentUser={user} />
