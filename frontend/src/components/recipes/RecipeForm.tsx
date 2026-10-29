@@ -1361,7 +1361,7 @@ export default function RecipeForm({
                 <div className="flex-1">
                   <span className="font-bold">Đủ điều kiện xuất bản công khai (SRS §FR-RCP-005): </span>
                   <span>
-                    Bạn có thể chọn <strong>"Xuất bản công khai ngay"</strong> để người dùng đọc được ngay trên trang chủ, hoặc chọn <strong>"Lưu bản nháp"</strong> để tiếp tục hoàn thiện sau.
+                    Bạn có thể chọn <strong>&quot;Xuất bản công khai ngay&quot;</strong> để người dùng đọc được ngay trên trang chủ, hoặc chọn <strong>&quot;Lưu bản nháp&quot;</strong> để tiếp tục hoàn thiện sau.
                   </span>
                 </div>
               </div>
@@ -1371,7 +1371,7 @@ export default function RecipeForm({
                 <div className="flex-1">
                   <span className="font-bold">Chưa đủ điều kiện xuất bản công khai: </span>
                   <span>
-                    Theo quy định SRS §FR-RCP-005, bài viết cần có tối thiểu 1 nguyên liệu và 1 bước nấu. Bạn vẫn có thể nhấn <strong>"Lưu bản nháp"</strong> để bảo toàn toàn bộ dữ liệu.
+                    Theo quy định SRS §FR-RCP-005, bài viết cần có tối thiểu 1 nguyên liệu và 1 bước nấu. Bạn vẫn có thể nhấn <strong>&quot;Lưu bản nháp&quot;</strong> để bảo toàn toàn bộ dữ liệu.
                   </span>
                 </div>
               </div>
