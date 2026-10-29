@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { RecipeSummaryDto } from '@/lib/types/category';
-import { Clock, Users, UtensilsCrossed } from 'lucide-react';
+import { Clock, Users, Calendar } from 'lucide-react';
+import {
+  cleanRecipeTitle,
+  getRecipeDisplayImage,
+  formatRecipeDate,
+  getAuthorAvatarInfo,
+  FALLBACK_RECIPE_IMAGES,
+} from '@/lib/recipe-ui-helpers';
 
 interface RecipeCardProps {
   recipe: RecipeSummaryDto;
@@ -16,8 +23,13 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 };
 
 export default function RecipeCard({ recipe }: RecipeCardProps) {
-  const totalTime = recipe.totalTimeMinutes;
+  const totalTime =
+    (recipe.totalTimeMinutes ?? ((recipe.prepTime || 0) + (recipe.cookTime || 0))) || 30;
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
+  const title = cleanRecipeTitle(recipe.title);
+  const imgUrl = getRecipeDisplayImage(recipe);
+  const formattedDate = formatRecipeDate(recipe.createdAt || recipe.publishedAt);
+  const authorInfo = getAuthorAvatarInfo(recipe.authorName);
 
   return (
     <Link
@@ -25,21 +37,15 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
       className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
     >
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
-        {recipe.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={recipe.thumbnailUrl}
-            alt={recipe.title}
-            className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
-            <UtensilsCrossed className="h-12 w-12 text-orange-300" />
-          </div>
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imgUrl}
+          alt={title}
+          className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = FALLBACK_RECIPE_IMAGES[0];
+          }}
+        />
 
         {/* Badge trạng thái cho Bản nháp hoặc Lưu trữ */}
         {(recipe.status === 'Draft' || (recipe.status as unknown) === 0) && (
@@ -68,26 +74,51 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
 
       <div className="flex flex-1 flex-col p-5">
         <h4 className="text-base font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
-          {recipe.title}
+          {title}
         </h4>
         <p className="mt-2 text-sm text-gray-500 line-clamp-2 leading-relaxed">
           {recipe.description}
         </p>
 
-        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-orange-500" />
-            <span>{totalTime} phút</span>
+        {/* Footer thông tin: Hàng thông số nấu + Dòng tác giả và ngày đăng riêng biệt */}
+        <div className="mt-auto pt-3 border-t border-gray-100 flex flex-col gap-2.5">
+          {/* Hàng 1: Thời gian & Khẩu phần */}
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-orange-500" />
+              <span className="font-medium">{totalTime} phút</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-orange-500" />
+              <span className="font-medium">{recipe.servings} phần</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-orange-500" />
-            <span>{recipe.servings} phần</span>
-          </div>
+          {/* Hàng 2: Tác giả xuống 1 dòng riêng kèm logo avatar (không bị mất chữ) + Ngày đăng */}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-50">
+            {/* Tác giả với Logo/Avatar đại diện */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] font-bold shadow-xs shrink-0 ring-1 ring-black/5"
+                style={{ background: authorInfo.gradient }}
+                title={`Tác giả: ${authorInfo.name}`}
+              >
+                {authorInfo.initial}
+              </div>
+              <span className="text-xs font-semibold text-gray-700 group-hover:text-orange-600 transition-colors truncate">
+                {authorInfo.name}
+              </span>
+            </div>
 
-          {recipe.authorName && (
-            <span className="text-gray-400 truncate max-w-[100px]">bởi {recipe.authorName}</span>
-          )}
+            {/* Ngày đăng */}
+            {formattedDate && (
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 shrink-0">
+                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span>{formattedDate}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Link>

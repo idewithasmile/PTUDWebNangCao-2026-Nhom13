@@ -8,6 +8,8 @@ import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeActionButtons from '@/components/recipes/RecipeActionButtons';
+import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
+import { resolveMediaUrl } from '@/lib/utils';
 import {
   Clock,
   Users,
@@ -33,7 +35,6 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 
 export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -54,28 +55,33 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
 
   if (isError || !recipe) {
     return (
-      <div className="mx-auto max-w-2xl py-12 text-center">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50 p-8 text-red-700">
-          <AlertCircle className="mb-2 h-10 w-10 text-red-500" />
-          <h3 className="text-lg font-bold">Tải thông tin công thức thất bại</h3>
-          <p className="mt-1 text-sm text-red-600">
-            {toErrorMessage(error, 'Công thức không tồn tại hoặc bạn không có quyền xem bài viết nháp này.')}
-          </p>
-          <div className="mt-5 flex gap-3">
+      <div className="mx-auto max-w-xl py-16 px-4 text-center animate-fade-in">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-gray-100 bg-white p-8 sm:p-10 shadow-sm space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
+            <UtensilsCrossed className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
+              Công thức không khả dụng
+            </h2>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
+              Công thức này hiện đang ở chế độ bản nháp, đã được tác giả chuyển vào kho lưu trữ hoặc chưa được xuất bản công khai.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/recipes"
-              className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Quay lại danh sách</span>
+              <span>Khám phá các công thức khác</span>
             </Link>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition"
             >
-              Thử lại
-            </button>
+              <span>Về trang chủ</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -84,11 +90,6 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
 
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
   const totalTime = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
-  const primaryImage =
-    recipe.images.find((img) => img.isPrimary)?.originalUrl ||
-    recipe.images[0]?.originalUrl;
-
-  const currentDisplayImage = selectedImageUrl || primaryImage;
 
   const formattedDate = recipe.publishedAt
     ? new Date(recipe.publishedAt).toLocaleDateString('vi-VN', {
@@ -149,48 +150,8 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
       {/* Thanh thao tác cho Owner / Admin */}
       <RecipeActionButtons recipe={recipe} />
 
-      {/* Khối Hình ảnh công thức */}
-      <div className="space-y-3">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm border border-gray-100">
-          {currentDisplayImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={currentDisplayImage}
-              alt={recipe.title}
-              className="h-full w-full object-cover object-center transition-all duration-300"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
-              <UtensilsCrossed className="h-16 w-16 text-orange-300" />
-            </div>
-          )}
-        </div>
-
-        {/* Bộ sưu tập ảnh nhỏ (nếu có nhiều ảnh) */}
-        {recipe.images && recipe.images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {recipe.images.map((img) => (
-              <button
-                key={img.id}
-                type="button"
-                onClick={() => setSelectedImageUrl(img.originalUrl)}
-                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                  (selectedImageUrl || primaryImage) === img.originalUrl
-                    ? 'border-orange-500 scale-95 shadow-sm'
-                    : 'border-transparent opacity-70 hover:opacity-100'
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.thumbnailUrl || img.originalUrl}
-                  alt={img.altText || recipe.title}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Khối Hình ảnh công thức chuẩn Gallery Mockup */}
+      <RecipeGalleryViewer images={recipe.images} recipeTitle={recipe.title} />
 
       {/* Các thẻ thông số tóm tắt (Thời gian, Khẩu phần) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

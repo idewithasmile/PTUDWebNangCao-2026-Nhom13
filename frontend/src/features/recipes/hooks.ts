@@ -136,122 +136,141 @@ export function useDeleteRecipe() {
   });
 }
 
-/**
- * FR-RCP-008: Hook mutation tải ảnh công thức
- */
-export function useUploadRecipeImage(recipeId: string) {
+// ---------------------------------------------------------------------------
+// FR-RCP-008: Hooks quản lý Thư viện ảnh (Images Gallery & Primary Image)
+// ---------------------------------------------------------------------------
+
+export function useUploadRecipeImage(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ file, altText }: { file: File; altText?: string }) =>
       recipeService.uploadRecipeImage(recipeId, file, altText),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-008: Hook mutation đặt ảnh chính cho công thức
- */
-export function useSetPrimaryRecipeImage(recipeId: string) {
+export function useSetPrimaryRecipeImage(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (imageId: string) => recipeService.setPrimaryRecipeImage(recipeId, imageId),
+    mutationFn: (imageId: string) => recipeService.setPrimaryImage(recipeId, imageId),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-008: Hook mutation xóa ảnh công thức
- */
-export function useDeleteRecipeImage(recipeId: string) {
+export function useDeleteRecipeImage(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (imageId: string) => recipeService.deleteRecipeImage(recipeId, imageId),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-009: Hook mutation thêm nguyên liệu
- */
-export function useAddIngredient(recipeId: string) {
+// ---------------------------------------------------------------------------
+// FR-RCP-009: Hooks quản lý Nguyên liệu (Ingredients CRUD độc lập)
+// ---------------------------------------------------------------------------
+
+export function useAddRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: AddIngredientRequest) => recipeService.addIngredient(recipeId, data),
+    mutationFn: (data: AddIngredientRequest) =>
+      recipeService.addRecipeIngredient(recipeId, data),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-009: Hook mutation cập nhật nguyên liệu
- */
-export function useUpdateIngredient(recipeId: string) {
+export const useAddIngredient = useAddRecipeIngredient;
+
+export function useUpdateRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ ingredientId, data }: { ingredientId: string; data: UpdateIngredientRequest }) =>
-      recipeService.updateIngredient(recipeId, ingredientId, data),
+    mutationFn: ({
+      ingredientId,
+      data,
+    }: {
+      ingredientId: string;
+      data: UpdateIngredientRequest;
+    }) => recipeService.updateRecipeIngredient(recipeId, ingredientId, data),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-009: Hook mutation xóa nguyên liệu
- */
-export function useDeleteIngredient(recipeId: string) {
+export const useUpdateIngredient = useUpdateRecipeIngredient;
+
+export function useDeleteRecipeIngredient(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (ingredientId: string) => recipeService.deleteIngredient(recipeId, ingredientId),
+    mutationFn: (ingredientId: string) =>
+      recipeService.deleteRecipeIngredient(recipeId, ingredientId),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-010: Hook mutation thêm bước thực hiện
- */
-export function useAddStep(recipeId: string) {
+export const useDeleteIngredient = useDeleteRecipeIngredient;
+
+// ---------------------------------------------------------------------------
+// FR-RCP-010: Hooks quản lý Các bước thực hiện (Steps CRUD độc lập)
+// ---------------------------------------------------------------------------
+
+export function useAddRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: AddStepRequest) => recipeService.addStep(recipeId, data),
+    mutationFn: (data: AddStepRequest) =>
+      recipeService.addRecipeStep(recipeId, data),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-010: Hook mutation cập nhật bước thực hiện
- */
-export function useUpdateStep(recipeId: string) {
+export const useAddStep = useAddRecipeStep;
+
+export function useUpdateRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ stepId, data }: { stepId: string; data: UpdateStepRequest }) =>
-      recipeService.updateStep(recipeId, stepId, data),
+    mutationFn: ({
+      stepId,
+      data,
+    }: {
+      stepId: string;
+      data: UpdateStepRequest;
+    }) => recipeService.updateRecipeStep(recipeId, stepId, data),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
 
-/**
- * FR-RCP-010: Hook mutation xóa bước thực hiện
- */
-export function useDeleteStep(recipeId: string) {
+export const useUpdateStep = useUpdateRecipeStep;
+
+export function useDeleteRecipeStep(recipeId: string, slug?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (stepId: string) => recipeService.deleteStep(recipeId, stepId),
+    mutationFn: (stepId: string) => recipeService.deleteRecipeStep(recipeId, stepId),
     onSuccess: () => {
+      if (slug) qc.invalidateQueries({ queryKey: recipeKeys.detail(slug) });
       qc.invalidateQueries({ queryKey: recipeKeys.all });
     },
   });
 }
+
+export const useDeleteStep = useDeleteRecipeStep;

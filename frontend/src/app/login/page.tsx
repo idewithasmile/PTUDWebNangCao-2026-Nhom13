@@ -16,20 +16,33 @@ export default function LoginPage() {
   // FR-AUTH-004: api-client đá về /login?reason=revoked khi phát hiện reuse
   // refresh token → hiện cảnh báo "phiên không hợp lệ / bị xâm phạm" đúng 1 lần.
   const [revokedWarning, setRevokedWarning] = useState(false);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('reason') === 'revoked' || consumeSessionRevokedFlag() !== null) {
-      setRevokedWarning(true);
-      // Dọn query param cho sạch URL (không reload trang).
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-  }, []);
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reason') === 'revoked' || consumeSessionRevokedFlag() !== null) {
+      setRevokedWarning(true);
+    }
+    // Nếu URL chứa query email hoặc password do form submit tự nhiên khi JS chưa tải xong
+    const emailParam = params.get('email');
+    if (emailParam) {
+      setValue('email', emailParam);
+    }
+    const passwordParam = params.get('password');
+    if (passwordParam) {
+      setValue('password', passwordParam);
+    }
+    if (emailParam || passwordParam || params.get('reason') === 'revoked') {
+      // Dọn query param cho sạch URL (không reload trang).
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [setValue]);
 
   const onSubmit = (values: LoginForm) => {
     setServerError(null);
@@ -41,9 +54,13 @@ export default function LoginPage() {
       }
       return;
     }
+    const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get('returnUrl') || '/';
     login.mutate(parsed.data, {
-      onSuccess: () => router.push('/dashboard'),
-      onError: (e) => setServerError(toErrorMessage(e, 'Đăng nhập thất bại.')),
+      onSuccess: () => {
+        router.push(returnUrl);
+      },
+      onError: (e) => setServerError(toErrorMessage(e, 'Đăng nhập thất bại. Vui lòng kiểm tra lại email hoặc mật khẩu.')),
     });
   };
 
@@ -55,7 +72,7 @@ export default function LoginPage() {
           Phiên đăng nhập không hợp lệ hoặc bị xâm phạm. Vui lòng đăng nhập lại.
         </p>
       )}
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} method="POST" className="mt-4 space-y-4" noValidate>
         <div>
           <label htmlFor="email" className="block text-sm font-medium">Email</label>
           <input

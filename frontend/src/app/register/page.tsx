@@ -30,8 +30,8 @@ export default function RegisterPage() {
       return;
     }
     signup.mutate(parsed.data, {
-      // FR-AUTH-001: auto-login sau đăng ký → vào dashboard.
-      onSuccess: () => router.push('/dashboard'),
+      // Tự động đăng nhập sau đăng ký → vào trang chủ.
+      onSuccess: () => router.push('/'),
       onError: (e) => {
         // Ưu tiên hiện lỗi field từ RFC 7807 `errors` inline dưới từng input
         // (vd Email/UserName trùng, Password bị Identity từ chối). Message nào
