@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using CulinaryBlog.Application.Common.Exceptions;
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -42,6 +44,8 @@ public static class FilesEndpoints
         IFormFile? file,
         [FromQuery] string? folder,
         IFileStorageService fileStorageService,
+        IStorageQuotaService storageQuotaService,
+        HttpContext httpContext,
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
@@ -53,6 +57,14 @@ public static class FilesEndpoints
                 Title = "Tệp tin rỗng",
                 Detail = "Vui lòng chọn một tệp tin hợp lệ để tải lên."
             });
+        }
+
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? httpContext.User.FindFirst("sub")?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            await storageQuotaService.EnsureUserStorageQuotaNotExceededAsync(userId, file.Length, ct);
         }
 
         using var stream = file.OpenReadStream();

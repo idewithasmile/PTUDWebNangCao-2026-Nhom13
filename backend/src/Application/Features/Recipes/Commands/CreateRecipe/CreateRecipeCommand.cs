@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Domain.Enums;
+using CulinaryBlog.Domain.Interfaces;
 using MediatR;
 
 namespace CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipe;
@@ -19,4 +20,7 @@ public record CreateRecipeCommand(
     decimal Fat,
     List<CreateRecipeStepDto>? Steps = null,
     List<CreateRecipeIngredientDto>? Ingredients = null,
-    string? PrimaryImageUrl = null) : IRequest<RecipeDto>;
+    string? PrimaryImageUrl = null) : IRequest<RecipeDto>, ICacheInvalidator
+{
+    public IReadOnlyList<string> CacheKeysToInvalidate => ["categories:all"];
+}

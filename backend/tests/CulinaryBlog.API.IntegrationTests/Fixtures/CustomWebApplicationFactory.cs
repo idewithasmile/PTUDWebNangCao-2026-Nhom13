@@ -135,6 +135,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             return Task.FromResult<Stream>(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0]));
         }
+
+        public Task<IReadOnlyList<string>> ListAllFilesAsync(string? folder = null, CancellationToken ct = default)
+        {
+            return Task.FromResult<IReadOnlyList<string>>([]);
+        }
     }
 
     public async Task ResetDatabaseAsync()
@@ -143,12 +148,5 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
         await db.Database.EnsureDeletedAsync();
         await db.Database.EnsureCreatedAsync();
-
-        // Xóa sạch distributed cache giữa các test case để đảm bảo tính cô lập
-        var cache = scope.ServiceProvider.GetService<IDistributedCache>();
-        if (cache != null)
-        {
-            await cache.RemoveAsync("categories:all");
-        }
     }
 }

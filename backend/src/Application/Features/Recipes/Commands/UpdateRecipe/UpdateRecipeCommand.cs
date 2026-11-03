@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Domain.Enums;
+using CulinaryBlog.Domain.Interfaces;
 using MediatR;
 
 namespace CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
@@ -18,4 +19,7 @@ public record UpdateRecipeCommand(
     decimal Protein,
     decimal Carbs,
     decimal Fat,
-    string RowVersionBase64) : IRequest<RecipeDto>;
+    string RowVersionBase64) : IRequest<RecipeDto>, ICacheInvalidator
+{
+    public IReadOnlyList<string> CacheKeysToInvalidate => ["categories:all"];
+}
