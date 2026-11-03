@@ -15,6 +15,7 @@ import type { RecipeSummaryDto, RecipeStatus, RecipeDifficulty } from '@/lib/typ
 import type { UserProfile } from '@/types/auth';
 import DeleteRecipeModal from '@/components/recipes/DeleteRecipeModal';
 import Toast, { ToastMessage } from '@/components/common/Toast';
+import RecipeDetailView from '@/components/recipes/RecipeDetailView';
 import {
   Search,
   Plus,
@@ -38,6 +39,7 @@ import {
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
+  ExternalLink,
 } from 'lucide-react';
 
 interface DashboardRecipesViewProps {
@@ -173,200 +175,63 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
   };
 
   // --------------------------------------------------------------------------
-  // SCREEN 3: CHI TIẾT BÀI VIẾT (Khi người dùng nhấn chọn xem 1 bài viết)
+  // SCREEN 3: CHI TIẾT BÀI VIẾT (Khớp 100% trang chi tiết công thức thực tế ngoài độc giả)
   // --------------------------------------------------------------------------
   if (selectedRecipe) {
     return (
       <div className="space-y-6 animate-fade-in">
-        {/* Top bar điều hướng quay lại & nút thao tác */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
+        {/* Top bar điều hướng quay lại & nút thao tác trong Dashboard */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-gray-200/80 shadow-2xs">
           <button
             type="button"
             onClick={() => setSelectedRecipe(null)}
-            className="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-blue-600 transition"
+            className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 hover:text-blue-600 bg-gray-50 hover:bg-gray-100 px-3.5 py-2 rounded-xl border border-gray-200 transition active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Quay lại danh sách</span>
+            <span>← Quay lại danh sách công thức</span>
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold ${
                 selectedRecipe.status === 'Published' || String(selectedRecipe.status) === '1'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : selectedRecipe.status === 'Archived' || String(selectedRecipe.status) === '2'
+                  ? 'bg-gray-100 text-gray-700 border border-gray-200'
                   : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}
             >
               {selectedRecipe.status === 'Published' || String(selectedRecipe.status) === '1'
                 ? 'Đã xuất bản'
+                : selectedRecipe.status === 'Archived' || String(selectedRecipe.status) === '2'
+                ? 'Đã lưu trữ'
                 : 'Bản nháp'}
             </span>
 
             <Link
               href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(selectedRecipe.slug)}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition active:scale-95"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              <span>Chỉnh sửa</span>
+              <span>Chỉnh sửa công thức</span>
+            </Link>
+
+            <Link
+              href={`/recipes/${encodeURIComponent(selectedRecipe.slug)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs border border-orange-200 transition"
+              title="Mở xem ở trang web công khai ngoài Dashboard"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Mở tab mới ↗</span>
             </Link>
           </div>
         </div>
 
-        {/* Tiêu đề & Thông tin tác giả */}
-        <div className="space-y-3">
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-            {selectedRecipe.title}
-          </h1>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-medium">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px]">
-                {(selectedRecipe.authorName || 'A')[0]}
-              </div>
-              <span className="font-bold text-gray-800">{selectedRecipe.authorName || 'Tác giả'}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-bold">
-                Author
-              </span>
-            </div>
-
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-gray-400" />
-              {new Date(selectedRecipe.createdAt).toLocaleDateString('vi-VN')}
-            </span>
-
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-orange-500" />
-              {selectedRecipe.totalTimeMinutes || 35} phút
-            </span>
-
-            <span className="flex items-center gap-1">
-              <ChefHat className="w-3.5 h-3.5 text-orange-500" />
-              {selectedRecipe.servings || 4} phần
-            </span>
-          </div>
-        </div>
-
-        {/* Nội dung 2 cột khớp Screen 3 */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Cột trái: Ảnh bìa + Nội dung bài viết */}
-          <div className="lg:col-span-8 space-y-5">
-            <div className="w-full h-72 sm:h-96 rounded-3xl overflow-hidden bg-gray-100 border border-gray-200 relative shadow-sm">
-              {selectedRecipe.thumbnailUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={selectedRecipe.thumbnailUrl}
-                  alt={selectedRecipe.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <ChefHat className="w-16 h-16" />
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white p-6 sm:p-7 rounded-3xl border border-gray-100 shadow-xs space-y-4">
-              <h3 className="text-base font-bold text-gray-900">Mô tả công thức</h3>
-              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                {selectedRecipe.description ||
-                  'Phở bò là món ăn truyền thống nổi tiếng của Việt Nam, đặc biệt là ở Hà Nội. Với hương vị đậm đà thơm ngon của nước dùng ninh từ xương ống hầm và hoa hồi quế, kết hợp cùng sợi phở mềm dai và từng thớ thịt bò tươi ngon.'}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                Các bước thực hiện được hướng dẫn chi tiết theo định lượng chuẩn mực, mang lại hương vị chuẩn gia truyền cho mọi bữa ăn gia đình.
-              </p>
-            </div>
-          </div>
-
-          {/* Cột phải: Card Thông tin bài viết + File đính kèm */}
-          <div className="lg:col-span-4 space-y-5">
-            {/* Box 1: Thông tin bài viết */}
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4 text-xs">
-              <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                Thông tin bài viết
-              </h3>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Danh mục</span>
-                  <span className="font-bold text-blue-600">
-                    {selectedRecipe.categoryName || 'Món Việt Nam'}
-                  </span>
-                </div>
-
-                <div className="flex items-start justify-between">
-                  <span className="text-gray-400">Thẻ</span>
-                  <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
-                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-semibold text-gray-600">
-                      phở bò
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-semibold text-gray-600">
-                      hà nội
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-semibold text-gray-600">
-                      công thức
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Tác giả</span>
-                  <span className="font-bold text-gray-800">
-                    {selectedRecipe.authorName || 'Nguyễn Thành Minh'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Ngày tạo</span>
-                  <span className="text-gray-700">
-                    {new Date(selectedRecipe.createdAt).toLocaleDateString('vi-VN')}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Ngày cập nhật</span>
-                  <span className="text-gray-700">
-                    {new Date(selectedRecipe.createdAt).toLocaleDateString('vi-VN')}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Trạng thái</span>
-                  <span className="font-bold text-emerald-600">Đã xuất bản</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Box 2: Thông số chế biến */}
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4 text-xs">
-              <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                Thông số chế biến
-              </h3>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Thời gian nấu</span>
-                  <span className="font-bold text-gray-900">
-                    {selectedRecipe.totalTimeMinutes || 35} phút
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Khẩu phần</span>
-                  <span className="font-bold text-gray-900">
-                    {selectedRecipe.servings || 4} phần
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Độ khó</span>
-                  <span className="font-bold text-orange-600">
-                    {selectedRecipe.difficulty === 1 ? 'Dễ' : selectedRecipe.difficulty === 2 ? 'Trung bình' : selectedRecipe.difficulty === 3 ? 'Khó' : 'Chuyên gia'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Nội dung chi tiết công thức THỰC TẾ 100% bằng RecipeDetailView */}
+        <div className="rounded-3xl border border-gray-200/80 bg-white p-6 sm:p-10 shadow-xs">
+          <RecipeDetailView slug={selectedRecipe.slug} hideBackLink />
         </div>
       </div>
     );

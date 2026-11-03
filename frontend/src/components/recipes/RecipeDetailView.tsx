@@ -24,6 +24,8 @@ import {
 
 interface RecipeDetailViewProps {
   slug: string;
+  hideBackLink?: boolean;
+  onBack?: () => void;
 }
 
 const difficultyLabels: Record<number, { label: string; color: string }> = {
@@ -33,7 +35,11 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
   4: { label: 'Chuyên gia', color: 'bg-rose-50 text-rose-700 border-rose-200' },
 };
 
-export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
+export default function RecipeDetailView({
+  slug,
+  hideBackLink = false,
+  onBack,
+}: RecipeDetailViewProps) {
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
 
   if (isLoading) {
@@ -106,15 +112,28 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Nút Quay lại danh sách */}
-      <div>
-        <Link
-          href="/recipes"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Danh sách công thức</span>
-        </Link>
-      </div>
+      {!hideBackLink && (
+        <div>
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Quay lại</span>
+            </button>
+          ) : (
+            <Link
+              href="/recipes"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Danh sách công thức</span>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Header thông tin chính */}
       <div className="space-y-4">

@@ -46,7 +46,18 @@ import {
   Calendar,
   User,
   ShoppingBag,
+  UtensilsCrossed,
 } from 'lucide-react';
+import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
+import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
+import RecipeStepsList from '@/components/recipes/RecipeStepsList';
+import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
+import type {
+  RecipeImageDto,
+  RecipeIngredientDto,
+  RecipeStepDto,
+  RecipeNutritionDto,
+} from '@/lib/types/recipe';
 
 export interface GalleryFileItem {
   id: string;
@@ -467,6 +478,57 @@ export default function RecipeForm({
       (watchedFat && watchedFat > 0)
   );
 
+  // Map dữ liệu form sang chuẩn RecipeDetailView để hiển thị xem trước 100% giống trang công khai
+  const previewImages: RecipeImageDto[] = galleryItems.map((item, idx) => ({
+    id: item.id || `preview-img-${idx}`,
+    originalUrl: item.previewUrl,
+    mediumUrl: item.previewUrl,
+    thumbnailUrl: item.previewUrl,
+    altText: item.name || watchedTitle || 'Ảnh món ăn',
+    isPrimary: item.isPrimary,
+    orderIndex: idx,
+  }));
+
+  if (previewImages.length === 0 && (watchedImageUrl || primaryGalleryItem?.previewUrl)) {
+    const url = watchedImageUrl || primaryGalleryItem?.previewUrl || '';
+    if (url) {
+      previewImages.push({
+        id: 'preview-img-primary',
+        originalUrl: url,
+        mediumUrl: url,
+        thumbnailUrl: url,
+        altText: watchedTitle || 'Ảnh món ăn',
+        isPrimary: true,
+        orderIndex: 0,
+      });
+    }
+  }
+
+  const previewIngredients: RecipeIngredientDto[] = validIngredients.map((ing, idx) => ({
+    id: `preview-ing-${idx}`,
+    name: ing.name,
+    quantity: ing.quantity ?? null,
+    unit: ing.unit || null,
+    notes: ing.notes || null,
+    orderIndex: idx + 1,
+  }));
+
+  const previewSteps: RecipeStepDto[] = validSteps.map((step, idx) => ({
+    id: `preview-step-${idx}`,
+    stepNumber: idx + 1,
+    title: step.title || `Bước ${idx + 1}`,
+    description: step.description,
+    timerMinutes: step.timerMinutes ?? null,
+    imageUrl: step.imageUrl || null,
+  }));
+
+  const previewNutrition: RecipeNutritionDto = {
+    calories: watchedCalories ?? null,
+    protein: watchedProtein ?? null,
+    carbohydrates: watchedCarbs ?? null,
+    fat: watchedFat ?? null,
+  };
+
   // Mở xem chi tiết ở một trang mới hoàn chỉnh độc lập (/recipes/preview)
   const handleOpenNewPagePreview = () => {
     try {
@@ -705,60 +767,15 @@ export default function RecipeForm({
               </div>
             </div>
 
-            {/* Khung Ảnh đại diện & Gallery Thumbnail */}
-            <div className="space-y-3">
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm border border-gray-100">
-                {effectiveHeroImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolveMediaUrl(effectiveHeroImage)}
-                    alt={watchedTitle || 'Ảnh món ăn'}
-                    className="h-full w-full object-cover object-center transition-all duration-300"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full w-full bg-gradient-to-br from-orange-50 to-amber-50 text-orange-300 gap-2">
-                    <ImageIcon className="h-14 w-14" />
-                    <span className="text-xs text-orange-400 font-medium">Chưa có hình ảnh món ăn</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Dải ảnh Thumbnail (cho phép bấm chuyển đổi ảnh xem trước) */}
-              {galleryItems.length > 1 && (
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
-                  <span className="text-[11px] font-bold text-gray-400 mr-1 shrink-0">
-                    Album ({galleryItems.length}):
-                  </span>
-                  {galleryItems.map((img) => {
-                    const isSelected = effectiveHeroImage === img.previewUrl;
-                    return (
-                      <button
-                        key={img.id}
-                        type="button"
-                        onClick={() => setSelectedPreviewImage(img.previewUrl)}
-                        className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? 'border-orange-500 scale-95 shadow-sm ring-2 ring-orange-200'
-                            : 'border-transparent opacity-70 hover:opacity-100'
-                        }`}
-                        title={img.name || 'Ảnh món ăn'}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={resolveMediaUrl(img.previewUrl)}
-                          alt={img.name || 'Ảnh món ăn'}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {/* Khối Hình ảnh công thức chuẩn Gallery Mockup */}
+            <RecipeGalleryViewer
+              images={previewImages}
+              recipeTitle={watchedTitle || 'Công thức'}
+            />
 
             {/* 4 Thẻ thông số tóm tắt (Chuẩn bị, Nấu, Tổng thời gian, Khẩu phần) */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
                   <Clock className="h-5 w-5" />
                 </div>
@@ -768,9 +785,9 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                  <Utensils className="h-5 w-5" />
+                  <UtensilsCrossed className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Thời gian nấu</p>
@@ -778,7 +795,7 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Clock className="h-5 w-5" />
                 </div>
@@ -790,191 +807,36 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xs">
+              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Khẩu phần</p>
-                  <p className="text-sm font-bold text-gray-900">{watchedServings || 1} người</p>
+                  <p className="text-sm font-bold text-gray-900">{watchedServings || 1} phần</p>
                 </div>
               </div>
             </div>
 
-            {/* Thông tin dinh dưỡng (nếu có) */}
-            {hasNutrition && (
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-                  <h4 className="text-sm font-bold text-gray-900">Giá trị Dinh dưỡng (mỗi khẩu phần)</h4>
-                  <span className="text-[11px] text-gray-400 font-medium">Ước tính</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-red-100 bg-red-50/50 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
-                      <Flame className="w-3.5 h-3.5" />
-                      <span>Năng lượng</span>
-                    </div>
-                    <p className="text-base font-black text-red-950 mt-1">
-                      {watchedCalories || 0} kcal
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600">
-                      <Dumbbell className="w-3.5 h-3.5" />
-                      <span>Chất đạm</span>
-                    </div>
-                    <p className="text-base font-black text-blue-950 mt-1">
-                      {watchedProtein || 0} g
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600">
-                      <Wheat className="w-3.5 h-3.5" />
-                      <span>Tinh bột</span>
-                    </div>
-                    <p className="text-base font-black text-amber-950 mt-1">
-                      {watchedCarbs || 0} g
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                      <Droplets className="w-3.5 h-3.5" />
-                      <span>Chất béo</span>
-                    </div>
-                    <p className="text-base font-black text-emerald-950 mt-1">
-                      {watchedFat || 0} g
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Thông tin dinh dưỡng */}
+            {hasNutrition && <RecipeNutritionCard nutrition={previewNutrition} />}
 
-            {/* Bố cục 2 cột: Nguyên liệu & Các bước */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Cột 1: Danh sách nguyên liệu */}
-              <div className="md:col-span-1 space-y-4 rounded-2xl border border-gray-100 bg-gray-50/40 p-5">
-                <div className="flex items-center justify-between border-b border-gray-200/70 pb-3">
-                  <div className="flex items-center gap-2 font-bold text-gray-900">
-                    <ShoppingBag className="h-4 w-4 text-orange-500" />
-                    <h4 className="text-base">Nguyên liệu</h4>
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-500">
-                    {validIngredients.length} món
-                  </span>
-                </div>
-
-                {validIngredients.length === 0 ? (
-                  <div className="text-center py-6 space-y-2">
-                    <p className="text-xs text-gray-400 italic">Chưa có nguyên liệu nào.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setViewMode('edit');
-                        scrollToAnchor('card-ingredients');
-                      }}
-                      className="text-xs font-bold text-blue-600 hover:underline"
-                    >
-                      + Thêm nguyên liệu ngay
-                    </button>
-                  </div>
-                ) : (
-                  <ul className="space-y-2.5 text-xs">
-                    {validIngredients.map((item, idx) => (
-                      <li
-                        key={`preview-ing-${idx}`}
-                        className="flex items-start justify-between gap-2 bg-white p-2.5 rounded-xl border border-gray-100 shadow-2xs"
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
-                          <div>
-                            <span className="font-semibold text-gray-800">{item.name}</span>
-                            {item.notes && (
-                              <p className="text-[10px] text-gray-400 italic">{item.notes}</p>
-                            )}
-                          </div>
-                        </div>
-                        {(item.quantity != null || item.unit) && (
-                          <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg shrink-0">
-                            {item.quantity ?? ''} {item.unit ?? ''}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            {/* Bố cục 2 cột: Cột trái Nguyên liệu & Các bước thực hiện */}
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {/* Cột 1: Nguyên liệu */}
+              <div className="md:col-span-1">
+                <RecipeIngredientsList
+                  ingredients={previewIngredients}
+                  servings={watchedServings || 1}
+                />
               </div>
 
-              {/* Cột 2: Các bước thực hiện & Ghi chú */}
-              <div className="md:col-span-2 space-y-5">
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <div className="flex items-center gap-2 font-bold text-gray-900">
-                      <ChefHat className="h-5 w-5 text-orange-500" />
-                      <h4 className="text-base">Các bước thực hiện</h4>
-                    </div>
-                    <span className="text-[11px] font-bold text-gray-500">
-                      {validSteps.length} bước
-                    </span>
-                  </div>
-
-                  {validSteps.length === 0 ? (
-                    <div className="text-center py-8 space-y-2">
-                      <p className="text-xs text-gray-400 italic">Chưa có bước thực hiện nào.</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setViewMode('edit');
-                          scrollToAnchor('card-steps');
-                        }}
-                        className="text-xs font-bold text-blue-600 hover:underline"
-                      >
-                        + Thêm bước thực hiện ngay
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {validSteps.map((step, idx) => (
-                        <div
-                          key={`preview-step-${idx}`}
-                          className="flex items-start gap-3.5 p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition"
-                        >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-2xs">
-                            {idx + 1}
-                          </span>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h5 className="text-xs font-bold text-gray-900">
-                                {step.title || `Bước ${idx + 1}`}
-                              </h5>
-                              {step.timerMinutes != null && step.timerMinutes > 0 && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                                  <Clock className="w-3 h-3 text-orange-500" />
-                                  <span>{step.timerMinutes} phút</span>
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
-                              {step.description}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bí quyết & Lưu ý của tác giả nếu có */}
-                {watchedInstructions?.trim() && (
-                  <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4.5 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
-                      <Lightbulb className="w-4 h-4 text-amber-600" />
-                      <span>Bí quyết & Lưu ý từ tác giả</span>
-                    </div>
-                    <p className="text-xs text-amber-800/90 leading-relaxed whitespace-pre-line">
-                      {watchedInstructions}
-                    </p>
-                  </div>
-                )}
+              {/* Cột 2: Các bước thực hiện */}
+              <div className="md:col-span-2">
+                <RecipeStepsList
+                  steps={previewSteps}
+                  instructions={watchedInstructions}
+                />
               </div>
             </div>
           </div>
