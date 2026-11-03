@@ -28,7 +28,7 @@ export default function DashboardRecipeCreateView({
   const handleSubmit = async (
     formData: RecipeFormData,
     secondaryFiles: File[] = [],
-    targetStatus: 'draft' | 'publish' = 'draft'
+    targetStatus: 'draft' | 'publish' | 'archive' = 'draft'
   ) => {
     setServerError(null);
     setSuccessMessage(null);
@@ -73,7 +73,7 @@ export default function DashboardRecipeCreateView({
 
       setUploadProgress(null);
 
-      // 3. Xử lý xuất bản hoặc lưu nháp theo quyết định của tác giả
+      // 3. Xử lý xuất bản hoặc lưu nháp hoặc lưu trữ theo quyết định của tác giả
       if (targetStatus === 'publish' && newRecipe?.id) {
         setUploadProgress('Đang kích hoạt xuất bản bài viết công khai (FR-RCP-005)...');
         try {
@@ -96,6 +96,22 @@ export default function DashboardRecipeCreateView({
             window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
           }, 1500);
           return;
+        }
+      }
+
+      if (targetStatus === 'archive' && newRecipe?.id) {
+        setUploadProgress('Đang chuyển công thức vào kho lưu trữ (FR-RCP-007)...');
+        try {
+          await recipeService.archiveRecipe(newRecipe.id);
+          setUploadProgress(null);
+          setSuccessMessage('Công thức đã được tạo và chuyển vào kho lưu trữ thành công!');
+          setTimeout(() => {
+            onSelectTab('recipes-archived');
+          }, 1200);
+          return;
+        } catch (archiveErr) {
+          console.error('Lỗi khi lưu trữ ngay:', archiveErr);
+          setUploadProgress(null);
         }
       }
 
