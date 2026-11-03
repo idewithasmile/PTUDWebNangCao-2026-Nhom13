@@ -10,7 +10,7 @@ import RecipeForm from '@/components/recipes/RecipeForm';
 import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
-import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, Loader2, ChefHat } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -163,72 +163,84 @@ export default function DashboardRecipeCreateView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 1. HERO BANNER: Thêm mới / Cập nhật công thức chuẩn mockup */}
-      <div className="relative overflow-hidden rounded-3xl bg-gray-900 border border-gray-800 shadow-md">
+      {/* 1. HERO BANNER: Thêm mới công thức chuẩn Mockup */}
+      <div className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 shadow-md">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 transition-transform duration-700 hover:scale-100"
+          className="absolute inset-0 bg-cover bg-center opacity-35 mix-blend-luminosity scale-105 transition-transform duration-700 hover:scale-100"
           style={{
             backgroundImage: `url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1600&auto=format&fit=crop&q=80')`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/80 to-transparent" />
 
-        <div className="relative z-10 p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
           <div className="space-y-3 max-w-2xl">
             {/* Breadcrumb điều hướng */}
             <div className="flex items-center gap-2 text-xs text-orange-200/80 font-medium">
               <button
                 type="button"
+                onClick={() => onSelectTab('overview')}
+                className="hover:text-white transition"
+              >
+                Trang chủ
+              </button>
+              <span>&gt;</span>
+              <button
+                type="button"
                 onClick={() => onSelectTab('recipes')}
                 className="hover:text-white transition"
               >
-                Quản lý công thức
+                Công thức
               </button>
-              <span>/</span>
+              <span>&gt;</span>
               <span className="text-white font-semibold">Thêm công thức</span>
             </div>
 
-            <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm">
-                Thêm mới / Cập nhật công thức
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-200 font-normal">
-                Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                <ChefHat className="w-7 h-7" />
+              </div>
+              <div className="space-y-0.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                  Thêm công thức mới
+                </h1>
+                <p className="text-xs sm:text-sm text-stone-300 font-normal">
+                  Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Cụm nút hành động Banner */}
-          <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleQuickStudioCreate}
-                disabled={createMutation.isPending || Boolean(uploadProgress)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
-                title="Mở Recipe Studio với 5 Tab chuyên nghiệp"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Mở Recipe Studio (5 Tab)</span>
-              </button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => alert('Hướng dẫn tạo công thức: Điền đầy đủ Thông tin cơ bản, chọn nguyên liệu và mô tả các bước nấu. Thẻ Xem trước bên phải sẽ cập nhật trực tiếp theo dữ liệu của bạn!')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+            >
+              <span>▷</span>
+              <span>Xem hướng dẫn</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => onSelectTab('recipes')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/20 transition active:scale-95"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Về danh sách</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleQuickStudioCreate}
+              disabled={createMutation.isPending || Boolean(uploadProgress)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+              title="Mở Recipe Studio với 5 Tab chuyên nghiệp"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Mở Recipe Studio</span>
+            </button>
 
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-orange-200 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
-              <span className="font-serif italic text-sm font-semibold tracking-wide text-white">
-                Nấu ngon Mỗi ngày
-              </span>
-              <span className="text-rose-400 text-xs">♥</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => onSelectTab('recipes')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 backdrop-blur-sm text-xs font-bold text-stone-200 border border-stone-700 transition active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại</span>
+            </button>
           </div>
         </div>
       </div>

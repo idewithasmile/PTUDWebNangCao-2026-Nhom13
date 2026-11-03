@@ -8,6 +8,13 @@ import { categoryService } from '@/lib/services/category-service';
 import { fileService } from '@/lib/services/file-service';
 import { resolveMediaUrl } from '@/lib/utils';
 import type { CategoryDto } from '@/lib/types/category';
+import type {
+  RecipeImageDto,
+  RecipeIngredientDto,
+  RecipeStepDto,
+  RecipeNutritionDto,
+  RecipeDifficulty,
+} from '@/lib/types/recipe';
 import {
   Loader2,
   AlertCircle,
@@ -22,19 +29,14 @@ import {
   CheckCircle2,
   Sparkles,
   UploadCloud,
-  Link as LinkIcon,
   X,
   Star,
   FileText,
   Eye,
   ChefHat,
-  Heart,
   Send,
   MoveUp,
   MoveDown,
-  ChevronDown,
-  ChevronUp,
-  Check,
   Tag,
   Dumbbell,
   Wheat,
@@ -45,19 +47,16 @@ import {
   Archive,
   Calendar,
   User,
-  ShoppingBag,
   UtensilsCrossed,
+  Info,
+  Edit3,
+  GripVertical,
+  Check,
 } from 'lucide-react';
 import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
 import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
-import type {
-  RecipeImageDto,
-  RecipeIngredientDto,
-  RecipeStepDto,
-  RecipeNutritionDto,
-} from '@/lib/types/recipe';
 
 export interface GalleryFileItem {
   id: string;
@@ -88,12 +87,12 @@ interface RecipeFormProps {
   onSwitchToStudio?: () => void;
 }
 
-// Một số URL ảnh món ăn chất lượng cao gợi ý nhanh
+// Danh sách ảnh mẫu chất lượng cao
 const sampleImages = [
-  { label: 'Phở bò', url: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800&auto=format&fit=crop&q=80' },
-  { label: 'Món nướng / Xào', url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80' },
-  { label: 'Salad thanh đạm', url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80' },
-  { label: 'Bánh tráng miệng', url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Phở bò Hà Nội', url: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Bò xào súp lơ', url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Bánh mì chảo xíu mại', url: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Canh chua cá lóc', url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80' },
 ];
 
 export default function RecipeForm({
@@ -107,11 +106,17 @@ export default function RecipeForm({
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  // Chế độ xem: 'edit' (Soạn thảo theo bố cục 2 cột) | 'preview' (Xem trước toàn cảnh ngay trong Dashboard)
-  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+  // Stepper 4 bước chuẩn mockup: 1. Thông tin cơ bản -> 2. Nguyên liệu -> 3. Công thức -> 4. Hoàn tất
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Sub-tabs trong cột trái: 'steps' (Quy trình chế biến) | 'ingredients' (Nguyên liệu chi tiết) | 'notes' (Ghi chú & Mẹo) | 'gallery' (Hình ảnh bổ sung)
+  const [subTab, setSubTab] = useState<'steps' | 'ingredients' | 'notes' | 'gallery'>('steps');
+
+  // Modal xem trước toàn màn hình
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [submitTarget, setSubmitTarget] = useState<'draft' | 'publish' | 'archive'>('draft');
 
-  // Thư viện ảnh (Giải pháp 1: Multi-Image Smart Grid Uploader)
+  // Thư viện hình ảnh
   const [galleryItems, setGalleryItems] = useState<GalleryFileItem[]>(() => {
     if (initialValues?.primaryImageUrl) {
       return [
@@ -119,20 +124,21 @@ export default function RecipeForm({
           id: 'initial-primary',
           previewUrl: initialValues.primaryImageUrl,
           isPrimary: true,
-          name: 'Ảnh chính hiện tại',
+          name: 'Ảnh đại diện chính',
         },
       ];
     }
     return [];
   });
+
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState('');
   const [isUploadingPrimary, setIsUploadingPrimary] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
-  const [isNutritionOpen, setIsNutritionOpen] = useState(false);
-  const [activeAnchor, setActiveAnchor] = useState('card-general');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const secondaryFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -150,9 +156,9 @@ export default function RecipeForm({
       primaryImageUrl: initialValues?.primaryImageUrl ?? '',
       categoryId: initialValues?.categoryId ?? '',
       prepTimeMinutes: initialValues?.prepTimeMinutes ?? 15,
-      cookTimeMinutes: initialValues?.cookTimeMinutes ?? 30,
-      servings: initialValues?.servings ?? 4,
-      difficulty: initialValues?.difficulty ?? 2,
+      cookTimeMinutes: initialValues?.cookTimeMinutes ?? 20,
+      servings: initialValues?.servings ?? 2,
+      difficulty: initialValues?.difficulty ?? 1,
       calories: initialValues?.calories ?? 0,
       protein: initialValues?.protein ?? 0,
       carbs: initialValues?.carbs ?? 0,
@@ -160,11 +166,31 @@ export default function RecipeForm({
       ingredients:
         initialValues?.ingredients && initialValues.ingredients.length > 0
           ? initialValues.ingredients
-          : [{ name: '', quantity: null, unit: '', notes: '' }],
+          : [
+              { name: 'Thịt bò tươi', quantity: 300, unit: 'g', notes: 'Thái lát mỏng' },
+              { name: 'Bông cải xanh (Súp lơ)', quantity: 200, unit: 'g', notes: 'Cắt miếng vừa ăn' },
+              { name: 'Cà rốt', quantity: 1, unit: 'củ', notes: 'Gọt vỏ tỉa hoa' },
+            ],
       steps:
         initialValues?.steps && initialValues.steps.length > 0
           ? initialValues.steps
-          : [{ title: 'Bước 1: Chuẩn bị', description: '', timerMinutes: null }],
+          : [
+              {
+                title: 'Sơ chế nguyên liệu',
+                description: 'Thịt bò rửa sạch, thái lát mỏng vừa ăn. Bông cải xanh chẻ nhỏ ngâm nước muối loãng. Cà rốt tỉa hoa.',
+                timerMinutes: 10,
+              },
+              {
+                title: 'Xào rau củ thanh ngọt',
+                description: 'Phi thơm tỏi băm, cho cà rốt và bông cải xanh vào xào chín tới cùng 1 thìa hạt nêm.',
+                timerMinutes: 5,
+              },
+              {
+                title: 'Xào thịt bò và hoàn thiện',
+                description: 'Xào thịt bò lửa lớn trong 3 phút cho chín mềm, đảo đều cùng rau củ, rắc tiêu đen và dọn ra đĩa.',
+                timerMinutes: 5,
+              },
+            ],
     },
   });
 
@@ -206,6 +232,9 @@ export default function RecipeForm({
         if (isMounted) {
           setCategories(data);
           setIsLoadingCategories(false);
+          if (!watchedCategoryId && data.length > 0) {
+            setValue('categoryId', data[0].id);
+          }
         }
       })
       .catch(() => {
@@ -214,9 +243,9 @@ export default function RecipeForm({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [setValue, watchedCategoryId]);
 
-  // Xử lý chọn nhiều tệp ảnh (Giải pháp 1: Multi-File Selection)
+  // Xử lý chọn nhiều tệp ảnh
   const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
@@ -231,7 +260,7 @@ export default function RecipeForm({
         return;
       }
       if (!allowedTypes.includes(file.type.toLowerCase())) {
-        setUploadError(`Định dạng tệp "${file.name}" không hợp lệ. Hệ thống chỉ hỗ trợ JPEG, PNG, WebP hoặc AVIF.`);
+        setUploadError(`Định dạng tệp "${file.name}" không hợp lệ. Hỗ trợ JPEG, PNG, WebP hoặc AVIF.`);
         return;
       }
       const blobUrl = URL.createObjectURL(file);
@@ -256,9 +285,8 @@ export default function RecipeForm({
       });
     }
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (secondaryFileInputRef.current) secondaryFileInputRef.current.value = '';
   };
 
   // Đổi ảnh chính
@@ -294,7 +322,7 @@ export default function RecipeForm({
   };
 
   // Thêm ảnh từ URL trực tiếp
-  const handleAddFromUrl = (url: string, label = 'Ảnh từ URL') => {
+  const handleAddFromUrl = (url: string, label = 'Ảnh món ăn') => {
     if (!url.trim()) return;
     const newItem: GalleryFileItem = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -313,79 +341,67 @@ export default function RecipeForm({
     setUrlInput('');
   };
 
-  // Nút điền nhanh mẫu nguyên liệu và các bước làm (Ẩm thực Việt Nam thực tế)
-  const handleFillSampleStepsAndIngredients = () => {
-    setValue('title', 'Bánh Mì Chảo Xíu Mại Sốt Cà Chua Hà Nội');
+  // Điền mẫu hoàn chỉnh (Ẩm thực Việt Nam: Bò xào bông cải xanh sốt tỏi & Bánh mì chảo)
+  const handleFillSample = () => {
+    setValue('title', 'Bò Xào Bông Cải Xanh Giòn Ngọt');
     setValue(
       'description',
-      'Bánh mì chảo thơm lừng nóng hổi với xíu mại đậm đà, trứng ốp la lòng đào, pa-tê béo ngậy và sốt cà chua tiêu đen sánh mịn đặc trưng phố cổ Hà Nội.'
+      'Món bò xào bông cải xanh thanh đạm nhưng đậm đà, thịt bò mềm ngọt tự nhiên hòa quyện cùng bông cải xanh giòn sần sật và nước sốt tỏi tiêu thơm lừng.'
     );
     setValue(
       'instructions',
-      'Bí quyết nước sốt cà chua tiêu đen sánh mịn: Phi thơm tỏi băm và bơ lạt trước khi cho cà chua băm nhuyễn vào xào. Thêm một chút dầu hào và tiêu đen Phú Quốc giã dập. Khi dọn ra chảo gang, giữ chảo thật nóng để bơ tan chảy xèo xèo thơm ngậy.'
+      'Mẹo xào thịt bò mềm không dai: Ướp thịt với một thìa dầu ăn và bột bắp trong 15 phút. Xào trên chảo gang thật nóng với lửa lớn, chỉ đảo nhanh trong 2-3 phút rồi tắt bếp ngay.'
     );
-    setValue('prepTimeMinutes', 20);
-    setValue('cookTimeMinutes', 25);
-    setValue('servings', 2);
+    setValue('prepTimeMinutes', 15);
+    setValue('cookTimeMinutes', 20);
+    setValue('servings', 3);
     setValue('difficulty', 1);
-    setValue('calories', 680);
-    setValue('protein', 28);
-    setValue('carbs', 65);
-    setValue('fat', 32);
+    setValue('calories', 420);
+    setValue('protein', 35);
+    setValue('carbs', 18);
+    setValue('fat', 14);
 
     if (categories.length > 0) {
       setValue('categoryId', categories[0].id);
     }
 
-    // Nạp 7 nguyên liệu ẩm thực chuẩn vị
     setValue('ingredients', [
-      { name: 'Bánh mì giòn', quantity: 2, unit: 'ổ', notes: 'Nướng lại cho nóng giòn' },
-      { name: 'Thịt nạc vai heo băm', quantity: 200, unit: 'g', notes: 'Ướp tiêu, hành tím băm làm xíu mại' },
-      { name: 'Pa-tê gan Hạ Long', quantity: 80, unit: 'g', notes: 'Cắt miếng dày béo ngậy' },
-      { name: 'Trứng gà ta', quantity: 2, unit: 'quả', notes: 'Ốp la lòng đào' },
-      { name: 'Xúc xích hun khói', quantity: 2, unit: 'cây', notes: 'Khía hoa chiên vàng' },
-      { name: 'Cà chua chín mọng', quantity: 3, unit: 'quả', notes: 'Băm nhỏ nấu sốt tiêu đen' },
-      { name: 'Bơ lạt Anchor & Tỏi băm', quantity: 20, unit: 'g', notes: 'Tạo mùi thơm béo ngậy' },
+      { name: 'Thịt bò thăn', quantity: 300, unit: 'g', notes: 'Thái mỏng ngang thớ' },
+      { name: 'Bông cải xanh (Súp lơ)', quantity: 200, unit: 'g', notes: 'Chẻ vừa ăn, ngâm muối' },
+      { name: 'Cà rốt tươi', quantity: 1, unit: 'củ', notes: 'Tỉa hoa thái mỏng' },
+      { name: 'Tỏi băm & Hành tím', quantity: 30, unit: 'g', notes: 'Phi thơm vàng' },
+      { name: 'Dầu hào & Nước tương', quantity: 2, unit: 'muỗng canh', notes: 'Gia vị xào đậm đà' },
+      { name: 'Tiêu đen & Dầu mè', quantity: 1, unit: 'thìa cà phê', notes: 'Tạo mùi thơm cuối cùng' },
     ]);
 
-    // Nạp các bước làm có thời gian hẹn giờ (timer)
     setValue('steps', [
       {
-        title: 'Bước 1: Làm xíu mại sốt mềm',
-        description: 'Trộn thịt băm với hành tím, tiêu xay, chút dầu hào và nặn thành các viên tròn vừa ăn. Đem hấp chín sơ trong 15 phút.',
-        timerMinutes: 15,
-      },
-      {
-        title: 'Bước 2: Nấu sốt cà chua tiêu đen',
-        description: 'Đun chảy bơ lạt, phi thơm tỏi băm, cho cà chua vào đảo nhuyễn. Thêm tương cà, dầu hào, tiêu đen đập dập và đun nhỏ lửa 10 phút cho sốt sánh sệt.',
+        title: 'Sơ chế & Ướp thịt bò',
+        description: 'Thịt bò rửa sạch thấm khô, thái lát mỏng. Ướp cùng 1 thìa tỏi băm, 1 thìa dầu hào, 1 thìa dầu ăn để thịt mềm.',
         timerMinutes: 10,
       },
       {
-        title: 'Bước 3: Chiên xúc xích và ốp la trứng',
-        description: 'Khía nhẹ thân xúc xích và chiên vàng đều hai mặt. Đập trứng gà ốp la lòng đào trong chảo gang nóng.',
-        timerMinutes: 5,
+        title: 'Chần sơ bông cải xanh và cà rốt',
+        description: 'Đun sôi nồi nước có chút muối, thả bông cải và cà rốt vào chần nhanh trong 1 phút rồi vớt ra ngâm nước đá để giữ màu xanh tươi giòn.',
+        timerMinutes: 3,
       },
       {
-        title: 'Bước 4: Hoàn thiện chảo gang nóng hổi',
-        description: 'Xếp xíu mại, pa-tê, xúc xích và trứng ốp la vào chảo gang. Rưới nước sốt cà chua nóng hổi lên trên, rắc thêm ngò rí, tiêu đen và thưởng thức kèm bánh mì giòn.',
-        timerMinutes: 5,
+        title: 'Xào rau củ cùng sốt tỏi',
+        description: 'Đun nóng chảo với chút dầu, phi thơm tỏi rồi trút rau củ vào đảo nhanh tay cùng 1 muỗng hạt nêm.',
+        timerMinutes: 4,
+      },
+      {
+        title: 'Xào thịt bò & Trình bày đĩa',
+        description: 'Bật lửa lớn, cho thịt bò vào xào nhanh 2 phút vừa chín tới, đổ rau củ vào đảo đều 30 giây, rưới chút dầu mè, rắc tiêu và bày ra đĩa thưởng thức.',
+        timerMinutes: 3,
       },
     ]);
 
     if (galleryItems.length === 0) {
       handleAddFromUrl(
         'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-        'Bánh mì chảo Hà Nội'
+        'Bò xào súp lơ cà rốt'
       );
-    }
-  };
-
-  // Cuộn mượt đến các khối neo
-  const scrollToAnchor = (id: string) => {
-    setActiveAnchor(id);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -398,14 +414,12 @@ export default function RecipeForm({
           ? String(firstError.message)
           : 'Vui lòng kiểm tra lại các trường thông tin bắt buộc còn thiếu.'
       );
-      if (viewMode === 'preview') {
-        setViewMode('edit');
-      }
-      scrollToAnchor('card-general');
+      setActiveStep(1);
+      window.scrollTo({ top: 150, behavior: 'smooth' });
     }
   };
 
-  // Xử lý gửi biểu mẫu
+  // Gửi form
   const executeFormSubmission = async (
     formData: RecipeFormData,
     target: 'draft' | 'publish' | 'archive' = 'draft'
@@ -418,7 +432,6 @@ export default function RecipeForm({
       .filter((item) => !item.isPrimary && item.file instanceof File)
       .map((item) => item.file as File);
 
-    // Nếu ảnh chính là File cục bộ mới tải lên -> Upload lên MinIO qua fileService
     if (primaryItem && primaryItem.file instanceof File) {
       setIsUploadingPrimary(true);
       try {
@@ -426,15 +439,10 @@ export default function RecipeForm({
         if (uploadRes?.url) {
           primaryUrl = uploadRes.url;
           formData.primaryImageUrl = uploadRes.url;
-        } else {
-          throw new Error('Không nhận được đường dẫn hình ảnh từ hệ thống lưu trữ.');
         }
       } catch (err: unknown) {
-        console.error('Lỗi khi tải ảnh chính lên MinIO:', err);
         setUploadError(
-          err instanceof Error
-            ? err.message
-            : 'Không thể tải ảnh chính lên hệ thống lưu trữ MinIO. Vui lòng thử lại.'
+          err instanceof Error ? err.message : 'Không thể tải ảnh chính lên hệ thống lưu trữ.'
         );
         setIsUploadingPrimary(false);
         return;
@@ -457,31 +465,24 @@ export default function RecipeForm({
     )();
   };
 
-  // Tính toán điều kiện sẵn sàng xuất bản (SRS FR-RCP-005)
-  const hasValidTitle = Boolean(watchedTitle && watchedTitle.trim().length >= 5);
+  // Tính toán dữ liệu hiển thị realtime cho Thẻ xem trước
   const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
-  const categoryDisplayName = selectedCategory?.name || 'Chưa chọn danh mục';
+  const categoryDisplayName = selectedCategory?.name || 'Món Việt Nam';
 
   const primaryGalleryItem = galleryItems.find((item) => item.isPrimary) || galleryItems[0];
   const effectiveHeroImage =
-    selectedPreviewImage || primaryGalleryItem?.previewUrl || watchedImageUrl || '';
+    selectedPreviewImage ||
+    primaryGalleryItem?.previewUrl ||
+    watchedImageUrl ||
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80';
 
-  const hasHeroImage = Boolean(effectiveHeroImage);
   const validIngredients = watchedIngredients?.filter((i) => i.name && i.name.trim().length > 0) || [];
-  const hasValidIngredients = validIngredients.length > 0;
   const validSteps = watchedSteps?.filter((s) => s.description && s.description.trim().length > 0) || [];
-  const hasValidSteps = validSteps.length > 0;
 
-  const canPublish = hasValidTitle && hasValidIngredients && hasValidSteps;
+  const totalTimeMinutes =
+    (Number(watchedPrepTime) || 0) + (Number(watchedCookTime) || 0) || 35;
 
-  const hasNutrition = Boolean(
-    (watchedCalories && watchedCalories > 0) ||
-      (watchedProtein && watchedProtein > 0) ||
-      (watchedCarbs && watchedCarbs > 0) ||
-      (watchedFat && watchedFat > 0)
-  );
-
-  // Map dữ liệu form sang chuẩn RecipeDetailView để hiển thị xem trước 100% giống trang công khai
+  // Dữ liệu cho modal xem trước toàn màn hình
   const previewImages: RecipeImageDto[] = galleryItems.map((item, idx) => ({
     id: item.id || `preview-img-${idx}`,
     originalUrl: item.previewUrl,
@@ -492,19 +493,16 @@ export default function RecipeForm({
     orderIndex: idx,
   }));
 
-  if (previewImages.length === 0 && (watchedImageUrl || primaryGalleryItem?.previewUrl)) {
-    const url = watchedImageUrl || primaryGalleryItem?.previewUrl || '';
-    if (url) {
-      previewImages.push({
-        id: 'preview-img-primary',
-        originalUrl: url,
-        mediumUrl: url,
-        thumbnailUrl: url,
-        altText: watchedTitle || 'Ảnh món ăn',
-        isPrimary: true,
-        orderIndex: 0,
-      });
-    }
+  if (previewImages.length === 0 && effectiveHeroImage) {
+    previewImages.push({
+      id: 'preview-img-primary',
+      originalUrl: effectiveHeroImage,
+      mediumUrl: effectiveHeroImage,
+      thumbnailUrl: effectiveHeroImage,
+      altText: watchedTitle || 'Ảnh món ăn',
+      isPrimary: true,
+      orderIndex: 0,
+    });
   }
 
   const previewIngredients: RecipeIngredientDto[] = validIngredients.map((ing, idx) => ({
@@ -532,881 +530,611 @@ export default function RecipeForm({
     fat: watchedFat ?? null,
   };
 
-  // Mở xem chi tiết ở một trang mới hoàn chỉnh độc lập (/recipes/preview)
-  const handleOpenNewPagePreview = () => {
-    try {
-      const previewData = {
-        title: watchedTitle?.trim() || 'Tiêu đề công thức món ăn',
-        description: watchedDescription?.trim() || '',
-        instructions: watchedInstructions?.trim() || '',
-        prepTimeMinutes: watchedPrepTime || 0,
-        cookTimeMinutes: watchedCookTime || 0,
-        servings: watchedServings || 1,
-        difficulty: watchedDifficulty || 1,
-        categoryName: categoryDisplayName,
-        categoryId: watchedCategoryId,
-        images: galleryItems.map((item, idx) => ({
-          id: item.id,
-          originalUrl: item.previewUrl,
-          isPrimary: item.isPrimary,
-          orderIndex: idx,
-          altText: item.name || watchedTitle,
-        })),
-        ingredients: validIngredients,
-        steps: validSteps,
-        nutrition: {
-          calories: watchedCalories || 0,
-          protein: watchedProtein || 0,
-          carbohydrates: watchedCarbs || 0,
-          fat: watchedFat || 0,
-        },
-      };
-      localStorage.setItem('culinary_recipe_preview_draft', JSON.stringify(previewData));
-      window.open('/recipes/preview', '_blank');
-    } catch (err) {
-      console.error('Không thể mở trang xem trước mới:', err);
-    }
-  };
+  const hasNutrition = Boolean(
+    (watchedCalories && watchedCalories > 0) ||
+      (watchedProtein && watchedProtein > 0) ||
+      (watchedCarbs && watchedCarbs > 0) ||
+      (watchedFat && watchedFat > 0)
+  );
 
   return (
-    <form
-      onSubmit={(e) => e.preventDefault()}
-      className="space-y-8"
-    >
-      {/* Thông báo lỗi server (nếu có) */}
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+      {/* 1. THÔNG BÁO LỖI SERVER HOẶC UPLOAD (NẾU CÓ) */}
       {serverError && (
-        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm animate-fade-in">
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-xs animate-fade-in">
           <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
           <div className="flex-1">
-            <h4 className="font-bold text-red-900">Không thể {isEdit ? 'cập nhật' : 'tạo'} công thức</h4>
+            <h4 className="font-bold text-red-900">Không thể lưu công thức</h4>
             <p className="mt-0.5 leading-relaxed">{serverError}</p>
           </div>
         </div>
       )}
 
-      {/* Thông báo lỗi upload ảnh */}
       {uploadError && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm animate-fade-in">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 shadow-xs animate-fade-in">
           <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
           <div className="flex-1">
-            <h4 className="font-bold text-amber-900">Lưu ý khi tải hình ảnh</h4>
+            <h4 className="font-bold text-amber-900">Lưu ý kiểm tra thông tin</h4>
             <p className="mt-0.5 leading-relaxed">{uploadError}</p>
           </div>
         </div>
       )}
 
-      {/* =========================================================================
-          CHẾ ĐỘ 1: XEM TRƯỚC BÀI VIẾT TOÀN CẢNH TRONG DASHBOARD (VIEWMODE = PREVIEW)
-          ========================================================================= */}
-      {viewMode === 'preview' ? (
-        <div className="space-y-6 animate-fade-in">
-          {/* Thanh Header Điều khiển Xem trước & Các nút quyết định xuất bản / lưu trữ */}
-          <div className="sticky top-2 z-30 rounded-3xl border border-gray-200 bg-white/95 backdrop-blur-md p-4 sm:p-6 shadow-md space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
-                    <Eye className="w-4 h-4" />
-                  </span>
-                  <h3 className="text-base sm:text-lg font-black text-gray-900">
-                    Xem trước bài viết trong Bảng điều khiển
-                  </h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Mô phỏng 100% ngoài thực tế</span>
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Kiểm tra toàn cảnh bài viết. Khi đã thấy ưng ý, bạn có thể chọn Đăng bài, Lưu nháp hoặc Lưu trữ ngay tại đây.
-                </p>
-              </div>
-
-              {/* Nút quay lại chế độ soạn thảo */}
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('edit');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-xs font-bold text-gray-700 transition shrink-0 active:scale-95"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Quay lại chỉnh sửa</span>
-              </button>
-            </div>
-
-            {/* Cụm nút hành động quyết định */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-              <div className="flex items-center gap-2 text-xs">
-                {canPublish ? (
-                  <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Đủ điều kiện xuất bản (SRS §FR-RCP-005)</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <span>Cần tối thiểu 1 nguyên liệu và 1 bước làm để xuất bản</span>
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {/* 1. Nút Lưu bản nháp */}
-                <button
-                  type="button"
-                  onClick={() => triggerSubmitWithTarget('draft')}
-                  disabled={isSubmitting || isUploadingPrimary}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-gray-700 transition shadow-2xs active:scale-95 disabled:opacity-50"
-                  title="Lưu lại bản nháp để tiếp tục chỉnh sửa sau"
-                >
-                  {isSubmitting && submitTarget === 'draft' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Save className="w-3.5 h-3.5 text-gray-500" />
-                  )}
-                  <span>Lưu bản nháp</span>
-                </button>
-
-                {/* 2. Nút Lưu trữ */}
-                <button
-                  type="button"
-                  onClick={() => triggerSubmitWithTarget('archive')}
-                  disabled={isSubmitting || isUploadingPrimary}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 transition shadow-2xs active:scale-95 disabled:opacity-50"
-                  title="Tạm ẩn và lưu trữ công thức"
-                >
-                  {isSubmitting && submitTarget === 'archive' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Archive className="w-3.5 h-3.5 text-gray-500" />
-                  )}
-                  <span>Lưu trữ</span>
-                </button>
-
-                {/* 3. Nút Xuất bản công khai ngay */}
-                <button
-                  type="button"
-                  onClick={() => triggerSubmitWithTarget('publish')}
-                  disabled={!canPublish || isSubmitting || isUploadingPrimary}
-                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-xs transition active:scale-95 disabled:opacity-50 ${
-                    canPublish
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600'
-                      : 'bg-gray-300 cursor-not-allowed'
-                  }`}
-                  title={
-                    canPublish
-                      ? 'Đăng bài viết công khai ngay'
-                      : 'Cần có tối thiểu 1 nguyên liệu và 1 bước làm để xuất bản'
-                  }
-                >
-                  {isSubmitting && submitTarget === 'publish' ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang xuất bản...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Đăng bài (Xuất bản)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* 4. Nút Mở ở tab mới (nếu muốn xem riêng biệt) */}
-                <button
-                  type="button"
-                  onClick={handleOpenNewPagePreview}
-                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-xs font-bold text-purple-700 border border-purple-200 transition shadow-2xs"
-                  title="Mở xem ở một tab trình duyệt mới độc lập (/recipes/preview)"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Tab mới ↗</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Khung mô phỏng chi tiết bài báo thực tế (Live Article Preview) */}
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-10 shadow-sm space-y-8">
-            {/* Header bài viết */}
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">
-                  <Tag className="h-3.5 w-3.5" />
-                  {categoryDisplayName}
-                </span>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    difficultyLabels[watchedDifficulty || 1]?.color || ''
-                  }`}
-                >
-                  Độ khó: {difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-bold text-purple-700">
-                  <Eye className="w-3.5 h-3.5" />
-                  Chế độ xem trước Dashboard
-                </span>
-              </div>
-
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-gray-900">
-                {watchedTitle?.trim() || 'Tiêu đề công thức món ăn của bạn'}
-              </h1>
-
-              <p className="text-sm sm:text-base leading-relaxed text-gray-600">
-                {watchedDescription?.trim() || 'Chưa nhập mô tả ngắn cho bài viết...'}
-              </p>
-
-              {/* Tác giả & Ngày đăng */}
-              <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-100">
-                <div className="flex items-center gap-1.5 font-medium text-gray-700">
-                  <User className="h-4 w-4 text-orange-500" />
-                  <span>Tác giả: Bạn (Bếp trưởng)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span>Ngày xem trước: Hôm nay</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Khối Hình ảnh công thức chuẩn Gallery Mockup */}
-            <RecipeGalleryViewer
-              images={previewImages}
-              recipeTitle={watchedTitle || 'Công thức'}
-            />
-
-            {/* 4 Thẻ thông số tóm tắt (Chuẩn bị, Nấu, Tổng thời gian, Khẩu phần) */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Chuẩn bị</p>
-                  <p className="text-sm font-bold text-gray-900">{watchedPrepTime || 0} phút</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                  <UtensilsCrossed className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Thời gian nấu</p>
-                  <p className="text-sm font-bold text-gray-900">{watchedCookTime || 0} phút</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Tổng thời gian</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {(Number(watchedPrepTime) || 0) + (Number(watchedCookTime) || 0)} phút
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Khẩu phần</p>
-                  <p className="text-sm font-bold text-gray-900">{watchedServings || 1} phần</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Thông tin dinh dưỡng */}
-            {hasNutrition && <RecipeNutritionCard nutrition={previewNutrition} />}
-
-            {/* Bố cục 2 cột: Cột trái Nguyên liệu & Các bước thực hiện */}
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {/* Cột 1: Nguyên liệu */}
-              <div className="md:col-span-1">
-                <RecipeIngredientsList
-                  ingredients={previewIngredients}
-                  servings={watchedServings || 1}
-                />
-              </div>
-
-              {/* Cột 2: Các bước thực hiện */}
-              <div className="md:col-span-2">
-                <RecipeStepsList
-                  steps={previewSteps}
-                  instructions={watchedInstructions}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Cụm nút hành động dưới cùng */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-white border border-gray-200 shadow-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setViewMode('edit');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-xs font-bold text-gray-700 transition"
+      {/* 2. THANH TIẾN TRÌNH STEPPER (4 BƯỚC CHUẨN MOCKUP) */}
+      <div className="bg-white rounded-2xl border border-stone-200/70 p-4 sm:p-5 shadow-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
+          {/* Bước 1: Thông tin cơ bản */}
+          <button
+            type="button"
+            onClick={() => setActiveStep(1)}
+            className={`flex items-center gap-3 text-left transition relative group pb-1 ${
+              activeStep === 1 ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs transition-colors ${
+                activeStep === 1
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-stone-100 text-stone-600 border border-stone-300'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại chỉnh sửa</span>
-            </button>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => triggerSubmitWithTarget('draft')}
-                disabled={isSubmitting || isUploadingPrimary}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-gray-700 transition shadow-2xs active:scale-95 disabled:opacity-50"
-              >
-                <Save className="w-3.5 h-3.5 text-gray-500" />
-                <span>Lưu bản nháp</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => triggerSubmitWithTarget('archive')}
-                disabled={isSubmitting || isUploadingPrimary}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 transition shadow-2xs active:scale-95 disabled:opacity-50"
-              >
-                <Archive className="w-3.5 h-3.5 text-gray-500" />
-                <span>Lưu trữ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => triggerSubmitWithTarget('publish')}
-                disabled={!canPublish || isSubmitting || isUploadingPrimary}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-xs transition active:scale-95 disabled:opacity-50 ${
-                  canPublish
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600'
-                    : 'bg-gray-300 cursor-not-allowed'
+              1
+            </div>
+            <div className="min-w-0">
+              <p
+                className={`text-xs sm:text-sm font-bold truncate ${
+                  activeStep === 1 ? 'text-orange-600' : 'text-stone-800'
                 }`}
               >
-                <Send className="w-4 h-4" />
-                <span>Đăng bài (Xuất bản)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenNewPagePreview}
-                className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-xs font-bold text-purple-700 border border-purple-200 transition shadow-2xs"
-                title="Mở xem ở một tab trình duyệt mới độc lập"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Tab mới ↗</span>
-              </button>
+                Thông tin cơ bản
+              </p>
+              <p className="text-[11px] text-stone-400 truncate">(Tên món, mô tả...)</p>
             </div>
-          </div>
+            {/* Thanh cam gạch dưới chỉ báo active */}
+            {activeStep === 1 && (
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+            )}
+          </button>
+
+          {/* Bước 2: Nguyên liệu */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveStep(2);
+              setSubTab('ingredients');
+            }}
+            className={`flex items-center gap-3 text-left transition relative group pb-1 ${
+              activeStep === 2 ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs transition-colors ${
+                activeStep === 2
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-stone-100 text-stone-600 border border-stone-300'
+              }`}
+            >
+              2
+            </div>
+            <div className="min-w-0">
+              <p
+                className={`text-xs sm:text-sm font-bold truncate ${
+                  activeStep === 2 ? 'text-orange-600' : 'text-stone-800'
+                }`}
+              >
+                Nguyên liệu
+              </p>
+              <p className="text-[11px] text-stone-400 truncate">(Danh sách nguyên liệu)</p>
+            </div>
+            {activeStep === 2 && (
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+            )}
+          </button>
+
+          {/* Bước 3: Công thức */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveStep(3);
+              setSubTab('steps');
+            }}
+            className={`flex items-center gap-3 text-left transition relative group pb-1 ${
+              activeStep === 3 ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs transition-colors ${
+                activeStep === 3
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-stone-100 text-stone-600 border border-stone-300'
+              }`}
+            >
+              3
+            </div>
+            <div className="min-w-0">
+              <p
+                className={`text-xs sm:text-sm font-bold truncate ${
+                  activeStep === 3 ? 'text-orange-600' : 'text-stone-800'
+                }`}
+              >
+                Công thức
+              </p>
+              <p className="text-[11px] text-stone-400 truncate">(Các bước chế biến)</p>
+            </div>
+            {activeStep === 3 && (
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+            )}
+          </button>
+
+          {/* Bước 4: Hoàn tất */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveStep(4);
+              setShowPreviewModal(true);
+            }}
+            className={`flex items-center gap-3 text-left transition relative group pb-1 ${
+              activeStep === 4 ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs transition-colors ${
+                activeStep === 4
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-stone-100 text-stone-600 border border-stone-300'
+              }`}
+            >
+              4
+            </div>
+            <div className="min-w-0">
+              <p
+                className={`text-xs sm:text-sm font-bold truncate ${
+                  activeStep === 4 ? 'text-orange-600' : 'text-stone-800'
+                }`}
+              >
+                Hoàn tất
+              </p>
+              <p className="text-[11px] text-stone-400 truncate">(Xem trước & Lưu)</p>
+            </div>
+            {activeStep === 4 && (
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+            )}
+          </button>
         </div>
-      ) : (
-        /* =========================================================================
-            CHẾ ĐỘ 2: SOẠN THẢO BỐ CỤC 2 CỘT + THẺ XEM TRƯỚC BÊN DƯỚI (VIEWMODE = EDIT)
-            ========================================================================= */
-        <div className="space-y-8 animate-fade-in">
-          {/* Thanh gợi ý điền nhanh khi tạo bài mới */}
-          {!isEdit && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-orange-200/80 bg-orange-50/50 px-5 py-3 text-xs shadow-2xs">
-              <div className="flex items-center gap-2 text-orange-950 font-medium">
-                <Sparkles className="h-4 w-4 text-orange-600 shrink-0" />
-                <span>Bạn muốn thử nghiệm nhanh bố cục? Hãy bấm nút điền dữ liệu mẫu đầy đủ:</span>
+      </div>
+
+      {/* 3. BỐ CỤC CHÍNH 2 CỘT: CỘT TRÁI FORM (65%) + CỘT PHẢI LIVE PREVIEW CARD (35%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* =========================================================================
+            CỘT TRÁI (FORM NHẬP LIỆU CHÍNH TÍCH HỢP SUB-TABS)
+            ========================================================================= */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* KHỐI 1: THÔNG TIN CƠ BẢN & DINH DƯỠNG */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 sm:p-7 shadow-xs space-y-6">
+            {/* Header Khối 1 */}
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-100 text-orange-600">
+                  <Info className="w-4 h-4" />
+                </span>
+                <h3 className="text-base font-bold text-stone-900">Thông tin cơ bản</h3>
               </div>
-              <button
-                type="button"
-                onClick={handleFillSampleStepsAndIngredients}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-orange-700 transition shrink-0 active:scale-95"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Điền mẫu hoàn chỉnh</span>
-              </button>
-            </div>
-          )}
 
-          {/* Thanh điều hướng nhanh các mục (Smooth Anchor Pills) */}
-          <div className="sticky top-4 z-20 flex items-center justify-between gap-2 overflow-x-auto rounded-2xl bg-white/95 backdrop-blur-md p-2 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {/* Nút điền nhanh mẫu nếu chưa có dữ liệu */}
               <button
                 type="button"
-                onClick={() => scrollToAnchor('card-general')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-general'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                onClick={handleFillSample}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold border border-orange-200 transition active:scale-95"
+                title="Tự động điền dữ liệu thực tế chuẩn vị"
               >
-                <Utensils className="w-3.5 h-3.5" />
-                <span>1. Thông tin & Ảnh ({galleryItems.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToAnchor('card-steps')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-steps'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <ChefHat className="w-3.5 h-3.5" />
-                <span>2. Các bước nấu ({stepFields.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToAnchor('card-instructions')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-instructions'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>3. Hướng dẫn & Mẹo</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToAnchor('card-ingredients')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-ingredients'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Tag className="w-3.5 h-3.5" />
-                <span>4. Nguyên liệu ({ingredientFields.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToAnchor('card-nutrition')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-nutrition'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Flame className="w-3.5 h-3.5" />
-                <span>5. Dinh dưỡng</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToAnchor('card-preview')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-preview'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>6. Thẻ xem trước</span>
+                <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+                <span>Điền mẫu nhanh</span>
               </button>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Nút chuyển đổi nhanh sang Recipe Studio (5 Tab) nếu có callback */}
-              {onSwitchToStudio && (
-                <button
-                  type="button"
-                  onClick={onSwitchToStudio}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition shrink-0 shadow-2xs active:scale-95"
-                  title="Chuyển sang chế độ biên tập Recipe Studio (5 Tab)"
+            {/* Nội dung bên trong: Cột upload ảnh + Cột Form Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              {/* CỘT UPLOAD ẢNH ĐẠI DIỆN VÀ THUMBNAIL (md:col-span-4) */}
+              <div className="md:col-span-4 space-y-3">
+                {/* 1. Ô vuông upload đại diện lớn */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative aspect-square rounded-2xl border-2 border-dashed border-stone-300 hover:border-orange-500 bg-stone-50/70 p-4 flex flex-col items-center justify-center text-center cursor-pointer group transition-all overflow-hidden"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="hidden sm:inline">Chế độ Studio (5 Tab)</span>
-                  <span className="sm:hidden">Studio</span>
-                </button>
-              )}
-
-              {/* Nút Xem trước chi tiết bài viết ngay trong Dashboard */}
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('preview');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition shrink-0 shadow-2xs active:scale-95"
-                title="Xem trước bài viết đầy đủ trong Bảng điều khiển"
-              >
-                <Eye className="w-3.5 h-3.5 text-orange-600" />
-                <span className="hidden sm:inline">Xem trước bài viết</span>
-                <span className="sm:hidden">Xem trước</span>
-              </button>
-            </div>
-          </div>
-
-          {/* BỐ CỤC 2 CỘT CÂN BẰNG: CỘT SOẠN THẢO (7/12) + CỘT NGUYÊN LIỆU & TRẠNG THÁI (5/12) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* CỘT TRÁI (7/12): THÔNG TIN CÔNG THỨC + CÁC BƯỚC NẤU + HƯỚNG DẪN CHI TIẾT */}
-            <div className="lg:col-span-7 space-y-8">
-              {/* KHỐI 1: THÔNG TIN CÔNG THỨC & LƯỚI ẢNH GIẢI PHÁP 1 */}
-              <div
-                id="card-general"
-                className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-6"
-              >
-                <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                    <Utensils className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                      Thông tin công thức
-                    </h3>
-                    <p className="text-xs text-gray-400">
-                      Ảnh món ăn đại diện, phân loại danh mục, thời gian và thông tin cốt lõi
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bố cục bên trong: Cột Trái là Lưới ảnh (Giải pháp 1), Cột Phải là Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                  {/* LƯỚI ẢNH THÔNG MINH (GIẢI PHÁP 1) */}
-                  <div className="md:col-span-5 space-y-3">
-                    <label className="block text-xs font-bold text-gray-700">
-                      Ảnh món ăn & Thư viện <span className="text-red-500">*</span>
-                    </label>
-
-                    {/* 1. KHUNG ẢNH CHÍNH (PRIMARY COVER) */}
-                    <div className="relative group rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 hover:border-orange-400 transition-all bg-gray-50 aspect-4/3 flex flex-col items-center justify-center text-center p-4">
-                      {effectiveHeroImage ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={resolveMediaUrl(effectiveHeroImage)}
-                            alt={watchedTitle || 'Ảnh món ăn'}
-                            className="w-full h-full object-cover rounded-xl"
-                          />
-                          {/* Huy hiệu ảnh bìa chính */}
-                          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-600 text-white shadow-md">
-                            <Star className="w-3 h-3 fill-white" />
-                            Ảnh đại diện chính
-                          </span>
-
-                          {/* Lớp phủ hành động khi hover */}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="px-3 py-1.5 rounded-xl bg-white text-gray-900 text-xs font-bold shadow hover:bg-orange-50 hover:text-orange-600 transition"
-                            >
-                              Đổi ảnh khác
-                            </button>
-                            {primaryGalleryItem && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItem(primaryGalleryItem.id)}
-                                className="p-1.5 rounded-xl bg-red-600 text-white shadow hover:bg-red-700 transition"
-                                title="Xóa ảnh này"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="space-y-2.5 flex flex-col items-center">
-                          <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                            <UploadCloud className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-gray-800">Tải ảnh món ăn lên</p>
-                            <p className="text-[11px] text-gray-400">JPG, PNG, WebP (tối đa 5MB)</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-bold hover:bg-orange-700 transition shadow-xs active:scale-95"
-                          >
-                            Chọn ảnh
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Input file hỗ trợ MULTIPLE cho Giải pháp 1 */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp,image/avif"
-                        onChange={handleMultipleFilesChange}
-                        className="hidden"
+                  {effectiveHeroImage ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveMediaUrl(effectiveHeroImage)}
+                        alt={watchedTitle || 'Ảnh đại diện'}
+                        className="w-full h-full object-cover rounded-xl"
                       />
-                    </div>
-
-                    {/* 2. DẢI ẢNH PHỤ (SECONDARY THUMBNAILS STRIP) - GIẢI PHÁP 1 */}
-                    {galleryItems.length > 0 && (
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center justify-between text-[11px] font-bold text-gray-500">
-                          <span>Đã chọn ({galleryItems.length} ảnh):</span>
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="text-orange-600 hover:underline flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" /> Thêm ảnh khác
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-2">
-                          {galleryItems.map((item) => (
-                            <div
-                              key={item.id}
-                              className={`relative group rounded-xl overflow-hidden border-2 aspect-square bg-gray-100 cursor-pointer transition ${
-                                item.isPrimary
-                                  ? 'border-orange-500 ring-2 ring-orange-200'
-                                  : 'border-transparent hover:border-gray-300'
-                              }`}
-                              onClick={() => handleSetPrimary(item.id)}
-                              title={item.isPrimary ? 'Ảnh đại diện chính' : 'Bấm để chọn làm ảnh chính'}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={resolveMediaUrl(item.previewUrl)}
-                                alt={item.name || 'Ảnh món ăn'}
-                                className="w-full h-full object-cover"
-                              />
-                              {item.isPrimary && (
-                                <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-orange-600 text-white flex items-center justify-center text-[9px] font-bold shadow">
-                                  ★
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveItem(item.id);
-                                }}
-                                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition hover:bg-red-600"
-                                title="Xóa ảnh"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tab chuyển cách nhập ảnh: Tải lên hoặc Dán URL */}
-                    <div className="pt-2 border-t border-gray-100 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">Hoặc dán URL hình ảnh:</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setImageInputMode(imageInputMode === 'upload' ? 'url' : 'upload')
-                          }
-                          className="text-blue-600 font-bold hover:underline"
-                        >
-                          {imageInputMode === 'upload' ? '+ Dán link URL' : 'Thu gọn'}
-                        </button>
-                      </div>
-
-                      {imageInputMode === 'url' && (
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            placeholder="https://example.com/anh-mon-an.jpg"
-                            className="flex-1 rounded-xl border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleAddFromUrl(urlInput)}
-                            className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-black transition shrink-0"
-                          >
-                            Thêm
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Ảnh gợi ý nhanh */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[10px] text-gray-400">Ảnh gợi ý:</span>
-                        {sampleImages.map((s) => (
-                          <button
-                            key={s.label}
-                            type="button"
-                            onClick={() => handleAddFromUrl(s.url, s.label)}
-                            className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-orange-50 hover:text-orange-600 text-[10px] text-gray-600 font-medium transition"
-                          >
-                            + {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* FORM FIELDS BÊN PHẢI (CỘT 7/12) */}
-                  <div className="md:col-span-7 space-y-4">
-                    {/* Tên công thức */}
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-gray-700">
-                        Tên công thức <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        {...register('title')}
-                        disabled={isSubmitting}
-                        placeholder="VD: Phở bò Hà Nội, Bánh mì chảo, Canh chua cá lóc..."
-                        className="w-full rounded-2xl border border-gray-200 p-3.5 text-xs sm:text-sm font-semibold outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                      />
-                      {errors.title && (
-                        <p className="text-[11px] font-semibold text-red-600">{errors.title.message}</p>
-                      )}
-                    </div>
-
-                    {/* Danh mục & Khẩu phần */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-gray-700">
-                          Danh mục món ăn <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          {...register('categoryId')}
-                          disabled={isSubmitting || isLoadingCategories}
-                          className="w-full rounded-2xl border border-gray-200 p-3 text-xs font-medium outline-none transition focus:border-orange-500 bg-white"
-                        >
-                          <option value="">-- Chọn danh mục --</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.categoryId && (
-                          <p className="text-[11px] font-semibold text-red-600">
-                            {errors.categoryId.message}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-gray-700">
-                          Độ khó chế biến
-                        </label>
-                        <select
-                          {...register('difficulty', { valueAsNumber: true })}
-                          disabled={isSubmitting}
-                          className="w-full rounded-2xl border border-gray-200 p-3 text-xs font-medium outline-none transition focus:border-orange-500 bg-white"
-                        >
-                          <option value={1}>Dễ (Người mới bắt đầu)</option>
-                          <option value={2}>Trung bình (Bữa cơm gia đình)</option>
-                          <option value={3}>Khó (Cần kỹ thuật nêm nếm)</option>
-                          <option value={4}>Chuyên gia (Đầu bếp chuyên nghiệp)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Thời gian chuẩn bị & Thời gian nấu & Khẩu phần */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <label className="block text-[11px] font-bold text-gray-600">
-                          Chuẩn bị (phút)
-                        </label>
-                        <div className="relative">
-                          <Clock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="number"
-                            {...register('prepTimeMinutes', { valueAsNumber: true })}
-                            disabled={isSubmitting}
-                            min="0"
-                            placeholder="15"
-                            className="w-full rounded-xl border border-gray-200 py-2 pl-8 pr-2 text-xs outline-none focus:border-orange-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-[11px] font-bold text-gray-600">
-                          Nấu chín (phút)
-                        </label>
-                        <div className="relative">
-                          <Clock className="w-3.5 h-3.5 text-orange-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="number"
-                            {...register('cookTimeMinutes', { valueAsNumber: true })}
-                            disabled={isSubmitting}
-                            min="0"
-                            placeholder="30"
-                            className="w-full rounded-xl border border-gray-200 py-2 pl-8 pr-2 text-xs outline-none focus:border-orange-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-[11px] font-bold text-gray-600">
-                          Khẩu phần (người)
-                        </label>
-                        <div className="relative">
-                          <Users className="w-3.5 h-3.5 text-blue-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="number"
-                            {...register('servings', { valueAsNumber: true })}
-                            disabled={isSubmitting}
-                            min="1"
-                            placeholder="4"
-                            className="w-full rounded-xl border border-gray-200 py-2 pl-8 pr-2 text-xs outline-none focus:border-orange-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Mô tả ngắn */}
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-gray-700">
-                        Mô tả ngắn gọn về món ăn <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        {...register('description')}
-                        disabled={isSubmitting}
-                        placeholder="Mô tả hương vị, nguồn gốc hoặc cảm xúc khi thưởng thức món ăn này..."
-                        className="w-full rounded-2xl border border-gray-200 p-3.5 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed"
-                      />
-                      {errors.description && (
-                        <p className="text-[11px] font-semibold text-red-600">
-                          {errors.description.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* KHỐI 2: CÁC BƯỚC THỰC HIỆN CÓ HẸN GIỜ (SRS §FR-RCP-004) */}
-              <div
-                id="card-steps"
-                className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-6"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                      <ChefHat className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                          Các bước thực hiện
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                          {stepFields.length} bước nấu
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                        <span className="px-3 py-1.5 rounded-xl bg-white text-stone-900 text-xs font-bold shadow-xs">
+                          Đổi ảnh
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400">
-                        Hướng dẫn rõ ràng kèm đồng hồ đếm ngược giúp người nấu làm theo dễ dàng
-                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-2 text-orange-500 group-hover:scale-105 transition-transform">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs font-bold text-stone-800">Tải ảnh đại diện</p>
+                      <p className="text-[11px] text-stone-400 mt-0.5">Kéo thả ảnh hoặc chọn file</p>
+                      <button
+                        type="button"
+                        className="mt-3 px-4 py-1.5 rounded-xl bg-orange-500 group-hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition"
+                      >
+                        Chọn ảnh
+                      </button>
+                    </>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/avif"
+                    onChange={handleMultipleFilesChange}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* 2. Dải thumbnail 3 ảnh nhỏ + nút [+] thêm ảnh */}
+                <div className="flex items-center gap-2 pt-1">
+                  {galleryItems.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSetPrimary(item.id)}
+                      className={`relative w-14 h-14 rounded-xl overflow-hidden border cursor-pointer group transition ${
+                        item.isPrimary
+                          ? 'border-orange-500 ring-2 ring-orange-200'
+                          : 'border-stone-200 hover:border-stone-400'
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveMediaUrl(item.previewUrl)}
+                        alt="Thumbnail"
+                        className="w-full h-full object-cover"
+                      />
+                      {item.isPrimary && (
+                        <span className="absolute top-1 left-1 w-3.5 h-3.5 rounded-full bg-orange-500 text-white flex items-center justify-center text-[8px]">
+                          ★
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveItem(item.id);
+                        }}
+                        className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] hover:bg-red-600 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Nút thêm ảnh phụ [+] */}
+                  <button
+                    type="button"
+                    onClick={() => secondaryFileInputRef.current?.click()}
+                    className="w-14 h-14 rounded-xl border-2 border-dashed border-stone-300 hover:border-orange-500 bg-stone-50 hover:bg-orange-50/50 flex items-center justify-center text-stone-400 hover:text-orange-600 transition"
+                    title="Thêm ảnh phụ vào thư viện"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                  <input
+                    ref={secondaryFileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,image/webp,image/avif"
+                    onChange={handleMultipleFilesChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* CỘT FORM FIELDS CƠ BẢN (md:col-span-8) */}
+              <div className="md:col-span-8 space-y-4">
+                {/* Hàng 1: Tên công thức & Danh mục */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+                  <div className="sm:col-span-7 space-y-1.5">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Tên công thức <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      {...register('title')}
+                      disabled={isSubmitting}
+                      placeholder="Nhập tên công thức..."
+                      className="w-full rounded-xl border border-stone-300 p-2.5 text-xs sm:text-sm font-semibold outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    />
+                    {errors.title && (
+                      <p className="text-[11px] font-semibold text-red-600">{errors.title.message}</p>
+                    )}
+                  </div>
+
+                  <div className="sm:col-span-5 space-y-1.5">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Danh mục <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('categoryId')}
+                        disabled={isSubmitting || isLoadingCategories}
+                        className="w-full rounded-xl border border-stone-300 p-2.5 text-xs font-medium outline-none transition focus:border-orange-500 bg-white pr-8"
+                      >
+                        <option value="">Chọn danh mục</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <UtensilsCrossed className="w-3.5 h-3.5 text-stone-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hàng 2: 4 ô thông số Thời gian chuẩn bị, Thời gian nấu, Khẩu phần, Độ khó */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-stone-600">
+                      Thời gian chuẩn bị
+                    </label>
+                    <div className="relative">
+                      <Clock className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="number"
+                        {...register('prepTimeMinutes', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        min="0"
+                        placeholder="0"
+                        className="w-full rounded-xl border border-stone-300 py-2 pl-7 pr-2 text-xs font-medium outline-none focus:border-orange-500"
+                      />
                     </div>
                   </div>
 
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-stone-600">
+                      Thời gian nấu
+                    </label>
+                    <div className="relative">
+                      <Clock className="w-3.5 h-3.5 text-orange-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="number"
+                        {...register('cookTimeMinutes', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        min="0"
+                        placeholder="0"
+                        className="w-full rounded-xl border border-stone-300 py-2 pl-7 pr-2 text-xs font-medium outline-none focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-stone-600">
+                      Khẩu phần
+                    </label>
+                    <div className="relative">
+                      <Users className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="number"
+                        {...register('servings', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        min="1"
+                        placeholder="1"
+                        className="w-full rounded-xl border border-stone-300 py-2 pl-7 pr-2 text-xs font-medium outline-none focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-stone-600">
+                      Độ khó
+                    </label>
+                    <select
+                      {...register('difficulty', { valueAsNumber: true })}
+                      disabled={isSubmitting}
+                      className="w-full rounded-xl border border-stone-300 py-2 px-2 text-xs font-medium outline-none focus:border-orange-500 bg-white"
+                    >
+                      <option value={1}>Dễ</option>
+                      <option value={2}>Trung bình</option>
+                      <option value={3}>Khó</option>
+                      <option value={4}>Chuyên gia</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Hàng 3: Mô tả ngắn */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Mô tả ngắn <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-stone-400">
+                      {watchedDescription?.length || 0}/200
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    maxLength={200}
+                    {...register('description')}
+                    disabled={isSubmitting}
+                    placeholder="Nhập mô tả ngắn về món ăn..."
+                    className="w-full rounded-xl border border-stone-300 p-2.5 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed"
+                  />
+                  {errors.description && (
+                    <p className="text-[11px] font-semibold text-red-600">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Dưới cùng Khối 1: Giá trị dinh dưỡng (4 ô nằm ngang chuẩn mockup) */}
+            <div className="pt-3 border-t border-stone-100 space-y-2.5">
+              <label className="block text-xs font-bold text-stone-700">
+                Giá trị dinh dưỡng <span className="text-stone-400 font-normal">(tùy chọn)</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2.5 p-2 rounded-xl border border-stone-200 bg-stone-50/50">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-stone-500 font-medium">Calo</p>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        {...register('calories', { valueAsNumber: true })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
+                      />
+                      <span className="text-[10px] text-stone-400 shrink-0">kcal</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 p-2 rounded-xl border border-stone-200 bg-stone-50/50">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                    <Dumbbell className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-stone-500 font-medium">Protein</p>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        {...register('protein', { valueAsNumber: true })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
+                      />
+                      <span className="text-[10px] text-stone-400 shrink-0">g</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 p-2 rounded-xl border border-stone-200 bg-stone-50/50">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Wheat className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-stone-500 font-medium">Carbs</p>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        {...register('carbs', { valueAsNumber: true })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
+                      />
+                      <span className="text-[10px] text-stone-400 shrink-0">g</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 p-2 rounded-xl border border-stone-200 bg-stone-50/50">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                    <Droplets className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-stone-500 font-medium">Chất béo</p>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        {...register('fat', { valueAsNumber: true })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
+                      />
+                      <span className="text-[10px] text-stone-400 shrink-0">g</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* KHỐI 2: SUB-TABS CHỨC NĂNG CHI TIẾT (QUY TRÌNH / NGUYÊN LIỆU / MẸO / ẢNH) */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden">
+            {/* Header Tabs Navigation */}
+            <div className="border-b border-stone-200 bg-stone-50/60 px-4 pt-2 flex items-center gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setSubTab('steps')}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition rounded-t-xl shrink-0 ${
+                  subTab === 'steps'
+                    ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
+                <ChefHat className="w-4 h-4" />
+                <span>Quy trình chế biến</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-700">
+                  {stepFields.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSubTab('ingredients')}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition rounded-t-xl shrink-0 ${
+                  subTab === 'ingredients'
+                    ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
+                <Utensils className="w-4 h-4" />
+                <span>Nguyên liệu chi tiết</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-stone-200 text-stone-700">
+                  {ingredientFields.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSubTab('notes')}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition rounded-t-xl shrink-0 ${
+                  subTab === 'notes'
+                    ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Ghi chú & Mẹo nhỏ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSubTab('gallery')}
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition rounded-t-xl shrink-0 ${
+                  subTab === 'gallery'
+                    ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span>Hình ảnh bổ sung</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-stone-200 text-stone-700">
+                  {galleryItems.length}
+                </span>
+              </button>
+            </div>
+
+            {/* TAB CONTENT 1: QUY TRÌNH CHẾ BIẾN (CÁC BƯỚC NẤU) */}
+            {subTab === 'steps' && (
+              <div className="p-5 sm:p-6 space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <div>
+                    <h4 className="text-sm font-bold text-stone-900">Các bước chế biến</h4>
+                    <p className="text-[11px] text-stone-400">
+                      Hướng dẫn từng bước thực hiện rõ ràng kèm hình ảnh và số phút đếm ngược
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() =>
@@ -1416,40 +1144,54 @@ export default function RecipeForm({
                         timerMinutes: null,
                       })
                     }
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-xs active:scale-95"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-500 text-orange-600 hover:bg-orange-50 text-xs font-bold transition active:scale-95"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Thêm bước</span>
                   </button>
                 </div>
 
-                {/* Danh sách các bước làm */}
-                <div className="space-y-4">
+                {/* Danh sách các bước */}
+                <div className="space-y-3">
                   {stepFields.map((field, idx) => (
                     <div
                       key={field.id}
-                      className="rounded-2xl border border-gray-200/80 bg-gray-50/50 p-4 sm:p-5 space-y-3 relative group hover:border-gray-300 transition"
+                      className="rounded-2xl border border-stone-200 bg-white p-3.5 sm:p-4 space-y-2.5 relative group hover:border-orange-300 transition"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black shadow-xs shrink-0">
+                          {/* Số bước hình tròn cam */}
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold shrink-0">
                             {idx + 1}
                           </span>
                           <input
                             type="text"
                             {...register(`steps.${idx}.title`)}
-                            placeholder={`Tiêu đề bước ${idx + 1} (VD: Sơ chế rau củ...)`}
-                            className="font-bold text-sm text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-gray-400 placeholder:font-normal w-full"
+                            placeholder={`Tiêu đề bước ${idx + 1} (VD: Sơ chế nguyên liệu...)`}
+                            className="font-bold text-xs sm:text-sm text-stone-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-stone-400 placeholder:font-normal w-full"
                           />
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0">
+                        {/* Thời gian và Action buttons */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="inline-flex items-center gap-1 text-[11px] text-stone-500 bg-stone-50 px-2 py-1 rounded-lg border border-stone-200">
+                            <Clock className="w-3 h-3 text-orange-500" />
+                            <input
+                              type="number"
+                              {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
+                              placeholder="0"
+                              min="0"
+                              className="w-8 text-center font-bold text-stone-800 bg-transparent outline-none p-0"
+                            />
+                            <span>phút</span>
+                          </div>
+
                           {idx > 0 && (
                             <button
                               type="button"
                               onClick={() => moveStep(idx, idx - 1)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition"
-                              title="Chuyển lên trên"
+                              className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                              title="Chuyển lên"
                             >
                               <MoveUp className="w-3.5 h-3.5" />
                             </button>
@@ -1458,8 +1200,8 @@ export default function RecipeForm({
                             <button
                               type="button"
                               onClick={() => moveStep(idx, idx + 1)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition"
-                              title="Chuyển xuống dưới"
+                              className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                              title="Chuyển xuống"
                             >
                               <MoveDown className="w-3.5 h-3.5" />
                             </button>
@@ -1468,7 +1210,7 @@ export default function RecipeForm({
                             <button
                               type="button"
                               onClick={() => removeStep(idx)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                              className="p-1 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition"
                               title="Xóa bước này"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1482,583 +1224,510 @@ export default function RecipeForm({
                         rows={2}
                         {...register(`steps.${idx}.description`)}
                         placeholder="Mô tả chi tiết những gì cần làm trong bước này..."
-                        className="w-full rounded-xl border border-gray-200 bg-white p-3 text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50/50 p-2.5 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed"
                       />
-
-                      {/* Bộ đếm thời gian (Timer) */}
-                      <div className="flex flex-wrap items-center gap-4 pt-1">
-                        <div className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-3 py-1.5 text-xs text-gray-600">
-                          <Clock className="w-3.5 h-3.5 text-blue-600" />
-                          <span className="font-semibold text-gray-700">Hẹn giờ (Timer):</span>
-                          <input
-                            type="number"
-                            {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
-                            placeholder="0"
-                            min="0"
-                            className="w-12 text-center font-bold text-gray-900 border-b border-gray-300 outline-none p-0 focus:border-blue-600"
-                          />
-                          <span className="text-gray-400 text-[11px]">phút</span>
-                        </div>
-                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* KHỐI 3: MÔ TẢ CHI TIẾT & MẸO GIA TRUYỀN (INSTRUCTIONS) */}
-              <div
-                id="card-instructions"
-                className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-4"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                        Mô tả chi tiết & Mẹo nấu gia truyền
-                      </h3>
-                      <p className="text-xs text-gray-400">
-                        Chia sẻ các lưu ý về lửa, cách chọn nguyên liệu tươi hoặc mẹo nêm nếm
-                      </p>
-                    </div>
+            {/* TAB CONTENT 2: NGUYÊN LIỆU CHI TIẾT */}
+            {subTab === 'ingredients' && (
+              <div className="p-5 sm:p-6 space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <div>
+                    <h4 className="text-sm font-bold text-stone-900">Danh sách nguyên liệu</h4>
+                    <p className="text-[11px] text-stone-400">
+                      Khai báo tên và định lượng rõ ràng giúp người nấu chuẩn bị đầy đủ
+                    </p>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <textarea
-                    rows={4}
-                    {...register('instructions')}
-                    disabled={isSubmitting}
-                    placeholder="Nhập hướng dẫn chi tiết cách nấu, mẹo chọn nguyên liệu hoặc lưu ý khi bảo quản..."
-                    className="w-full rounded-2xl border border-gray-200 p-4 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed font-sans"
-                  />
-                  <div className="flex justify-end text-[11px] text-gray-400">
-                    <span>{(watchedInstructions?.length || 0)}/2000 ký tự</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CỘT PHẢI (5/12): TRẠNG THÁI & HÀNH ĐỘNG + NGUYÊN LIỆU + DINH DƯỠNG + MẸO TÁC GIẢ */}
-            <div className="lg:col-span-5 space-y-8">
-              {/* KHỐI 1: BẢNG TRẠNG THÁI CÔNG THỨC & NÚT HÀNH ĐỘNG */}
-              <div className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                  <div className="flex items-center gap-2 text-gray-900 font-black text-sm">
-                    <Send className="w-4 h-4 text-orange-600 rotate-45" />
-                    <span>Trạng thái công thức</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
-                    Bản nháp
-                  </span>
-                </div>
-
-                {/* Stepper 3 trạng thái chuẩn SRS */}
-                <div className="space-y-2.5">
-                  {/* Nấc 1: Bản nháp */}
-                  <div className="flex items-start gap-3 p-3 rounded-2xl bg-orange-50/70 border border-orange-200/70">
-                    <div className="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-orange-950">1. Bản nháp (Draft)</h4>
-                      <p className="text-[11px] text-orange-800/80 mt-0.5">
-                        Lưu lại để tiếp tục chỉnh sửa sau, chỉ mình bạn thấy.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Nấc 2: Xuất bản */}
-                  <div className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/70 border border-gray-200/70">
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-800">2. Xuất bản (Published)</h4>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        Công khai cho cộng đồng đón đọc và lưu lại.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Nấc 3: Lưu trữ */}
-                  <div className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/70 border border-gray-200/70">
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-800">3. Lưu trữ (Archived)</h4>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        Tạm ẩn công thức khỏi trang công khai.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* BẢNG KIỂM TRA ĐIỀU KIỆN XUẤT BẢN (SRS §FR-RCP-005) */}
-                <div className="rounded-2xl bg-gray-50 p-4 space-y-2 text-xs">
-                  <h5 className="font-bold text-gray-800 text-[11px] uppercase tracking-wider">
-                    Điều kiện xuất bản công khai:
-                  </h5>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      {hasValidTitle ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                      )}
-                      <span className={hasValidTitle ? 'text-gray-700 font-medium' : 'text-gray-400'}>
-                        Tiêu đề & Danh mục hợp lệ
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {hasValidIngredients ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                      )}
-                      <span className={hasValidIngredients ? 'text-gray-700 font-medium' : 'text-gray-400'}>
-                        Tối thiểu 1 nguyên liệu ({validIngredients.length})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {hasValidSteps ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                      )}
-                      <span className={hasValidSteps ? 'text-gray-700 font-medium' : 'text-gray-400'}>
-                        Tối thiểu 1 bước thực hiện ({validSteps.length})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {hasHeroImage ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                      )}
-                      <span className={hasHeroImage ? 'text-gray-700 font-medium' : 'text-gray-400'}>
-                        Ảnh món ăn đại diện ({galleryItems.length} ảnh)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CỤM NÚT HÀNH ĐỘNG CHÍNH */}
-                <div className="flex flex-col gap-2.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => triggerSubmitWithTarget('publish')}
-                    disabled={isSubmitting || isUploadingPrimary}
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition active:scale-95 disabled:opacity-50"
-                  >
-                    {isSubmitting && submitTarget === 'publish' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                    <span>Xuất bản công khai ngay</span>
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => triggerSubmitWithTarget('draft')}
-                      disabled={isSubmitting || isUploadingPrimary}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
-                    >
-                      {isSubmitting && submitTarget === 'draft' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4 text-gray-500" />
-                      )}
-                      <span>Lưu bản nháp</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => triggerSubmitWithTarget('archive')}
-                      disabled={isSubmitting || isUploadingPrimary}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
-                      title="Chuyển vào kho lưu trữ"
-                    >
-                      {isSubmitting && submitTarget === 'archive' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Archive className="w-4 h-4 text-gray-500" />
-                      )}
-                      <span>Lưu trữ</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* BANNER CHUYỂN SANG RECIPE STUDIO */}
-                {onSwitchToStudio && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-                        <div>
-                          <h5 className="text-xs font-bold text-blue-950">Recipe Studio (5 Tab)</h5>
-                          <p className="text-[11px] text-blue-700/80">Quản lý nâng cao theo từng tab</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={onSwitchToStudio}
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs shrink-0 active:scale-95"
-                      >
-                        Mở Studio 🎛️
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* KHỐI 2: DANH SÁCH NGUYÊN LIỆU (SRS §FR-RCP-003) */}
-              <div
-                id="card-ingredients"
-                className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xs space-y-4"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                      <Tag className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-black text-gray-900 tracking-tight">
-                          Nguyên liệu cần chuẩn bị
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {ingredientFields.length} món
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-400">
-                        Định lượng và đơn vị giúp bạn đọc dễ nấu theo
-                      </p>
-                    </div>
-                  </div>
-
                   <button
                     type="button"
                     onClick={() => appendIngredient({ name: '', quantity: null, unit: '', notes: '' })}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition shadow-xs active:scale-95 shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-500 text-orange-600 hover:bg-orange-50 text-xs font-bold transition active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm</span>
+                    <span>Thêm nguyên liệu</span>
                   </button>
                 </div>
 
-                {/* Danh sách các trường nguyên liệu 2-tier responsive */}
                 <div className="space-y-2.5">
                   {ingredientFields.map((field, idx) => (
                     <div
                       key={field.id}
-                      className="p-3 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-gray-200 transition space-y-2"
+                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 rounded-xl border border-stone-200 bg-white hover:border-orange-200 transition"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 text-center text-xs font-bold text-gray-400 shrink-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="w-5 text-center text-xs font-bold text-stone-400">
                           #{idx + 1}
                         </span>
                         <input
                           type="text"
                           {...register(`ingredients.${idx}.name`)}
-                          placeholder="Tên nguyên liệu (VD: Thịt thăn bò)"
-                          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-orange-500"
+                          placeholder="Tên nguyên liệu (VD: Thịt bò, Nước mắm...)"
+                          className="flex-1 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-orange-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="any"
+                          {...register(`ingredients.${idx}.quantity`, {
+                            setValueAs: (v) => (v === '' ? null : Number(v)),
+                          })}
+                          placeholder="Số lượng"
+                          className="w-20 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 text-right"
+                        />
+                        <input
+                          type="text"
+                          {...register(`ingredients.${idx}.unit`)}
+                          placeholder="Đơn vị (g, ml, quả)"
+                          className="w-24 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                        />
+                        <input
+                          type="text"
+                          {...register(`ingredients.${idx}.notes`)}
+                          placeholder="Ghi chú (tùy chọn)"
+                          className="w-28 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 hidden sm:block"
                         />
                         {ingredientFields.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeIngredient(idx)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0"
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition"
                             title="Xóa nguyên liệu này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                      <div className="grid grid-cols-12 gap-2 pl-7">
-                        <div className="col-span-3">
-                          <input
-                            type="number"
-                            step="any"
-                            {...register(`ingredients.${idx}.quantity`, { valueAsNumber: true })}
-                            placeholder="SL"
-                            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-orange-500 text-center"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <input
-                            type="text"
-                            {...register(`ingredients.${idx}.unit`)}
-                            placeholder="Đơn vị (g, muỗng)"
-                            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-orange-500 text-center"
-                          />
-                        </div>
-                        <div className="col-span-6">
-                          <input
-                            type="text"
-                            {...register(`ingredients.${idx}.notes`)}
-                            placeholder="Ghi chú (tùy chọn)"
-                            className="w-full rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
-                          />
-                        </div>
+            {/* TAB CONTENT 3: GHI CHÚ & MẸO NHỎ */}
+            {subTab === 'notes' && (
+              <div className="p-5 sm:p-6 space-y-4 animate-fade-in">
+                <div className="pb-2 border-b border-stone-100">
+                  <h4 className="text-sm font-bold text-stone-900">Bí quyết & Mẹo nấu ăn gia truyền</h4>
+                  <p className="text-[11px] text-stone-400">
+                    Chia sẻ các lưu ý khi chọn nguyên liệu tươi ngon hoặc bí quyết nêm nếm
+                  </p>
+                </div>
+                <textarea
+                  rows={6}
+                  {...register('instructions')}
+                  disabled={isSubmitting}
+                  placeholder="Ghi lại các bí quyết, lưu ý khi nêm nếm gia vị hoặc cách bảo quản món ăn để hương vị luôn thơm ngon nhất..."
+                  className="w-full rounded-xl border border-stone-300 p-3.5 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed"
+                />
+              </div>
+            )}
+
+            {/* TAB CONTENT 4: HÌNH ẢNH BỔ SUNG */}
+            {subTab === 'gallery' && (
+              <div className="p-5 sm:p-6 space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <div>
+                    <h4 className="text-sm font-bold text-stone-900">Thư viện ảnh món ăn ({galleryItems.length})</h4>
+                    <p className="text-[11px] text-stone-400">
+                      Tải lên nhiều góc chụp hoặc ảnh thành phẩm hấp dẫn
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => secondaryFileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tải ảnh mới</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form dán URL ảnh trực tiếp */}
+                <div className="flex items-center gap-2 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="Dán đường dẫn ảnh: https://images.unsplash.com/photo-..."
+                    className="flex-1 rounded-lg border border-stone-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddFromUrl(urlInput)}
+                    className="px-3.5 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold hover:bg-black transition shrink-0"
+                  >
+                    Thêm link
+                  </button>
+                </div>
+
+                {/* Lưới các ảnh trong thư viện */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  {galleryItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="relative aspect-4/3 rounded-xl overflow-hidden border border-stone-200 group bg-stone-100"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveMediaUrl(item.previewUrl)}
+                        alt="Gallery"
+                        className="w-full h-full object-cover"
+                      />
+                      {item.isPrimary && (
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-orange-600 text-white text-[9px] font-bold shadow-xs">
+                          Ảnh đại diện
+                        </span>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                        {!item.isPrimary && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimary(item.id)}
+                            className="px-2 py-1 rounded bg-white text-stone-900 text-[10px] font-bold hover:bg-orange-50 hover:text-orange-600 transition"
+                          >
+                            Đặt làm chính
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1 rounded bg-red-600 text-white text-[10px] hover:bg-red-700 transition"
+                          title="Xóa ảnh"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
 
-                {/* Gợi ý thêm nhanh */}
-                <div className="pt-1 flex flex-wrap items-center gap-1 text-[11px] text-gray-500">
-                  <span className="font-semibold text-gray-400 mr-1">Gợi ý:</span>
-                  {['Hành tím', 'Tỏi băm', 'Nước mắm', 'Hạt nêm', 'Tiêu xay', 'Bơ lạt'].map((ing) => (
-                    <button
-                      key={ing}
-                      type="button"
-                      onClick={() => appendIngredient({ name: ing, quantity: 1, unit: 'muỗng', notes: '' })}
-                      className="px-2 py-0.5 rounded-lg bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 text-[10px] font-semibold text-gray-700 transition"
-                    >
-                      + {ing}
-                    </button>
+          {/* Banner thông báo mẹo kéo thả (màu xanh nhạt chuẩn mockup) */}
+          <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-blue-700 font-medium">
+            <Info className="w-4 h-4 text-blue-500 shrink-0" />
+            <span>Bạn có thể thêm nhiều bước chế biến và sắp xếp thứ tự dễ dàng.</span>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            CỘT PHẢI (WIDGET XEM TRƯỚC CÔNG THỨC - LIVE PREVIEW CARD DÍNH NỔI STICKY)
+            ========================================================================= */}
+        <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+          {/* Card Live Preview Container */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden">
+            {/* Header Thẻ Xem trước */}
+            <div className="p-4 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-orange-500 font-bold">🍳</span>
+                <h4 className="text-sm font-bold text-stone-900">Xem trước công thức</h4>
+              </div>
+              <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                Live Preview
+              </span>
+            </div>
+
+            {/* 1. Ảnh món ăn lớn có Badge danh mục nổi trên ảnh */}
+            <div className="relative aspect-16/10 w-full overflow-hidden bg-stone-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveMediaUrl(effectiveHeroImage)}
+                alt={watchedTitle || 'Preview'}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+              {/* Badge danh mục góc trái trên ảnh */}
+              <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs text-stone-800 text-[11px] font-bold shadow-xs">
+                <span>🥗</span>
+                <span>{categoryDisplayName}</span>
+              </div>
+            </div>
+
+            {/* 2. Thân card thông tin chi tiết */}
+            <div className="p-4 sm:p-5 space-y-3.5">
+              {/* Tiêu đề công thức cập nhật realtime */}
+              <h3 className="text-base font-bold text-stone-900 line-clamp-2 leading-snug">
+                {watchedTitle?.trim() || 'Tên công thức sẽ hiển thị ở đây'}
+              </h3>
+
+              {/* Mô tả ngắn cập nhật realtime */}
+              <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
+                {watchedDescription?.trim() || 'Mô tả ngắn về món ăn sẽ xuất hiện tại đây...'}
+              </p>
+
+              {/* Hàng 3 thông số nhanh: Thời gian | Độ khó | Khẩu phần */}
+              <div className="flex items-center justify-between py-2 border-y border-stone-100 text-xs text-stone-600 font-medium">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-stone-400" />
+                  <span>{totalTimeMinutes} phút</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <ChefHat className="w-3.5 h-3.5 text-stone-400" />
+                  <span>{difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-stone-400" />
+                  <span>{watchedServings || 2} người</span>
+                </div>
+              </div>
+
+              {/* Mục Nguyên liệu chính thu nhỏ */}
+              <div className="space-y-2 pt-1">
+                <h5 className="text-xs font-bold text-stone-800">Nguyên liệu chính</h5>
+                <div className="space-y-2">
+                  {validIngredients.slice(0, 3).map((ing, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {ing.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-semibold text-stone-800 truncate">{ing.name}</span>
+                      </div>
+                      <span className="text-stone-400 font-medium text-[11px] shrink-0">
+                        {ing.quantity ? `${ing.quantity} ${ing.unit || ''}` : ing.unit || ''}
+                      </span>
+                    </div>
                   ))}
+                  {validIngredients.length === 0 && (
+                    <p className="text-xs text-stone-400 italic">Chưa nhập nguyên liệu...</p>
+                  )}
                 </div>
               </div>
 
-              {/* KHỐI 3: THÔNG TIN DINH DƯỠNG (TUỲ CHỌN) */}
-              <div
-                id="card-nutrition"
-                className="rounded-3xl border border-gray-100 bg-white p-5 shadow-xs space-y-4"
-              >
-                <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                    <Flame className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-gray-900">
-                      Giá trị dinh dưỡng trên mỗi khẩu phần
-                    </h4>
-                    <p className="text-[11px] text-gray-400">Calo, Protein, Carbs, Chất béo (tùy chọn)</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-3 rounded-2xl bg-orange-50/50 border border-orange-100 space-y-1">
-                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" /> Calo (kcal)
-                    </label>
-                    <input
-                      type="number"
-                      {...register('calories', { valueAsNumber: true })}
-                      placeholder="0"
-                      min="0"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-1">
-                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                      <Dumbbell className="w-3.5 h-3.5 text-blue-500" /> Đạm / Protein (g)
-                    </label>
-                    <input
-                      type="number"
-                      {...register('protein', { valueAsNumber: true })}
-                      placeholder="0"
-                      min="0"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-1">
-                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                      <Wheat className="w-3.5 h-3.5 text-amber-500" /> Tinh bột / Carbs (g)
-                    </label>
-                    <input
-                      type="number"
-                      {...register('carbs', { valueAsNumber: true })}
-                      placeholder="0"
-                      min="0"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-rose-50/50 border border-rose-100 space-y-1">
-                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                      <Droplets className="w-3.5 h-3.5 text-rose-500" /> Chất béo / Fat (g)
-                    </label>
-                    <input
-                      type="number"
-                      {...register('fat', { valueAsNumber: true })}
-                      placeholder="0"
-                      min="0"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-rose-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* KHỐI 4: CARD MẸO NHỎ CHO TÁC GIẢ */}
-              <div className="rounded-3xl border border-amber-200/70 bg-amber-50/40 p-5 space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-amber-900 font-bold">
-                  <Lightbulb className="w-4 h-4 text-amber-600" />
-                  <span>Mẹo viết bài thu hút:</span>
-                </div>
-                <p className="text-amber-800/90 leading-relaxed text-[11px]">
-                  Ảnh bìa sáng rõ, các bước nấu có thời gian hẹn giờ cụ thể sẽ giúp công thức của bạn nhận được nhiều lượt tim và xuất hiện ở mục tiêu điểm trang chủ!
-                </p>
+              {/* Link Xem chi tiết -> mở modal xem toàn màn hình */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPreviewModal(true)}
+                  className="text-orange-600 hover:text-orange-700 font-bold text-xs inline-flex items-center gap-1 transition"
+                >
+                  <span>Xem chi tiết</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* KHỐI DƯỚI CÙNG: XEM TRƯỚC THEO THỜI GIAN THỰC (LIVE PREVIEW CARD) */}
-          <div
-            id="card-preview"
-            className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-5"
-          >
-            <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-gray-900 font-black text-sm">
+          {/* Banner chuyển sang Recipe Studio (nếu có callback) */}
+          {onSwitchToStudio && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/70 flex items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-orange-600" />
-                <span>Xem trước bài viết trên trang chủ (Live Preview)</span>
+                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                <div>
+                  <h5 className="text-xs font-bold text-blue-950">Recipe Studio</h5>
+                  <p className="text-[10px] text-blue-700/80">Biên tập nâng cao 5 tab</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={onSwitchToStudio}
+                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs shrink-0 active:scale-95"
+              >
+                Mở Studio 🎛️
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 4. THANH HÀNH ĐỘNG DƯỚI CÙNG (FOOTER ACTIONS BAR CHUẨN MOCKUP) */}
+      <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200 p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-stone-500">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span>
+            {isEdit ? 'Đang cập nhật công thức' : 'Bản nháp tự động lưu trên trình duyệt của bạn'}
+          </span>
+        </div>
+
+        {/* 3 Nút chuẩn mockup: [Xem trước] [Lưu nháp] [Đăng bài] */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+          {/* Nút 1: Xem trước */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-stone-200 hover:border-orange-300 bg-white hover:bg-orange-50/50 text-stone-700 hover:text-orange-600 text-xs font-bold transition active:scale-95"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Xem trước</span>
+          </button>
+
+          {/* Nút 2: Lưu nháp */}
+          <button
+            type="button"
+            onClick={() => triggerSubmitWithTarget('draft')}
+            disabled={isSubmitting || isUploadingPrimary}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-orange-300 hover:border-orange-500 bg-white hover:bg-orange-50 text-orange-600 text-xs font-bold transition active:scale-95 disabled:opacity-50"
+          >
+            {isSubmitting && submitTarget === 'draft' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>Lưu nháp</span>
+          </button>
+
+          {/* Nút 3: Đăng bài (Gradient cam nổi bật) */}
+          <button
+            type="button"
+            onClick={() => triggerSubmitWithTarget('publish')}
+            disabled={isSubmitting || isUploadingPrimary}
+            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-orange-500/25 transition active:scale-95 disabled:opacity-50"
+          >
+            {isSubmitting && submitTarget === 'publish' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            <span>Đăng bài</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5. MODAL XEM TRƯỚC TOÀN CẢNH BÀI VIẾT (FULL PREVIEW MODAL) */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-4xl bg-white rounded-3xl border border-stone-200 shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/70 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                  <Eye className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900">Xem trước toàn cảnh công thức</h3>
+                  <p className="text-xs text-stone-400">Hiển thị chuẩn như trang chi tiết công khai</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-xs font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+              {/* Tiêu đề & Danh mục */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold">
+                    {categoryDisplayName}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold">
+                    Độ khó: {difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                  {watchedTitle || 'Tiêu đề công thức'}
+                </h1>
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  {watchedDescription || 'Chưa có mô tả ngắn...'}
+                </p>
+              </div>
+
+              {/* Gallery ảnh */}
+              <RecipeGalleryViewer
+                images={previewImages}
+                recipeTitle={watchedTitle || 'Công thức'}
+              />
+
+              {/* 4 Chỉ số nhanh */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 flex items-center gap-2.5">
+                  <Clock className="w-5 h-5 text-orange-500" />
+                  <div>
+                    <p className="text-[11px] text-stone-400">Chuẩn bị</p>
+                    <p className="text-xs font-bold text-stone-900">{watchedPrepTime || 0} phút</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 flex items-center gap-2.5">
+                  <Clock className="w-5 h-5 text-amber-500" />
+                  <div>
+                    <p className="text-[11px] text-stone-400">Thời gian nấu</p>
+                    <p className="text-xs font-bold text-stone-900">{watchedCookTime || 0} phút</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 flex items-center gap-2.5">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-[11px] text-stone-400">Tổng thời gian</p>
+                    <p className="text-xs font-bold text-stone-900">{totalTimeMinutes} phút</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 flex items-center gap-2.5">
+                  <Users className="w-5 h-5 text-emerald-500" />
+                  <div>
+                    <p className="text-[11px] text-stone-400">Khẩu phần</p>
+                    <p className="text-xs font-bold text-stone-900">{watchedServings || 1} người</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dinh dưỡng */}
+              {hasNutrition && <RecipeNutritionCard nutrition={previewNutrition} />}
+
+              {/* Bố cục 2 cột: Nguyên liệu & Các bước làm */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                <div className="md:col-span-1">
+                  <RecipeIngredientsList
+                    ingredients={previewIngredients}
+                    servings={watchedServings || 1}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <RecipeStepsList
+                    steps={previewSteps}
+                    instructions={watchedInstructions}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-stone-100 flex items-center justify-between bg-stone-50/70 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="px-4 py-2 rounded-xl border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-100 transition"
+              >
+                Quay lại chỉnh sửa
+              </button>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setViewMode('preview');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setShowPreviewModal(false);
+                    triggerSubmitWithTarget('draft');
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-xl transition shadow-2xs"
-                  title="Xem toàn cảnh bài viết ngay trong Dashboard"
+                  className="px-4 py-2 rounded-xl border border-orange-300 text-orange-600 text-xs font-bold hover:bg-orange-50 transition"
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Xem chi tiết trong Dashboard</span>
+                  Lưu nháp
                 </button>
-
                 <button
                   type="button"
-                  onClick={handleOpenNewPagePreview}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-xl transition shadow-2xs"
-                  title="Mở xem chi tiết bài viết ở một tab mới độc lập (/recipes/preview)"
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    triggerSubmitWithTarget('publish');
+                  }}
+                  className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md transition"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Mở tab mới ↗</span>
+                  Đăng bài ngay
                 </button>
-              </div>
-            </div>
-
-            {/* Horizontal Recipe Card chuẩn Mockup */}
-            <div className="rounded-2xl border border-gray-200/80 overflow-hidden bg-white hover:border-gray-300 transition flex flex-col md:flex-row items-stretch">
-              {/* Cột ảnh đại diện */}
-              <div className="md:w-80 h-52 md:h-auto relative bg-gray-100 shrink-0">
-                {effectiveHeroImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolveMediaUrl(effectiveHeroImage)}
-                    alt={watchedTitle || 'Preview'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-4">
-                    <ImageIcon className="w-8 h-8 mb-1 text-gray-300" />
-                    <span className="text-xs">Chưa có ảnh món ăn</span>
-                  </div>
-                )}
-
-                {/* Dải ảnh nhỏ bên dưới preview nếu có nhiều ảnh */}
-                {galleryItems.length > 1 && (
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 p-1 rounded-xl bg-black/40 backdrop-blur-xs">
-                    {galleryItems.slice(0, 5).map((item, idx) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setSelectedPreviewImage(item.previewUrl)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          effectiveHeroImage === item.previewUrl
-                            ? 'w-4 bg-orange-500'
-                            : 'bg-white/80 hover:bg-white'
-                        }`}
-                        title={`Xem ảnh ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Cột nội dung tóm tắt */}
-              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <h4 className="text-base sm:text-lg font-black text-gray-900 tracking-tight leading-snug">
-                      {watchedTitle?.trim() || 'Tên công thức sẽ hiển thị ở đây'}
-                    </h4>
-                    <button
-                      type="button"
-                      className="p-1.5 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition shrink-0"
-                      title="Yêu thích món ăn"
-                    >
-                      <Heart className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                    {watchedDescription?.trim() ||
-                      'Mô tả ngắn về món ăn sẽ xuất hiện tại đây, giúp người dùng hiểu nhanh nội dung công thức.'}
-                  </p>
-                </div>
-
-                {/* Thông số & Nút hành động */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-100 text-xs">
-                  <div className="flex flex-wrap items-center gap-4 text-gray-600 font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-gray-400" />
-                      <span>{(watchedPrepTime || 0) + (watchedCookTime || 0)} phút</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <ChefHat className="w-3.5 h-3.5 text-gray-400" />
-                      <span>{difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-gray-400" />
-                      <span>{watchedServings || 1} người</span>
-                    </div>
-
-                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[11px] font-semibold">
-                      {categoryDisplayName}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    {/* Nút Xem chi tiết bài viết ngay trong Dashboard */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setViewMode('preview');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50/80 hover:bg-orange-100/80 border border-orange-200 hover:border-orange-300 px-3.5 py-1.5 rounded-xl transition shadow-2xs active:scale-95"
-                      title="Xem trước bài viết đầy đủ trong Bảng điều khiển"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Xem chi tiết →</span>
-                    </button>
-
-                    {/* Nút Mở ở tab mới */}
-                    <button
-                      type="button"
-                      onClick={handleOpenNewPagePreview}
-                      className="p-1.5 rounded-xl text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition border border-transparent hover:border-purple-200"
-                      title="Mở xem ở một tab trình duyệt mới độc lập"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
