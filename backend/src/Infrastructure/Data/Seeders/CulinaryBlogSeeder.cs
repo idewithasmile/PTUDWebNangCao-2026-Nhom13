@@ -393,7 +393,7 @@ public static class CulinaryBlogSeeder
             {
                 Email = "admin@culinaryblog.com",
                 UserName = "admin",
-                DisplayName = "Quản trị viên Hệ thống",
+                DisplayName = "Quản Trị Viên",
                 Password = "Admin@123456",
                 Roles = new[] { "Admin", "Author" },
                 Avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
@@ -446,6 +446,12 @@ public static class CulinaryBlogSeeder
             }
             else
             {
+                if (user.DisplayName != demo.DisplayName || (user.DisplayName != null && user.DisplayName.Contains('?')))
+                {
+                    user.DisplayName = demo.DisplayName;
+                    await userManager.UpdateAsync(user);
+                }
+
                 foreach (var role in demo.Roles)
                 {
                     if (!await userManager.IsInRoleAsync(user, role))

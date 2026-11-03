@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   if (!mounted || !canFetch || isLoading) {
     return (
-      <div className="min-h-screen w-full bg-[#f4f7fc] flex flex-col items-center justify-center gap-3">
+      <div className="min-h-screen w-full bg-[#f4f7fc] dark:bg-zinc-950 flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
         <p className="text-xs text-gray-400 font-medium tracking-wide">
           Đang tải bảng điều khiển của bạn...
@@ -43,8 +43,8 @@ export default function DashboardPage() {
 
   if (isError || !user) {
     return (
-      <div className="min-h-screen w-full bg-[#f4f7fc] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center space-y-4">
+      <div className="min-h-screen w-full bg-[#f4f7fc] dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 text-center space-y-4">
           <div className="p-4 rounded-2xl bg-red-50 text-red-700 text-sm border border-red-100">
             Không thể xác thực danh tính người dùng hoặc phiên đăng nhập đã hết hạn.
           </div>

@@ -138,11 +138,11 @@ export default function DashboardCategoriesView() {
       {/* Header Quản lý danh mục (Khớp Screen 4) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
             <span>Danh mục</span>
             {isFetching && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
             Quản lý cơ cấu phân loại món ăn và công thức ẩm thực toàn hệ thống
           </p>
         </div>
@@ -161,7 +161,7 @@ export default function DashboardCategoriesView() {
       </div>
 
       {/* Filter Bar (Khớp Screen 4) */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex flex-col sm:flex-row items-center gap-3">
+      <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-2xs flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -172,7 +172,7 @@ export default function DashboardCategoriesView() {
               setCurrentPage(1);
             }}
             placeholder="Tìm kiếm danh mục..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
           />
         </div>
 
@@ -180,7 +180,7 @@ export default function DashboardCategoriesView() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs text-gray-700 dark:text-zinc-200 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="ACTIVE">Hoạt động</option>
@@ -190,11 +190,11 @@ export default function DashboardCategoriesView() {
       </div>
 
       {/* Categories Table (Khớp Screen 4) */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/70 text-gray-500 font-bold text-[11px] uppercase tracking-wider">
+              <tr className="border-b border-gray-100 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-800/60 text-gray-500 dark:text-zinc-400 font-bold text-[11px] uppercase tracking-wider">
                 <th className="py-3 px-4 w-16">Hình ảnh</th>
                 <th className="py-3 px-4 min-w-[160px]">Tên danh mục</th>
                 <th className="py-3 px-4 min-w-[280px]">Mô tả</th>
@@ -203,7 +203,7 @@ export default function DashboardCategoriesView() {
                 <th className="py-3 px-4 text-right w-24">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-gray-400">
