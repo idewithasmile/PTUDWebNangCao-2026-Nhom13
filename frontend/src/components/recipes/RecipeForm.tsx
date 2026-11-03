@@ -537,6 +537,36 @@ export default function RecipeForm({
       (watchedFat && watchedFat > 0)
   );
 
+  // Mở xem trước ở một trang riêng biệt độc lập (/recipes/preview)
+  const handleOpenNewPagePreview = () => {
+    try {
+      const previewData = {
+        title: watchedTitle?.trim() || 'Tiêu đề công thức món ăn',
+        description: watchedDescription?.trim() || '',
+        instructions: watchedInstructions?.trim() || '',
+        prepTimeMinutes: watchedPrepTime || 0,
+        cookTimeMinutes: watchedCookTime || 0,
+        servings: watchedServings || 1,
+        difficulty: watchedDifficulty || 1,
+        categoryName: categoryDisplayName,
+        categoryId: watchedCategoryId,
+        images: previewImages,
+        ingredients: validIngredients,
+        steps: validSteps,
+        nutrition: {
+          calories: watchedCalories || 0,
+          protein: watchedProtein || 0,
+          carbohydrates: watchedCarbs || 0,
+          fat: watchedFat || 0,
+        },
+      };
+      localStorage.setItem('culinary_recipe_preview_draft', JSON.stringify(previewData));
+      window.open('/recipes/preview', '_blank');
+    } catch (err) {
+      console.error('Không thể mở trang xem trước mới:', err);
+    }
+  };
+
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
       {/* 1. THÔNG BÁO LỖI SERVER HOẶC UPLOAD (NẾU CÓ) */}
@@ -671,7 +701,7 @@ export default function RecipeForm({
             type="button"
             onClick={() => {
               setActiveStep(4);
-              setShowPreviewModal(true);
+              handleOpenNewPagePreview();
             }}
             className={`flex items-center gap-3 text-left transition relative group pb-1 ${
               activeStep === 4 ? 'opacity-100' : 'opacity-70 hover:opacity-100'
@@ -1502,15 +1532,16 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              {/* Link Xem chi tiết -> mở modal xem toàn màn hình */}
+              {/* Link Xem chi tiết -> mở trang riêng biệt */}
               <div className="pt-2 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setShowPreviewModal(true)}
+                  onClick={handleOpenNewPagePreview}
                   className="text-orange-600 hover:text-orange-700 font-bold text-xs inline-flex items-center gap-1 transition"
+                  title="Mở xem trước ở trang riêng biệt (/recipes/preview)"
                 >
-                  <span>Xem chi tiết</span>
-                  <span>→</span>
+                  <span>Xem chi tiết trang riêng</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -1549,14 +1580,15 @@ export default function RecipeForm({
 
         {/* 3 Nút chuẩn mockup: [Xem trước] [Lưu nháp] [Đăng bài] */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-          {/* Nút 1: Xem trước */}
+          {/* Nút 1: Xem trước ở trang riêng */}
           <button
             type="button"
-            onClick={() => setShowPreviewModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-stone-200 hover:border-orange-300 bg-white hover:bg-orange-50/50 text-stone-700 hover:text-orange-600 text-xs font-bold transition active:scale-95"
+            onClick={handleOpenNewPagePreview}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-stone-200 hover:border-orange-300 bg-white hover:bg-orange-50/50 text-stone-700 hover:text-orange-600 text-xs font-bold transition active:scale-95 shadow-xs"
+            title="Mở xem trước ở trang riêng biệt (/recipes/preview)"
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Xem trước</span>
+            <Eye className="w-3.5 h-3.5 text-orange-600" />
+            <span>Xem trước (Trang riêng ↗)</span>
           </button>
 
           {/* Nút 2: Lưu nháp */}
