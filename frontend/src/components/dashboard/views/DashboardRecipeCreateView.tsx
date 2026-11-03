@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import RecipeForm from '@/components/recipes/RecipeForm';
 import { useCreateRecipe } from '@/features/recipes/hooks';
-import { toErrorMessage } from '@/features/auth/hooks';
 import { recipeService } from '@/lib/services/recipe-service';
 import type { RecipeFormData } from '@/features/recipes/schemas';
 import type { RecipeDifficulty } from '@/lib/types/recipe';
+import RecipeForm from '@/components/recipes/RecipeForm';
+import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
-import { ArrowLeft, ChefHat, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -73,7 +73,7 @@ export default function DashboardRecipeCreateView({
 
       setUploadProgress(null);
 
-      // 3. Xử lý xuất bản hoặc lưu nháp theo quyết định của tác giả tại Bước 5
+      // 3. Xử lý xuất bản hoặc lưu nháp theo quyết định của tác giả
       if (targetStatus === 'publish' && newRecipe?.id) {
         setUploadProgress('Đang kích hoạt xuất bản bài viết công khai (FR-RCP-005)...');
         try {
@@ -118,58 +118,61 @@ export default function DashboardRecipeCreateView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 1. Header Bar: Breadcrumb + Nút quay lại */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-2xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes')}
-              className="hover:text-blue-600 transition"
-            >
-              Bảng điều khiển
-            </button>
-            <span>/</span>
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes')}
-              className="hover:text-blue-600 transition"
-            >
-              Bài viết
-            </button>
-            <span>/</span>
-            <span className="text-gray-700 font-semibold">Tạo công thức mới</span>
-          </div>
+      {/* 1. HERO BANNER: Thêm mới / Cập nhật công thức chuẩn mockup */}
+      <div className="relative overflow-hidden rounded-3xl bg-gray-900 border border-gray-800 shadow-md">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 transition-transform duration-700 hover:scale-100"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1600&auto=format&fit=crop&q=80')`,
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-transparent" />
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-              <ChefHat className="w-5 h-5" />
+        <div className="relative z-10 p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
+          <div className="space-y-3 max-w-2xl">
+            {/* Breadcrumb điều hướng */}
+            <div className="flex items-center gap-2 text-xs text-orange-200/80 font-medium">
+              <button
+                type="button"
+                onClick={() => onSelectTab('recipes')}
+                className="hover:text-white transition"
+              >
+                Quản lý công thức
+              </button>
+              <span>/</span>
+              <span className="text-white font-semibold">Thêm công thức</span>
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                  Đăng công thức ẩm thực mới
-                </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Bản nháp mới</span>
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Quy trình 5 bước tạo công thức chuẩn: Thông tin & dinh dưỡng, hình ảnh, nguyên liệu, các bước làm và xem trước bài viết
+
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                Thêm mới / Cập nhật công thức
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-200 font-normal">
+                Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog
               </p>
             </div>
           </div>
-        </div>
 
-        <button
-          type="button"
-          onClick={() => onSelectTab('recipes')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition shrink-0"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Về danh sách bài viết</span>
-        </button>
+          {/* Huy hiệu nghệ thuật: Nấu ngon Mỗi ngày + Nút quay về */}
+          <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-orange-200 shadow-lg">
+              <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
+              <span className="font-serif italic text-base font-semibold tracking-wide text-white">
+                Nấu ngon Mỗi ngày
+              </span>
+              <span className="text-rose-400 text-xs">♥</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab('recipes')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/20 transition active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Về danh sách công thức</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Thông báo Tiến trình tải ảnh phụ */}
@@ -196,8 +199,8 @@ export default function DashboardRecipeCreateView({
         </div>
       )}
 
-      {/* 2. Form Nhập Liệu Chi Tiết Với Tab Bar & Phương Án 1 */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-2xs">
+      {/* 2. Form Nhập Liệu Bố Cục 2 Cột & Lưới Ảnh Giải Pháp 1 */}
+      <div>
         <RecipeForm
           isEdit={false}
           isSubmitting={createMutation.isPending || Boolean(uploadProgress)}
