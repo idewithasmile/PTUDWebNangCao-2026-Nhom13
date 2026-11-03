@@ -43,6 +43,7 @@ import {
   Lightbulb,
   Maximize2,
   Minimize2,
+  ExternalLink,
 } from 'lucide-react';
 
 export type RecipeFormTab = 'general' | 'gallery' | 'ingredients' | 'steps' | 'preview';
@@ -525,6 +526,42 @@ export default function RecipeForm({
       ) : undefined,
     },
   ];
+
+  // Mở xem chi tiết ở một trang mới hoàn chỉnh độc lập (New Tab)
+  const handleOpenNewPagePreview = () => {
+    try {
+      const previewData = {
+        title: watchedTitle?.trim() || 'Tiêu đề công thức món ăn',
+        description: watchedDescription?.trim() || '',
+        instructions: watchedInstructions?.trim() || '',
+        prepTimeMinutes: watchedPrepTime || 0,
+        cookTimeMinutes: watchedCookTime || 0,
+        servings: watchedServings || 1,
+        difficulty: watchedDifficulty || 1,
+        categoryName: categoryDisplayName,
+        categoryId: watchedCategoryId,
+        images: galleryItems.map((item, idx) => ({
+          id: item.id,
+          originalUrl: item.previewUrl,
+          isPrimary: item.isPrimary,
+          orderIndex: idx,
+          altText: item.name || watchedTitle,
+        })),
+        ingredients: validIngredients,
+        steps: validSteps,
+        nutrition: {
+          calories: watchedCalories || 0,
+          protein: watchedProtein || 0,
+          carbohydrates: watchedCarbs || 0,
+          fat: watchedFat || 0,
+        },
+      };
+      localStorage.setItem('culinary_recipe_preview_draft', JSON.stringify(previewData));
+      window.open('/recipes/preview', '_blank');
+    } catch (err) {
+      console.error('Không thể mở trang xem trước mới:', err);
+    }
+  };
 
   return (
     <form
@@ -1260,6 +1297,15 @@ export default function RecipeForm({
                   </button>
                   <button
                     type="button"
+                    onClick={handleOpenNewPagePreview}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-xs"
+                    title="Mở xem chi tiết ở một trang mới độc lập (Tab mới)"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Mở ở trang mới ↗</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setIsFullscreen(false)}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-black transition shadow-xs"
                   >
@@ -1269,6 +1315,29 @@ export default function RecipeForm({
                 </div>
               </div>
             )}
+
+            {/* Banner nổi bật: Mở xem chi tiết ở một trang mới độc lập */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-3xl bg-gradient-to-r from-purple-900 to-indigo-900 text-white shadow-md border border-purple-700/60">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                  <ExternalLink className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Xem chi tiết ở một trang mới độc lập</p>
+                  <p className="text-[11px] text-purple-200 mt-0.5">
+                    Mở bài viết trực tiếp ngoài giao diện độc giả hoàn chỉnh trong tab trình duyệt mới (/recipes/preview).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenNewPagePreview}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-purple-900 hover:bg-purple-50 text-xs font-bold shadow-sm transition active:scale-95 shrink-0"
+              >
+                <span>Mở ở trang mới ↗</span>
+                <ExternalLink className="w-3.5 h-3.5 text-purple-700" />
+              </button>
+            </div>
 
             {/* 1. Header Banner & Checklist Kiểm Tra Điều Kiện Xuất Bản (SRS FR-RCP-005) */}
             <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-7 shadow-2xs space-y-5">
@@ -1351,6 +1420,15 @@ export default function RecipeForm({
                         <span>Xem toàn màn hình</span>
                       </>
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewPagePreview}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition shadow-2xs ml-1"
+                    title="Mở xem chi tiết ở một trang mới độc lập (Tab mới)"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Mở ở trang mới ↗</span>
                   </button>
                 </div>
               </div>

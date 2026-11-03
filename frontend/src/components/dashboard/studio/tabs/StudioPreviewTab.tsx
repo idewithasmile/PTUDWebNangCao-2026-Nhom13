@@ -151,6 +151,32 @@ export default function StudioPreviewTab({
           </div>
         )}
 
+        {/* Banner nổi bật: Xem chi tiết ở một trang mới độc lập */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 text-white shadow-md">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-white/20 backdrop-blur-xs">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </span>
+              <h4 className="text-sm sm:text-base font-extrabold tracking-tight">
+                Xem chi tiết ở một trang mới hoàn chỉnh
+              </h4>
+            </div>
+            <p className="text-xs text-orange-100 max-w-xl">
+              Mở bài viết trực tiếp ngoài giao diện độc giả trong một tab trình duyệt mới riêng biệt (/recipes/{recipe.slug}).
+            </p>
+          </div>
+          <Link
+            href={`/recipes/${encodeURIComponent(recipe.slug)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-orange-700 hover:bg-orange-50 text-xs font-black shadow-lg transition active:scale-95 shrink-0"
+          >
+            <span>Mở ở trang mới</span>
+            <ExternalLink className="w-4 h-4 text-orange-600" />
+          </Link>
+        </div>
+
         {/* =========================================================================
             1. HEADER ĐIỀU HƯỚNG VÀ CHECKLIST CHẤT LƯỢNG (FR-RCP-005)
             ========================================================================= */}
@@ -239,6 +265,16 @@ export default function StudioPreviewTab({
                   </>
                 )}
               </button>
+              <Link
+                href={`/recipes/${encodeURIComponent(recipe.slug)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition shadow-2xs ml-1"
+                title="Mở xem chi tiết ở một trang mới độc lập (/recipes/...)"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-orange-600" />
+                <span>Xem ở trang mới ↗</span>
+              </Link>
             </div>
           </div>
 
@@ -385,33 +421,32 @@ export default function StudioPreviewTab({
               </button>
             )}
 
-            {/* Nếu đã Published: Nút Xem trang công khai & Nút Gỡ xuất bản */}
-            {isPublished && (
-              <>
-                <Link
-                  href={`/recipes/${encodeURIComponent(recipe.slug)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition shadow-2xs"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
-                  <span>Xem trang công khai</span>
-                </Link>
+            {/* Nút Xem chi tiết ở trang mới (luôn hiển thị cho cả bản nháp lẫn xuất bản) */}
+            <Link
+              href={`/recipes/${encodeURIComponent(recipe.slug)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs font-bold text-white transition shadow-xs active:scale-95"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Xem chi tiết ở trang mới ↗</span>
+            </Link>
 
-                <button
-                  type="button"
-                  onClick={onUnpublish}
-                  disabled={isUnpublishing}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                >
-                  {isUnpublishing ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <EyeOff className="w-3.5 h-3.5" />
-                  )}
-                  <span>Gỡ về bản nháp</span>
-                </button>
-              </>
+            {/* Nếu đã Published: Nút Gỡ xuất bản */}
+            {isPublished && (
+              <button
+                type="button"
+                onClick={onUnpublish}
+                disabled={isUnpublishing}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+              >
+                {isUnpublishing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <EyeOff className="w-3.5 h-3.5" />
+                )}
+                <span>Gỡ về bản nháp</span>
+              </button>
             )}
 
             {/* Nút Lưu trữ */}

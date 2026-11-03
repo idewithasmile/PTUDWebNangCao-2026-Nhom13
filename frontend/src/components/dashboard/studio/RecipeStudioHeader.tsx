@@ -114,16 +114,16 @@ export default function RecipeStudioHeader({
 
           {/* Action Buttons Bar */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* 1. Nút Xem bài viết công khai */}
+            {/* 1. Nút Xem chi tiết ở trang mới */}
             <Link
               href={`/recipes/${encodeURIComponent(recipe.slug)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-100 transition shadow-2xs"
-              title="Xem bài viết trên giao diện người dùng"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-xs font-bold text-purple-700 transition shadow-2xs"
+              title="Mở xem bài viết ở một trang mới độc lập (/recipes/...)"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
-              <span>Xem bài viết</span>
+              <ExternalLink className="w-3.5 h-3.5 text-purple-600" />
+              <span>Xem chi tiết ở trang mới ↗</span>
             </Link>
 
             {/* 2. Xuất bản hoặc Hủy xuất bản (FR-RCP-005) */}
