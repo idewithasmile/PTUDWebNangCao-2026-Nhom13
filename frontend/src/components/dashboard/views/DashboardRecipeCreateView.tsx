@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCreateRecipe } from '@/features/recipes/hooks';
 import { recipeService } from '@/lib/services/recipe-service';
+import { categoryService } from '@/lib/services/category-service';
 import type { RecipeFormData } from '@/features/recipes/schemas';
 import type { RecipeDifficulty } from '@/lib/types/recipe';
 import RecipeForm from '@/components/recipes/RecipeForm';
@@ -132,6 +133,34 @@ export default function DashboardRecipeCreateView({
     }
   };
 
+  const handleQuickStudioCreate = async () => {
+    setServerError(null);
+    setUploadProgress('Đang khởi tạo bản nháp mới để mở Recipe Studio (5 Tab)...');
+    try {
+      const categories = await categoryService.getCategories();
+      const defaultCatId = categories?.[0]?.id || '';
+      const newRecipe = await createMutation.mutateAsync({
+        title: 'Bản nháp công thức mới',
+        description: 'Mô tả ngắn cho công thức của bạn.',
+        instructions: 'Hướng dẫn các bước nấu.',
+        prepTimeMinutes: 15,
+        cookTimeMinutes: 30,
+        servings: 4,
+        difficulty: 1 as RecipeDifficulty,
+        categoryId: defaultCatId,
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      });
+      setUploadProgress(null);
+      window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
+    } catch (err: unknown) {
+      setUploadProgress(null);
+      setServerError(toErrorMessage(err, 'Không thể khởi tạo Recipe Studio.'));
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* 1. HERO BANNER: Thêm mới / Cập nhật công thức chuẩn mockup */}
@@ -169,24 +198,37 @@ export default function DashboardRecipeCreateView({
             </div>
           </div>
 
-          {/* Huy hiệu nghệ thuật: Nấu ngon Mỗi ngày + Nút quay về */}
+          {/* Cụm nút hành động Banner */}
           <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-orange-200 shadow-lg">
-              <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
-              <span className="font-serif italic text-base font-semibold tracking-wide text-white">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleQuickStudioCreate}
+                disabled={createMutation.isPending || Boolean(uploadProgress)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+                title="Mở Recipe Studio với 5 Tab chuyên nghiệp"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Mở Recipe Studio (5 Tab)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSelectTab('recipes')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/20 transition active:scale-95"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Về danh sách</span>
+              </button>
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-orange-200 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+              <span className="font-serif italic text-sm font-semibold tracking-wide text-white">
                 Nấu ngon Mỗi ngày
               </span>
               <span className="text-rose-400 text-xs">♥</span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/20 transition active:scale-95"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Về danh sách công thức</span>
-            </button>
           </div>
         </div>
       </div>
@@ -215,13 +257,14 @@ export default function DashboardRecipeCreateView({
         </div>
       )}
 
-      {/* 2. Form Nhập Liệu Bố Cục 2 Cột & Lưới Ảnh Giải Pháp 1 */}
+      {/* 2. Form Nhập Liệu Bố Cục 2 Cột Cân Bằng (Xóa triệt để khoảng trắng bên phải) */}
       <div>
         <RecipeForm
           isEdit={false}
           isSubmitting={createMutation.isPending || Boolean(uploadProgress)}
           serverError={serverError}
           onSubmit={handleSubmit}
+          onSwitchToStudio={handleQuickStudioCreate}
         />
       </div>
     </div>

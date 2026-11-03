@@ -8,8 +8,13 @@ import {
   useUnpublishRecipe,
   useArchiveRecipe,
   useDeleteRecipe,
+  useUpdateRecipe,
 } from '@/features/recipes/hooks';
 import { toErrorMessage } from '@/features/auth/hooks';
+import type { RecipeFormData } from '@/features/recipes/schemas';
+import type { RecipeDifficulty } from '@/lib/types/recipe';
+import { recipeService } from '@/lib/services/recipe-service';
+import RecipeForm from '@/components/recipes/RecipeForm';
 import type { DashboardTab } from '../DashboardSidebar';
 import RecipeStudioHeader from '../studio/RecipeStudioHeader';
 import StudioGeneralTab from '../studio/tabs/StudioGeneralTab';
@@ -46,6 +51,7 @@ export default function DashboardRecipeEditView({
   const studioTabParam = (searchParams.get('studioTab') as StudioActiveTab) || 'general';
 
   const [activeTab, setActiveTab] = useState<StudioActiveTab>(studioTabParam);
+  const [viewStyle, setViewStyle] = useState<'studio' | 'form'>('studio');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'warning', title: string, message?: string) => {
@@ -64,6 +70,7 @@ export default function DashboardRecipeEditView({
   const unpublishMutation = useUnpublishRecipe();
   const archiveMutation = useArchiveRecipe();
   const deleteMutation = useDeleteRecipe();
+  const updateMutation = useUpdateRecipe(recipe?.id || '');
 
   if (isLoading) {
     return (
@@ -146,6 +153,58 @@ export default function DashboardRecipeEditView({
     }
   };
 
+  const handleFormSubmit = async (
+    formData: RecipeFormData,
+    secondaryFiles: File[] = [],
+    targetStatus: 'draft' | 'publish' | 'archive' = 'draft'
+  ) => {
+    if (!recipe) return;
+    try {
+      await updateMutation.mutateAsync({
+        id: recipe.id,
+        title: formData.title,
+        description: formData.description,
+        instructions: formData.instructions,
+        prepTimeMinutes: Number(formData.prepTimeMinutes),
+        cookTimeMinutes: Number(formData.cookTimeMinutes),
+        servings: Number(formData.servings),
+        difficulty: Number(formData.difficulty) as RecipeDifficulty,
+        categoryId: formData.categoryId,
+        calories: Number(formData.calories || 0),
+        protein: Number(formData.protein || 0),
+        carbs: Number(formData.carbs || 0),
+        fat: Number(formData.fat || 0),
+        rowVersionBase64: recipe.rowVersionBase64 || '',
+      });
+
+      // Tải ảnh phụ nếu có
+      if (secondaryFiles.length > 0) {
+        for (const f of secondaryFiles) {
+          try {
+            await recipeService.uploadRecipeImage(recipe.id, f);
+          } catch (e) {
+            console.warn('Lỗi tải ảnh phụ:', e);
+          }
+        }
+      }
+
+      // Xử lý chuyển đổi trạng thái nếu người dùng bấm Xuất bản hoặc Lưu trữ
+      const statusNum = Number(recipe.status);
+      if (targetStatus === 'publish' && recipe.status !== 'Published' && statusNum !== 1) {
+        await publishMutation.mutateAsync(recipe.id);
+      } else if (targetStatus === 'archive' && recipe.status !== 'Archived' && statusNum !== 2) {
+        await archiveMutation.mutateAsync(recipe.id);
+      } else if (targetStatus === 'draft' && recipe.status !== 'Draft' && statusNum !== 0) {
+        await unpublishMutation.mutateAsync(recipe.id);
+      }
+
+      addToast('success', 'Lưu thành công', 'Công thức đã được cập nhật thành công!');
+      refetch();
+    } catch (err: unknown) {
+      addToast('error', 'Cập nhật thất bại', toErrorMessage(err, 'Vui lòng kiểm tra lại dữ liệu.'));
+    }
+  };
+
   const imagesCount = recipe.images?.length ?? 0;
   const ingredientsCount = recipe.ingredients?.length ?? 0;
   const stepsCount = recipe.steps?.length ?? 0;
@@ -221,51 +280,96 @@ export default function DashboardRecipeEditView({
         isUnpublishing={unpublishMutation.isPending}
         isArchiving={archiveMutation.isPending}
         isDeleting={deleteMutation.isPending}
+        viewStyle={viewStyle}
+        onToggleViewStyle={() => setViewStyle((prev) => (prev === 'studio' ? 'form' : 'studio'))}
       />
 
-      {/* 2. Studio Tabs Navigation */}
-      <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs">
-        <Tabs
-          tabs={studioTabs}
-          activeTab={activeTab}
-          onTabChange={(id) => handleTabChange(id as StudioActiveTab)}
-          ariaLabel="Điều hướng Recipe Studio"
-        />
-      </div>
+      {/* 2. Điều hướng Chế độ xem: Studio 5 Tab HOẶC Soạn thảo 1 Trang Cân Bằng */}
+      {viewStyle === 'form' ? (
+        <div className="animate-fade-in">
+          <RecipeForm
+            initialValues={{
+              title: recipe.title,
+              description: recipe.description,
+              instructions: recipe.instructions,
+              prepTimeMinutes: recipe.prepTimeMinutes,
+              cookTimeMinutes: recipe.cookTimeMinutes,
+              servings: recipe.servings,
+              difficulty: typeof recipe.difficulty === 'number' ? recipe.difficulty : 1,
+              categoryId: recipe.categoryId,
+              calories: recipe.nutrition?.calories ?? 0,
+              protein: recipe.nutrition?.protein ?? 0,
+              carbs: recipe.nutrition?.carbohydrates ?? 0,
+              fat: recipe.nutrition?.fat ?? 0,
+              primaryImageUrl:
+                recipe.images?.find((i) => i.isPrimary)?.originalUrl ||
+                recipe.images?.[0]?.originalUrl ||
+                '',
+              ingredients: recipe.ingredients?.map((i) => ({
+                name: i.name,
+                quantity: i.quantity,
+                unit: i.unit || '',
+                notes: i.notes || '',
+              })),
+              steps: recipe.steps?.map((s) => ({
+                title: s.title,
+                description: s.description,
+                timerMinutes: s.timerMinutes,
+              })),
+            }}
+            isEdit={true}
+            isSubmitting={updateMutation.isPending || publishMutation.isPending || archiveMutation.isPending}
+            onSubmit={handleFormSubmit}
+            onSwitchToStudio={() => setViewStyle('studio')}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Studio Tabs Navigation */}
+          <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs">
+            <Tabs
+              tabs={studioTabs}
+              activeTab={activeTab}
+              onTabChange={(id) => handleTabChange(id as StudioActiveTab)}
+              ariaLabel="Điều hướng Recipe Studio"
+            />
+          </div>
 
-      {/* 3. Tab Contents */}
-      {activeTab === 'general' && (
-        <StudioGeneralTab recipe={recipe} onRefresh={refetch} />
-      )}
+          {/* Tab Contents */}
+          {activeTab === 'general' && (
+            <StudioGeneralTab recipe={recipe} onRefresh={refetch} />
+          )}
 
-      {activeTab === 'gallery' && (
-        <StudioGalleryTab recipe={recipe} onRefresh={refetch} />
-      )}
+          {activeTab === 'gallery' && (
+            <StudioGalleryTab recipe={recipe} onRefresh={refetch} />
+          )}
 
-      {activeTab === 'ingredients' && (
-        <StudioIngredientsTab recipe={recipe} onRefresh={refetch} />
-      )}
+          {activeTab === 'ingredients' && (
+            <StudioIngredientsTab recipe={recipe} onRefresh={refetch} />
+          )}
 
-      {activeTab === 'steps' && (
-        <StudioStepsTab
-          recipe={recipe}
-          onRefresh={refetch}
-          onSwitchTab={(tab) => handleTabChange(tab)}
-        />
-      )}
+          {activeTab === 'steps' && (
+            <StudioStepsTab
+              recipe={recipe}
+              onRefresh={refetch}
+              onSwitchTab={(tab) => handleTabChange(tab)}
+            />
+          )}
 
-      {activeTab === 'preview' && (
-        <StudioPreviewTab
-          recipe={recipe}
-          onRefresh={refetch}
-          onSwitchTab={(tab) => handleTabChange(tab)}
-          onPublish={handlePublish}
-          onUnpublish={handleUnpublish}
-          onArchive={handleArchive}
-          isPublishing={publishMutation.isPending}
-          isUnpublishing={unpublishMutation.isPending}
-          isArchiving={archiveMutation.isPending}
-        />
+          {activeTab === 'preview' && (
+            <StudioPreviewTab
+              recipe={recipe}
+              onRefresh={refetch}
+              onSwitchTab={(tab) => handleTabChange(tab)}
+              onPublish={handlePublish}
+              onUnpublish={handleUnpublish}
+              onArchive={handleArchive}
+              isPublishing={publishMutation.isPending}
+              isUnpublishing={unpublishMutation.isPending}
+              isArchiving={archiveMutation.isPending}
+            />
+          )}
+        </>
       )}
     </div>
   );

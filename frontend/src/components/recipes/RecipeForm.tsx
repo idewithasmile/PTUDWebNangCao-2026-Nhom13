@@ -85,6 +85,7 @@ interface RecipeFormProps {
     secondaryFiles?: File[],
     targetStatus?: 'draft' | 'publish' | 'archive'
   ) => Promise<void>;
+  onSwitchToStudio?: () => void;
 }
 
 // Một số URL ảnh món ăn chất lượng cao gợi ý nhanh
@@ -101,6 +102,7 @@ export default function RecipeForm({
   isSubmitting,
   serverError,
   onSubmit,
+  onSwitchToStudio,
 }: RecipeFormProps) {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -311,68 +313,69 @@ export default function RecipeForm({
     setUrlInput('');
   };
 
-  // Nút điền nhanh mẫu nguyên liệu và các bước làm
+  // Nút điền nhanh mẫu nguyên liệu và các bước làm (Ẩm thực Việt Nam thực tế)
   const handleFillSampleStepsAndIngredients = () => {
-    setValue('title', 'Phở Bò Hà Nội Truyền Thống');
+    setValue('title', 'Bánh Mì Chảo Xíu Mại Sốt Cà Chua Hà Nội');
     setValue(
       'description',
-      'Món phở bò thơm ngon đậm đà phong vị Hà thành với nước dùng ninh từ xương ống hầm thảo mộc thơm lừng, thịt bò mềm ngọt và bánh phở dai mịn.'
+      'Bánh mì chảo thơm lừng nóng hổi với xíu mại đậm đà, trứng ốp la lòng đào, pa-tê béo ngậy và sốt cà chua tiêu đen sánh mịn đặc trưng phố cổ Hà Nội.'
     );
     setValue(
       'instructions',
-      'Bí quyết nước dùng trong: Phải chần kỹ xương ống với gừng đập dập và muối trước khi ninh. Trong quá trình ninh không đậy nắp vung và vớt bọt liên tục. Thêm chút đường phèn và nước mắm ngon ở 15 phút cuối cùng để dậy mùi thanh nhẹ.'
+      'Bí quyết nước sốt cà chua tiêu đen sánh mịn: Phi thơm tỏi băm và bơ lạt trước khi cho cà chua băm nhuyễn vào xào. Thêm một chút dầu hào và tiêu đen Phú Quốc giã dập. Khi dọn ra chảo gang, giữ chảo thật nóng để bơ tan chảy xèo xèo thơm ngậy.'
     );
-    setValue('prepTimeMinutes', 30);
-    setValue('cookTimeMinutes', 120);
-    setValue('servings', 4);
-    setValue('difficulty', 2);
-    setValue('calories', 450);
+    setValue('prepTimeMinutes', 20);
+    setValue('cookTimeMinutes', 25);
+    setValue('servings', 2);
+    setValue('difficulty', 1);
+    setValue('calories', 680);
     setValue('protein', 28);
-    setValue('carbs', 55);
-    setValue('fat', 12);
+    setValue('carbs', 65);
+    setValue('fat', 32);
 
     if (categories.length > 0) {
       setValue('categoryId', categories[0].id);
     }
 
-    // Nạp nguyên liệu mẫu
+    // Nạp 7 nguyên liệu ẩm thực chuẩn vị
     setValue('ingredients', [
-      { name: 'Xương ống bò', quantity: 1, unit: 'kg', notes: 'Rửa sạch chặt khúc' },
-      { name: 'Thịt bò phi lê hoặc nạm', quantity: 500, unit: 'g', notes: 'Thái lát thật mỏng' },
-      { name: 'Bánh phở tươi', quantity: 800, unit: 'g', notes: 'Chần nước sôi trước khi dùng' },
-      { name: 'Hành tây & Gừng', quantity: 2, unit: 'củ', notes: 'Nướng thơm cạo vỏ' },
-      { name: 'Hoa hồi, quế, thảo quả', quantity: 1, unit: 'gói', notes: 'Rang thơm cho vào túi lọc' },
-      { name: 'Hành hoa & ngò gai', quantity: 100, unit: 'g', notes: 'Rửa sạch thái nhỏ' },
+      { name: 'Bánh mì giòn', quantity: 2, unit: 'ổ', notes: 'Nướng lại cho nóng giòn' },
+      { name: 'Thịt nạc vai heo băm', quantity: 200, unit: 'g', notes: 'Ướp tiêu, hành tím băm làm xíu mại' },
+      { name: 'Pa-tê gan Hạ Long', quantity: 80, unit: 'g', notes: 'Cắt miếng dày béo ngậy' },
+      { name: 'Trứng gà ta', quantity: 2, unit: 'quả', notes: 'Ốp la lòng đào' },
+      { name: 'Xúc xích hun khói', quantity: 2, unit: 'cây', notes: 'Khía hoa chiên vàng' },
+      { name: 'Cà chua chín mọng', quantity: 3, unit: 'quả', notes: 'Băm nhỏ nấu sốt tiêu đen' },
+      { name: 'Bơ lạt Anchor & Tỏi băm', quantity: 20, unit: 'g', notes: 'Tạo mùi thơm béo ngậy' },
     ]);
 
-    // Nạp các bước làm mẫu
+    // Nạp các bước làm có thời gian hẹn giờ (timer)
     setValue('steps', [
       {
-        title: 'Bước 1: Sơ chế và ninh xương',
-        description: 'Chần xương bò với nước sôi và muối trong 5 phút. Rửa lại nước lạnh rồi cho vào nồi lớn với 3 lít nước, ninh lửa nhỏ trong 2 giờ.',
-        timerMinutes: 120,
-      },
-      {
-        title: 'Bước 2: Chuẩn bị gia vị thảo mộc',
-        description: 'Nướng thơm gừng và hành tây, rang hồi quế thảo quả rồi cho tất cả vào nồi nước dùng đang sôi lăn tăn.',
+        title: 'Bước 1: Làm xíu mại sốt mềm',
+        description: 'Trộn thịt băm với hành tím, tiêu xay, chút dầu hào và nặn thành các viên tròn vừa ăn. Đem hấp chín sơ trong 15 phút.',
         timerMinutes: 15,
       },
       {
-        title: 'Bước 3: Nêm nếm nước dùng',
-        description: 'Nêm hạt nêm, muối hạt, đường phèn và chút nước mắm truyền thống cho vừa miệng.',
+        title: 'Bước 2: Nấu sốt cà chua tiêu đen',
+        description: 'Đun chảy bơ lạt, phi thơm tỏi băm, cho cà chua vào đảo nhuyễn. Thêm tương cà, dầu hào, tiêu đen đập dập và đun nhỏ lửa 10 phút cho sốt sánh sệt.',
         timerMinutes: 10,
       },
       {
-        title: 'Bước 4: Hoàn thiện và thưởng thức',
-        description: 'Trần bánh phở xếp vào tô, xếp thịt bò tái/chín lên trên, rắc hành ngò rồi chan nước dùng thật sôi vào.',
+        title: 'Bước 3: Chiên xúc xích và ốp la trứng',
+        description: 'Khía nhẹ thân xúc xích và chiên vàng đều hai mặt. Đập trứng gà ốp la lòng đào trong chảo gang nóng.',
+        timerMinutes: 5,
+      },
+      {
+        title: 'Bước 4: Hoàn thiện chảo gang nóng hổi',
+        description: 'Xếp xíu mại, pa-tê, xúc xích và trứng ốp la vào chảo gang. Rưới nước sốt cà chua nóng hổi lên trên, rắc thêm ngò rí, tiêu đen và thưởng thức kèm bánh mì giòn.',
         timerMinutes: 5,
       },
     ]);
 
     if (galleryItems.length === 0) {
       handleAddFromUrl(
-        'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800&auto=format&fit=crop&q=80',
-        'Phở bò mẫu'
+        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
+        'Bánh mì chảo Hà Nội'
       );
     }
   };
@@ -927,11 +930,11 @@ export default function RecipeForm({
 
           {/* Thanh điều hướng nhanh các mục (Smooth Anchor Pills) */}
           <div className="sticky top-4 z-20 flex items-center justify-between gap-2 overflow-x-auto rounded-2xl bg-white/95 backdrop-blur-md p-2 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => scrollToAnchor('card-general')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
                   activeAnchor === 'card-general'
                     ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-gray-600 hover:bg-gray-100'
@@ -943,64 +946,106 @@ export default function RecipeForm({
 
               <button
                 type="button"
-                onClick={() => scrollToAnchor('card-ingredients')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  activeAnchor === 'card-ingredients'
-                    ? 'bg-orange-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Tag className="w-3.5 h-3.5" />
-                <span>2. Nguyên liệu ({ingredientFields.length})</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => scrollToAnchor('card-steps')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
                   activeAnchor === 'card-steps'
                     ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <ChefHat className="w-3.5 h-3.5" />
-                <span>3. Các bước làm ({stepFields.length})</span>
+                <span>2. Các bước nấu ({stepFields.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToAnchor('card-instructions')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  activeAnchor === 'card-instructions'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>3. Hướng dẫn & Mẹo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToAnchor('card-ingredients')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  activeAnchor === 'card-ingredients'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Tag className="w-3.5 h-3.5" />
+                <span>4. Nguyên liệu ({ingredientFields.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToAnchor('card-nutrition')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  activeAnchor === 'card-nutrition'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>5. Dinh dưỡng</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => scrollToAnchor('card-preview')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
                   activeAnchor === 'card-preview'
                     ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>4. Thẻ xem trước</span>
+                <span>6. Thẻ xem trước</span>
               </button>
             </div>
 
-            {/* Nút Xem trước chi tiết bài viết ngay trong Dashboard */}
-            <button
-              type="button"
-              onClick={() => {
-                setViewMode('preview');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition shrink-0 shadow-2xs active:scale-95"
-              title="Xem trước bài viết đầy đủ trong Bảng điều khiển"
-            >
-              <Eye className="w-3.5 h-3.5 text-orange-600" />
-              <span className="hidden sm:inline">Xem trước bài viết</span>
-              <span className="sm:hidden">Xem trước</span>
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Nút chuyển đổi nhanh sang Recipe Studio (5 Tab) nếu có callback */}
+              {onSwitchToStudio && (
+                <button
+                  type="button"
+                  onClick={onSwitchToStudio}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition shrink-0 shadow-2xs active:scale-95"
+                  title="Chuyển sang chế độ biên tập Recipe Studio (5 Tab)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="hidden sm:inline">Chế độ Studio (5 Tab)</span>
+                  <span className="sm:hidden">Studio</span>
+                </button>
+              )}
+
+              {/* Nút Xem trước chi tiết bài viết ngay trong Dashboard */}
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('preview');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition shrink-0 shadow-2xs active:scale-95"
+                title="Xem trước bài viết đầy đủ trong Bảng điều khiển"
+              >
+                <Eye className="w-3.5 h-3.5 text-orange-600" />
+                <span className="hidden sm:inline">Xem trước bài viết</span>
+                <span className="sm:hidden">Xem trước</span>
+              </button>
+            </div>
           </div>
 
-          {/* BỐ CỤC 2 CỘT: CỘT SOẠN THẢO (70%) + CỘT TRẠNG THÁI STICKY (30%) */}
+          {/* BỐ CỤC 2 CỘT CÂN BẰNG: CỘT SOẠN THẢO (7/12) + CỘT NGUYÊN LIỆU & TRẠNG THÁI (5/12) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* CỘT TRÁI (LỚN): CÁC KHỐI NHẬP LIỆU CHÍNH */}
-            <div className="lg:col-span-8 space-y-8">
+            {/* CỘT TRÁI (7/12): THÔNG TIN CÔNG THỨC + CÁC BƯỚC NẤU + HƯỚNG DẪN CHI TIẾT */}
+            <div className="lg:col-span-7 space-y-8">
               {/* KHỐI 1: THÔNG TIN CÔNG THỨC & LƯỚI ẢNH GIẢI PHÁP 1 */}
               <div
                 id="card-general"
@@ -1337,125 +1382,7 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              {/* KHỐI 2: DANH SÁCH NGUYÊN LIỆU (SRS §FR-RCP-003) */}
-              <div
-                id="card-ingredients"
-                className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-6"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                      <Tag className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                          Nguyên liệu cần chuẩn bị
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {ingredientFields.length} món
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-400">
-                        Ghi rõ định lượng và đơn vị giúp người đọc dễ dàng chuẩn bị nguyên liệu
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => appendIngredient({ name: '', quantity: null, unit: '', notes: '' })}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition shadow-xs active:scale-95"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Thêm nguyên liệu</span>
-                  </button>
-                </div>
-
-                {/* Danh sách các trường nguyên liệu */}
-                <div className="space-y-3">
-                  {ingredientFields.map((field, idx) => (
-                    <div
-                      key={field.id}
-                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 p-3 rounded-2xl bg-gray-50/70 border border-gray-100 hover:border-gray-200 transition"
-                    >
-                      <span className="w-6 text-center text-xs font-bold text-gray-400 shrink-0">
-                        #{idx + 1}
-                      </span>
-
-                      {/* Tên nguyên liệu */}
-                      <div className="flex-1 sm:max-w-xs">
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.name`)}
-                          placeholder="Tên nguyên liệu (VD: Thịt thăn bò)"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-orange-500"
-                        />
-                      </div>
-
-                      {/* Định lượng */}
-                      <div className="w-24">
-                        <input
-                          type="number"
-                          step="any"
-                          {...register(`ingredients.${idx}.quantity`, { valueAsNumber: true })}
-                          placeholder="Số lượng"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-orange-500"
-                        />
-                      </div>
-
-                      {/* Đơn vị */}
-                      <div className="w-24">
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.unit`)}
-                          placeholder="Đơn vị (g, muỗng)"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-orange-500"
-                        />
-                      </div>
-
-                      {/* Ghi chú */}
-                      <div className="flex-1 sm:max-w-xs">
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.notes`)}
-                          placeholder="Ghi chú (thái mỏng, băm nhỏ...)"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs outline-none focus:border-orange-500"
-                        />
-                      </div>
-
-                      {/* Nút xóa */}
-                      {ingredientFields.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeIngredient(idx)}
-                          className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0"
-                          title="Xóa nguyên liệu này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Gợi ý thêm nhanh */}
-                <div className="pt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-                  <span className="font-semibold text-gray-400 mr-1">Gợi ý nhanh:</span>
-                  {['Hành tím', 'Tỏi băm', 'Nước mắm', 'Hạt nêm', 'Tiêu xay', 'Dầu ăn'].map((ing) => (
-                    <button
-                      key={ing}
-                      type="button"
-                      onClick={() => appendIngredient({ name: ing, quantity: 1, unit: 'muỗng', notes: '' })}
-                      className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 text-[11px] font-semibold text-gray-700 transition"
-                    >
-                      + {ing}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* KHỐI 3: CÁC BƯỚC THỰC HIỆN CÓ HẸN GIỜ (SRS §FR-RCP-004) */}
+              {/* KHỐI 2: CÁC BƯỚC THỰC HIỆN CÓ HẸN GIỜ (SRS §FR-RCP-004) */}
               <div
                 id="card-steps"
                 className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-6"
@@ -1504,19 +1431,19 @@ export default function RecipeForm({
                       className="rounded-2xl border border-gray-200/80 bg-gray-50/50 p-4 sm:p-5 space-y-3 relative group hover:border-gray-300 transition"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black shadow-xs">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black shadow-xs shrink-0">
                             {idx + 1}
                           </span>
                           <input
                             type="text"
                             {...register(`steps.${idx}.title`)}
                             placeholder={`Tiêu đề bước ${idx + 1} (VD: Sơ chế rau củ...)`}
-                            className="font-bold text-sm text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-gray-400 placeholder:font-normal"
+                            className="font-bold text-sm text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-gray-400 placeholder:font-normal w-full"
                           />
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                           {idx > 0 && (
                             <button
                               type="button"
@@ -1578,7 +1505,7 @@ export default function RecipeForm({
                 </div>
               </div>
 
-              {/* KHỐI 4: MÔ TẢ CHI TIẾT & MẸO NẤU (INSTRUCTIONS) */}
+              {/* KHỐI 3: MÔ TẢ CHI TIẾT & MẸO GIA TRUYỀN (INSTRUCTIONS) */}
               <div
                 id="card-instructions"
                 className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-xs space-y-4"
@@ -1612,106 +1539,31 @@ export default function RecipeForm({
                   </div>
                 </div>
               </div>
-
-              {/* KHỐI 5: THÔNG TIN DINH DƯỠNG (TUỲ CHỌN - ACCORDION) */}
-              <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsNutritionOpen(!isNutritionOpen)}
-                  className="w-full flex items-center justify-between text-left"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                      <Flame className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-gray-900">
-                        Giá trị dinh dưỡng trên mỗi khẩu phần (Tuỳ chọn)
-                      </h4>
-                      <p className="text-[11px] text-gray-400">Calo, Protein, Carbs, Chất béo</p>
-                    </div>
-                  </div>
-                  <div className="p-1 rounded-lg text-gray-400 hover:bg-gray-100">
-                    {isNutritionOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </div>
-                </button>
-
-                {isNutritionOpen && (
-                  <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in border-t border-gray-100 mt-4">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-orange-500" /> Calo (kcal)
-                      </label>
-                      <input
-                        type="number"
-                        {...register('calories', { valueAsNumber: true })}
-                        placeholder="0"
-                        min="0"
-                        className="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                        <Dumbbell className="w-3 h-3 text-blue-500" /> Đạm / Protein (g)
-                      </label>
-                      <input
-                        type="number"
-                        {...register('protein', { valueAsNumber: true })}
-                        placeholder="0"
-                        min="0"
-                        className="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                        <Wheat className="w-3 h-3 text-amber-500" /> Tinh bột / Carbs (g)
-                      </label>
-                      <input
-                        type="number"
-                        {...register('carbs', { valueAsNumber: true })}
-                        placeholder="0"
-                        min="0"
-                        className="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
-                        <Droplets className="w-3 h-3 text-rose-500" /> Chất béo / Fat (g)
-                      </label>
-                      <input
-                        type="number"
-                        {...register('fat', { valueAsNumber: true })}
-                        placeholder="0"
-                        min="0"
-                        className="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* CỘT PHẢI (STICKY): BẢNG TRẠNG THÁI CÔNG THỨC & NÚT HÀNH ĐỘNG */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
-              {/* CARD TRẠNG THÁI CÔNG THỨC */}
-              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-xs space-y-6">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100 text-gray-900 font-black text-sm">
-                  <Send className="w-4 h-4 text-orange-600 rotate-45" />
-                  <span>Trạng thái công thức</span>
+            {/* CỘT PHẢI (5/12): TRẠNG THÁI & HÀNH ĐỘNG + NGUYÊN LIỆU + DINH DƯỠNG + MẸO TÁC GIẢ */}
+            <div className="lg:col-span-5 space-y-8">
+              {/* KHỐI 1: BẢNG TRẠNG THÁI CÔNG THỨC & NÚT HÀNH ĐỘNG */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2 text-gray-900 font-black text-sm">
+                    <Send className="w-4 h-4 text-orange-600 rotate-45" />
+                    <span>Trạng thái công thức</span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                    Bản nháp
+                  </span>
                 </div>
 
                 {/* Stepper 3 trạng thái chuẩn SRS */}
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   {/* Nấc 1: Bản nháp */}
-                  <div className="flex items-start gap-3 p-3 rounded-2xl bg-orange-50/60 border border-orange-200/60">
+                  <div className="flex items-start gap-3 p-3 rounded-2xl bg-orange-50/70 border border-orange-200/70">
                     <div className="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center shrink-0 mt-0.5">
                       <Check className="w-3 h-3 stroke-[3]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-orange-950">Bản nháp (Draft)</h4>
+                      <h4 className="text-xs font-black text-orange-950">1. Bản nháp (Draft)</h4>
                       <p className="text-[11px] text-orange-800/80 mt-0.5">
                         Lưu lại để tiếp tục chỉnh sửa sau, chỉ mình bạn thấy.
                       </p>
@@ -1722,9 +1574,9 @@ export default function RecipeForm({
                   <div className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/70 border border-gray-200/70">
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-bold text-gray-800">Xuất bản (Published)</h4>
+                      <h4 className="text-xs font-bold text-gray-800">2. Xuất bản (Published)</h4>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        Công khai cho cộng đồng Culinary Blog đón đọc và lưu lại.
+                        Công khai cho cộng đồng đón đọc và lưu lại.
                       </p>
                     </div>
                   </div>
@@ -1733,16 +1585,16 @@ export default function RecipeForm({
                   <div className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/70 border border-gray-200/70">
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-bold text-gray-800">Lưu trữ (Archived)</h4>
+                      <h4 className="text-xs font-bold text-gray-800">3. Lưu trữ (Archived)</h4>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        Tạm ẩn công thức khỏi trang công khai khi chưa dùng tới.
+                        Tạm ẩn công thức khỏi trang công khai.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* BẢNG KIỂM TRA ĐIỀU KIỆN XUẤT BẢN (SRS §FR-RCP-005) */}
-                <div className="rounded-2xl bg-gray-50 p-4 space-y-2.5 text-xs">
+                <div className="rounded-2xl bg-gray-50 p-4 space-y-2 text-xs">
                   <h5 className="font-bold text-gray-800 text-[11px] uppercase tracking-wider">
                     Điều kiện xuất bản công khai:
                   </h5>
@@ -1750,9 +1602,9 @@ export default function RecipeForm({
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       {hasValidTitle ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                       )}
                       <span className={hasValidTitle ? 'text-gray-700 font-medium' : 'text-gray-400'}>
                         Tiêu đề & Danh mục hợp lệ
@@ -1761,9 +1613,9 @@ export default function RecipeForm({
 
                     <div className="flex items-center gap-2">
                       {hasValidIngredients ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                       )}
                       <span className={hasValidIngredients ? 'text-gray-700 font-medium' : 'text-gray-400'}>
                         Tối thiểu 1 nguyên liệu ({validIngredients.length})
@@ -1772,9 +1624,9 @@ export default function RecipeForm({
 
                     <div className="flex items-center gap-2">
                       {hasValidSteps ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                       )}
                       <span className={hasValidSteps ? 'text-gray-700 font-medium' : 'text-gray-400'}>
                         Tối thiểu 1 bước thực hiện ({validSteps.length})
@@ -1783,9 +1635,9 @@ export default function RecipeForm({
 
                     <div className="flex items-center gap-2">
                       {hasHeroImage ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                       )}
                       <span className={hasHeroImage ? 'text-gray-700 font-medium' : 'text-gray-400'}>
                         Ảnh món ăn đại diện ({galleryItems.length} ảnh)
@@ -1795,7 +1647,7 @@ export default function RecipeForm({
                 </div>
 
                 {/* CỤM NÚT HÀNH ĐỘNG CHÍNH */}
-                <div className="flex flex-col gap-2.5 pt-2">
+                <div className="flex flex-col gap-2.5 pt-1">
                   <button
                     type="button"
                     onClick={() => triggerSubmitWithTarget('publish')}
@@ -1810,38 +1662,245 @@ export default function RecipeForm({
                     <span>Xuất bản công khai ngay</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => triggerSubmitWithTarget('draft')}
-                    disabled={isSubmitting || isUploadingPrimary}
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
-                  >
-                    {isSubmitting && submitTarget === 'draft' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4 text-gray-500" />
-                    )}
-                    <span>Lưu bản nháp</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => triggerSubmitWithTarget('draft')}
+                      disabled={isSubmitting || isUploadingPrimary}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
+                    >
+                      {isSubmitting && submitTarget === 'draft' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 text-gray-500" />
+                      )}
+                      <span>Lưu bản nháp</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => triggerSubmitWithTarget('archive')}
+                      disabled={isSubmitting || isUploadingPrimary}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
+                      title="Chuyển vào kho lưu trữ"
+                    >
+                      {isSubmitting && submitTarget === 'archive' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Archive className="w-4 h-4 text-gray-500" />
+                      )}
+                      <span>Lưu trữ</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* BANNER CHUYỂN SANG RECIPE STUDIO */}
+                {onSwitchToStudio && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                        <div>
+                          <h5 className="text-xs font-bold text-blue-950">Recipe Studio (5 Tab)</h5>
+                          <p className="text-[11px] text-blue-700/80">Quản lý nâng cao theo từng tab</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onSwitchToStudio}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs shrink-0 active:scale-95"
+                      >
+                        Mở Studio 🎛️
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* KHỐI 2: DANH SÁCH NGUYÊN LIỆU (SRS §FR-RCP-003) */}
+              <div
+                id="card-ingredients"
+                className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xs space-y-4"
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                      <Tag className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-black text-gray-900 tracking-tight">
+                          Nguyên liệu cần chuẩn bị
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {ingredientFields.length} món
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400">
+                        Định lượng và đơn vị giúp bạn đọc dễ nấu theo
+                      </p>
+                    </div>
+                  </div>
 
                   <button
                     type="button"
-                    onClick={() => triggerSubmitWithTarget('archive')}
-                    disabled={isSubmitting || isUploadingPrimary}
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition active:scale-95 disabled:opacity-50"
-                    title="Chuyển vào kho lưu trữ"
+                    onClick={() => appendIngredient({ name: '', quantity: null, unit: '', notes: '' })}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition shadow-xs active:scale-95 shrink-0"
                   >
-                    {isSubmitting && submitTarget === 'archive' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Archive className="w-4 h-4 text-gray-500" />
-                    )}
-                    <span>Lưu trữ</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm</span>
                   </button>
+                </div>
+
+                {/* Danh sách các trường nguyên liệu 2-tier responsive */}
+                <div className="space-y-2.5">
+                  {ingredientFields.map((field, idx) => (
+                    <div
+                      key={field.id}
+                      className="p-3 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-gray-200 transition space-y-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 text-center text-xs font-bold text-gray-400 shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          {...register(`ingredients.${idx}.name`)}
+                          placeholder="Tên nguyên liệu (VD: Thịt thăn bò)"
+                          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-orange-500"
+                        />
+                        {ingredientFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeIngredient(idx)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0"
+                            title="Xóa nguyên liệu này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-2 pl-7">
+                        <div className="col-span-3">
+                          <input
+                            type="number"
+                            step="any"
+                            {...register(`ingredients.${idx}.quantity`, { valueAsNumber: true })}
+                            placeholder="SL"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-orange-500 text-center"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <input
+                            type="text"
+                            {...register(`ingredients.${idx}.unit`)}
+                            placeholder="Đơn vị (g, muỗng)"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-orange-500 text-center"
+                          />
+                        </div>
+                        <div className="col-span-6">
+                          <input
+                            type="text"
+                            {...register(`ingredients.${idx}.notes`)}
+                            placeholder="Ghi chú (tùy chọn)"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Gợi ý thêm nhanh */}
+                <div className="pt-1 flex flex-wrap items-center gap-1 text-[11px] text-gray-500">
+                  <span className="font-semibold text-gray-400 mr-1">Gợi ý:</span>
+                  {['Hành tím', 'Tỏi băm', 'Nước mắm', 'Hạt nêm', 'Tiêu xay', 'Bơ lạt'].map((ing) => (
+                    <button
+                      key={ing}
+                      type="button"
+                      onClick={() => appendIngredient({ name: ing, quantity: 1, unit: 'muỗng', notes: '' })}
+                      className="px-2 py-0.5 rounded-lg bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 text-[10px] font-semibold text-gray-700 transition"
+                    >
+                      + {ing}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* CARD MẸO NHỎ CHO TÁC GIẢ */}
+              {/* KHỐI 3: THÔNG TIN DINH DƯỠNG (TUỲ CHỌN) */}
+              <div
+                id="card-nutrition"
+                className="rounded-3xl border border-gray-100 bg-white p-5 shadow-xs space-y-4"
+              >
+                <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-gray-900">
+                      Giá trị dinh dưỡng trên mỗi khẩu phần
+                    </h4>
+                    <p className="text-[11px] text-gray-400">Calo, Protein, Carbs, Chất béo (tùy chọn)</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 rounded-2xl bg-orange-50/50 border border-orange-100 space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
+                      <Flame className="w-3.5 h-3.5 text-orange-500" /> Calo (kcal)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('calories', { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
+                      <Dumbbell className="w-3.5 h-3.5 text-blue-500" /> Đạm / Protein (g)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('protein', { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
+                      <Wheat className="w-3.5 h-3.5 text-amber-500" /> Tinh bột / Carbs (g)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('carbs', { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-rose-50/50 border border-rose-100 space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
+                      <Droplets className="w-3.5 h-3.5 text-rose-500" /> Chất béo / Fat (g)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('fat', { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-rose-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* KHỐI 4: CARD MẸO NHỎ CHO TÁC GIẢ */}
               <div className="rounded-3xl border border-amber-200/70 bg-amber-50/40 p-5 space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-amber-900 font-bold">
                   <Lightbulb className="w-4 h-4 text-amber-600" />

@@ -17,6 +17,8 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 
 interface RecipeStudioHeaderProps {
@@ -30,6 +32,8 @@ interface RecipeStudioHeaderProps {
   isUnpublishing?: boolean;
   isArchiving?: boolean;
   isDeleting?: boolean;
+  viewStyle?: 'studio' | 'form';
+  onToggleViewStyle?: () => void;
 }
 
 export default function RecipeStudioHeader({
@@ -43,6 +47,8 @@ export default function RecipeStudioHeader({
   isUnpublishing = false,
   isArchiving = false,
   isDeleting = false,
+  viewStyle = 'studio',
+  onToggleViewStyle,
 }: RecipeStudioHeaderProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isConfirmingPublish, setIsConfirmingPublish] = useState(false);
@@ -114,6 +120,28 @@ export default function RecipeStudioHeader({
 
           {/* Action Buttons Bar */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Nút Chuyển đổi giữa Chế độ Studio 5 Tab và Soạn thảo 1 trang */}
+            {onToggleViewStyle && (
+              <button
+                type="button"
+                onClick={onToggleViewStyle}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-bold text-blue-700 transition shadow-2xs"
+                title={viewStyle === 'form' ? 'Chuyển sang chế độ Recipe Studio (5 Tab)' : 'Chuyển sang chế độ Soạn thảo 1 trang'}
+              >
+                {viewStyle === 'form' ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Mở Studio (5 Tab)</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Xem dạng Soạn thảo 1 trang</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* 1. Nút Xem chi tiết ở trang mới */}
             <Link
               href={`/recipes/${encodeURIComponent(recipe.slug)}`}
