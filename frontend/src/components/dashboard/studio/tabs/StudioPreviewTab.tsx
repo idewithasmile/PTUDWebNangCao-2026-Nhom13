@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { RecipeDetailDto } from '@/lib/types/recipe';
 import { resolveMediaUrl, formatDate } from '@/lib/utils';
@@ -31,6 +31,8 @@ import {
   Image as ImageIcon,
   Edit2,
   AlertTriangle,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 interface StudioPreviewTabProps {
@@ -68,7 +70,19 @@ export default function StudioPreviewTab({
   // Tìm ảnh chính mặc định
   const primaryImg = images.find((img) => img.isPrimary) || images[0];
   const [selectedHeroUrl, setSelectedHeroUrl] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const activeHeroUrl = selectedHeroUrl || primaryImg?.originalUrl || null;
+
+  // Lắng nghe phím Escape để thoát chế độ xem toàn màn hình
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   // Kiểm tra điều kiện FR-RCP-005
   const hasValidTitle = (recipe.title?.trim().length ?? 0) >= 5;
@@ -96,67 +110,137 @@ export default function StudioPreviewTab({
   );
 
   return (
-    <div className="space-y-6">
-      {/* =========================================================================
-          1. HEADER ĐIỀU HƯỚNG VÀ CHECKLIST CHẤT LƯỢNG (FR-RCP-005)
-          ========================================================================= */}
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-7 shadow-2xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-          <div>
+    <div
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-50 bg-stone-100/95 backdrop-blur-md overflow-y-auto p-4 sm:p-8 animate-fade-in'
+          : 'space-y-6'
+      }
+    >
+      <div className={isFullscreen ? 'max-w-5xl mx-auto space-y-6 pb-12' : 'space-y-6'}>
+        {/* Thanh điều khiển nổi khi ở chế độ Fullscreen */}
+        {isFullscreen && (
+          <div className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-gray-200 shadow-md">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
-                <Eye className="w-4 h-4" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs sm:text-sm font-bold text-gray-900">
+                Chế độ Xem trước Toàn màn hình
               </span>
-              <h3 className="text-base sm:text-lg font-black text-gray-900">
-                Xem trước bài viết & Quyết định xuất bản
-              </h3>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                <Sparkles className="w-3 h-3" />
-                <span>Mô phỏng thực tế độc giả</span>
-              </span>
+              <span className="text-[11px] text-gray-400 hidden sm:inline">(Nhấn phím Esc để thoát)</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Kiểm tra toàn cảnh bài viết sau khi chỉnh sửa trước khi cập nhật hoặc xuất bản trên Culinary Blog.
-            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  onSwitchTab('general');
+                }}
+                className="px-3.5 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+              >
+                Quay lại chỉnh sửa
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(false)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-black transition shadow-xs"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Thu nhỏ (Esc)</span>
+              </button>
+            </div>
           </div>
+        )}
 
-          {/* Phím tắt chuyển nhanh về các tab chỉnh sửa */}
-          <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center">
-            <span className="text-[11px] font-semibold text-gray-400 mr-1">Chỉnh sửa nhanh:</span>
-            <button
-              type="button"
-              onClick={() => onSwitchTab('general')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
-            >
-              <Edit2 className="w-3 h-3 text-gray-400" />
-              <span>1. Thông tin</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSwitchTab('gallery')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
-            >
-              <Edit2 className="w-3 h-3 text-gray-400" />
-              <span>2. Ảnh ({images.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSwitchTab('ingredients')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
-            >
-              <Edit2 className="w-3 h-3 text-gray-400" />
-              <span>3. Nguyên liệu ({ingredients.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSwitchTab('steps')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
-            >
-              <Edit2 className="w-3 h-3 text-gray-400" />
-              <span>4. Các bước ({steps.length})</span>
-            </button>
+        {/* =========================================================================
+            1. HEADER ĐIỀU HƯỚNG VÀ CHECKLIST CHẤT LƯỢNG (FR-RCP-005)
+            ========================================================================= */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-7 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
+                  <Eye className="w-4 h-4" />
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-gray-900">
+                  Xem trước bài viết & Quyết định xuất bản
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Mô phỏng thực tế độc giả</span>
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Kiểm tra toàn cảnh bài viết sau khi chỉnh sửa trước khi cập nhật hoặc xuất bản trên Culinary Blog.
+              </p>
+            </div>
+
+            {/* Phím tắt chuyển nhanh về các tab chỉnh sửa */}
+            <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center">
+              <span className="text-[11px] font-semibold text-gray-400 mr-1">Chỉnh sửa nhanh:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  onSwitchTab('general');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+              >
+                <Edit2 className="w-3 h-3 text-gray-400" />
+                <span>1. Thông tin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  onSwitchTab('gallery');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+              >
+                <Edit2 className="w-3 h-3 text-gray-400" />
+                <span>2. Ảnh ({images.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  onSwitchTab('ingredients');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+              >
+                <Edit2 className="w-3 h-3 text-gray-400" />
+                <span>3. Nguyên liệu ({ingredients.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  onSwitchTab('steps');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition"
+              >
+                <Edit2 className="w-3 h-3 text-gray-400" />
+                <span>4. Các bước ({steps.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition shadow-2xs ml-1"
+                title={isFullscreen ? 'Thu nhỏ cửa sổ (Esc)' : 'Phóng to xem toàn màn hình'}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Thu nhỏ (Esc)</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Xem toàn màn hình</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* 4 Thẻ Checklist điều kiện SRS FR-RCP-005 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -702,6 +786,7 @@ export default function StudioPreviewTab({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
