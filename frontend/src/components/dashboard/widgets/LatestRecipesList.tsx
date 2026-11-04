@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRecipes } from '@/features/recipes/hooks';
-import { ChefHat, ArrowRight, Eye, MessageSquare, MoreVertical } from 'lucide-react';
+import { ChefHat, ArrowRight, Clock, Users } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/utils';
 
 export default function LatestRecipesList() {
   const { data: recipesData, isLoading } = useRecipes({
@@ -38,7 +38,7 @@ export default function LatestRecipesList() {
           ) : recipes.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-6">Chưa có bài viết mới</p>
           ) : (
-            recipes.map((recipe, idx) => (
+            recipes.map((recipe) => (
               <div
                 key={recipe.id}
                 className="flex items-start gap-3 p-2.5 rounded-2xl hover:bg-gray-50/80 transition-colors group relative border border-gray-50/60"
@@ -47,7 +47,7 @@ export default function LatestRecipesList() {
                   {recipe.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={recipe.thumbnailUrl}
+                      src={resolveMediaUrl(recipe.thumbnailUrl)}
                       alt={recipe.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       onError={(e) => {
@@ -61,7 +61,7 @@ export default function LatestRecipesList() {
                   )}
                 </div>
 
-                <div className="flex-1 min-w-0 text-xs">
+                <div className="flex-1 min-w-0 text-xs space-y-1">
                   <div className="flex items-start justify-between gap-1">
                     <Link
                       href={`/recipes/${recipe.slug}`}
@@ -69,43 +69,13 @@ export default function LatestRecipesList() {
                     >
                       {recipe.title}
                     </Link>
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600 p-0.5 shrink-0"
-                    >
-                      <MoreVertical className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-                    {recipe.categoryName || 'Ẩm thực'}
-                  </p>
-
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {new Date(recipe.createdAt).toLocaleDateString('vi-VN')}{' '}
-                    {new Date(recipe.createdAt).toLocaleTimeString('vi-VN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-
-                  <div className="flex items-center justify-between mt-1 pt-0.5">
-                    <div className="flex items-center gap-3 text-[10px] text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> {(1.2 - idx * 0.15).toFixed(1)}K
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" /> {45 - idx * 6}
-                      </span>
-                    </div>
-
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
                         recipe.status === 'Published' || String(recipe.status) === '1'
                           ? 'bg-emerald-50 text-emerald-700'
                           : recipe.status === 'Draft' || String(recipe.status) === '0'
                           ? 'bg-amber-50 text-amber-700'
-                          : 'bg-blue-50 text-blue-700'
+                          : 'bg-stone-100 text-stone-600'
                       }`}
                     >
                       {recipe.status === 'Published' || String(recipe.status) === '1'
@@ -114,6 +84,23 @@ export default function LatestRecipesList() {
                         ? 'Bản nháp'
                         : 'Đã lưu trữ'}
                     </span>
+                  </div>
+
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {recipe.categoryName || 'Ẩm thực'}
+                  </p>
+
+                  <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-gray-400" />
+                      {recipe.totalTimeMinutes || 30} phút
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3 text-gray-400" />
+                      {recipe.servings || 2} người
+                    </span>
+                    <span>•</span>
+                    <span>{new Date(recipe.createdAt).toLocaleDateString('vi-VN')}</span>
                   </div>
                 </div>
               </div>

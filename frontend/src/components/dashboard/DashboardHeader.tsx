@@ -5,16 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Bell,
-  Moon,
-  Sun,
   LogOut,
   User,
-  ShieldCheck,
-  ChefHat,
   Calendar,
   Clock,
-  CloudSun,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/auth';
 import { logoutApi } from '@/features/auth/api';
@@ -27,7 +21,6 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({ user, isStudioMode = false }: DashboardHeaderProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDark, setIsDark] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [timeStr, setTimeStr] = useState('18:24');
   const [dateStr, setDateStr] = useState('Thứ Ba, 16/09/2026');
@@ -105,29 +98,8 @@ export default function DashboardHeader({ user, isStudioMode = false }: Dashboar
           </form>
         </div>
 
-        {/* Right Controls: Notifications + Theme + User Pill */}
+        {/* Right Controls: User Profile Pill */}
         <div className="flex items-center justify-end gap-3 shrink-0">
-
-          {/* Bell Notification */}
-          <button
-            type="button"
-            className="relative p-2.5 rounded-2xl bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-gray-50 shadow-2xs transition"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center">
-              3
-            </span>
-          </button>
-
-          {/* Dark / Light Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsDark(!isDark)}
-            className="p-2.5 rounded-2xl bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-gray-50 shadow-2xs transition"
-          >
-            {isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
-          </button>
-
           {/* User Profile Pill */}
           <div className="relative">
             <button
@@ -211,10 +183,6 @@ export default function DashboardHeader({ user, isStudioMode = false }: Dashboar
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-gray-400" />
               <span>{timeStr}</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-blue-50/70 text-blue-700 font-bold border border-blue-100/60 shadow-2xs">
-              <CloudSun className="w-4 h-4 text-blue-500" />
-              <span>Đà Lạt 22°C • Trời quang mây</span>
             </div>
           </div>
         </div>
