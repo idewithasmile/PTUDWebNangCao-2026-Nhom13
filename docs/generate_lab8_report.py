@@ -108,18 +108,40 @@ def create_lab8_report():
         {
             "stt": "5",
             "content": (
-                "Rà soát Dashboard theo đặc tả SRS, phân quyền vai trò (Admin/Author), tích hợp hệ thống Logging và Kiểm thử E2E tự động\n\n"
+                "Xây dựng trang xem danh sách người dùng và tác giả (Admin, Tác giả) kết nối dữ liệu thực tế ASP.NET Core Identity\n\n"
+                "Đã hoàn thành:\n"
+                "- Tầng Backend (.NET 10 Minimal API - Clean Architecture):\n"
+                "  + Xây dựng DTOs (UserSummaryDto, UserStatsSummaryDto, PagedUsersResultDto) chuẩn Clean Architecture.\n"
+                "  + Xây dựng MediatR Query GetUsersQuery và Handler tối ưu: Truy vấn trực tiếp từ bảng AspNetUsers, phân quyền linh hoạt (Admin xem toàn bộ hệ thống; Author xem danh bạ cộng đồng tác giả và đầu bếp công khai).\n"
+                "  + Hỗ trợ bộ lọc đa chiều: Lọc theo vai trò (Admin, Author, Reader), lọc trạng thái (Active/Inactive), tìm kiếm từ khóa (tên hiển thị, username, email) và phân trang chuẩn.\n"
+                "  + Tính toán tự động số lượng bài viết thật đã tạo và đã xuất bản của từng tác giả qua quan hệ bảng Recipes.\n"
+                "  + Xây dựng Command ToggleUserStatusCommand cho phép Quản trị viên khóa/mở khóa tài khoản an toàn (chống Admin tự khóa chính mình).\n"
+                "  + Đăng ký Minimal API Endpoints: GET /api/v1/users và PATCH /api/v1/users/{id}/status có bảo vệ bằng JWT Bearer Token.\n"
+                "- Tầng Frontend (Next.js 14 App Router - Tailwind CSS):\n"
+                "  + Xây dựng userService (src/lib/services/user-service.ts) tích hợp token xác thực tự động.\n"
+                "  + Bổ sung tab 'users' vào DashboardSidebar.tsx và UnifiedDashboardView.tsx: Hiển thị mục 'Quản lý người dùng' kèm badge số lượng cho Admin, hoặc 'Cộng đồng tác giả' cho Author.\n"
+                "  + Xây dựng component DashboardUsersView.tsx hiện đại: Dải 4 thẻ KPI thống kê (Tổng tài khoản, Quản trị viên, Tác giả bài viết, Đang hoạt động), thanh tìm kiếm debounce 250ms, bộ lọc vai trò/trạng thái.\n"
+                "  + Hỗ trợ 2 chế độ hiển thị linh hoạt: Dạng bảng (Table List) chuyên nghiệp và Dạng lưới thẻ (Grid Cards) phong cách tạp chí ẩm thực.\n"
+                "  + Tích hợp Modal xem chi tiết hồ sơ người dùng đầy đủ và Modal xác nhận thay đổi trạng thái an toàn.\n\n"
+                "Chưa hoàn thành: Không."
+            ),
+            "branch": "https://github.com/idewithasmile/PTUDWebNangCao-2026-Nhom13/tree/2312691/NguyenThanhMinh/tuan-8",
+            "progress": "100%"
+        },
+        {
+            "stt": "6",
+            "content": (
+                "Rà soát Dashboard theo đặc tả SRS, tích hợp hệ thống Logging ghi nhật ký hệ thống và Kiểm thử E2E tự động\n\n"
                 "Đã hoàn thành:\n"
                 "- Rà soát đặc tả SRS v1.0.0 cho Dashboard: Phân định rạch ròi vai trò Admin và Author trong DashboardSidebar.tsx và UnifiedDashboardView.tsx. Ẩn hoàn toàn tab Quản lý danh mục đối với tài khoản Author (chỉ tài khoản Admin mới có quyền truy cập theo SRS).\n"
-                "- Tinh gọn mã nguồn Dashboard: Loại bỏ hoàn toàn các view mock và widget không thuộc phạm vi đặc tả (comments, files, jobs, analytics, authors giả lập) để toàn bộ hệ thống kết nối 100% dữ liệu API thật.\n"
-                "- Phối hợp và kiểm chứng tính năng Danh sách người dùng & Hệ thống Logging:\n"
-                "  + Ghi nhận phân công nhóm theo mô hình Vertical Slice: Tính năng Quản lý người dùng (User Management) do thành viên phụ trách Auth/Identity đảm nhiệm.\n"
-                "  + Hệ thống Structured Logging (Serilog, UserLogEnrichmentMiddleware, LoggingBehavior) hoạt động xuyên suốt, tự động ghi nhận CorrelationId, UserId, RequestPath, thời gian thực thi và trạng thái HTTP cho mọi thao tác thêm mới/cập nhật/thay đổi trạng thái công thức và upload ảnh vào file log hàng ngày (backend/src/Presentation/logs/culinaryblog-20261103.log).\n"
+                "- Tinh gọn mã nguồn Dashboard: Loại bỏ hoàn toàn các view mock và widget không thuộc phạm vi đặc tả (comments, files, jobs, analytics, authors giả lập) để toàn bộ hệ thống kết nối 100% dữ liệu API thật từ CSDL PostgreSQL.\n"
+                "- Hệ thống Structured Logging (Serilog, UserLogEnrichmentMiddleware, LoggingBehavior) hoạt động xuyên suốt, tự động ghi nhận CorrelationId, UserId, RequestPath, thời gian thực thi và trạng thái HTTP cho mọi thao tác thêm mới/cập nhật/thay đổi trạng thái công thức, upload ảnh và quản lý người dùng vào file log hàng ngày (backend/src/Presentation/logs/culinaryblog-20261103.log).\n"
                 "- Xây dựng và thực thi thành công 100% bộ kịch bản kiểm thử tự động Playwright E2E:\n"
                 "  + test_dashboard_clean_ui.mjs: Kiểm thử giao diện Dashboard sạch, phân quyền Author/Admin.\n"
                 "  + test_mockup_fidelity.mjs: Kiểm thử độ trung thực giao diện tạo công thức theo mockup.\n"
                 "  + test_edit_page.mjs: Kiểm thử giao diện trang chỉnh sửa đồng nhất.\n"
-                "  + test_inline_preview.mjs: Kiểm thử toàn diện quy trình xem trước trong Dashboard, quay lại chỉnh sửa, lưu nháp, lưu trữ và xuất bản công thức (Đạt 100% PASS trên Chromium).\n\n"
+                "  + test_inline_preview.mjs: Kiểm thử toàn diện quy trình xem trước trong Dashboard, quay lại chỉnh sửa, lưu nháp, lưu trữ và xuất bản công thức.\n"
+                "  + test_dashboard_users_management.mjs: Kiểm thử toàn diện trang quản lý người dùng, tìm kiếm, lọc vai trò, chuyển đổi Table/Grid và mở modal chi tiết (Đạt 100% PASS trên Chromium).\n\n"
                 "Chưa hoàn thành: Không."
             ),
             "branch": "https://github.com/idewithasmile/PTUDWebNangCao-2026-Nhom13/tree/2312691/NguyenThanhMinh/tuan-8",
@@ -128,7 +150,7 @@ def create_lab8_report():
     ]
 
     # Template table has 7 rows (1 header + 6 rows).
-    # We will populate the first 5 rows with tasks, and remove row 6 and row 7.
+    # We will populate all 6 rows with tasks.
     for i, task in enumerate(tasks):
         row = table.rows[i + 1]
         row.cells[0].text = task["stt"]
@@ -136,7 +158,7 @@ def create_lab8_report():
         row.cells[2].text = task["branch"]
         row.cells[3].text = task["progress"]
 
-    # Xóa hàng thừa (hàng 6 và 7 ban đầu)
+    # Xóa hàng thừa nếu có
     while len(table.rows) > len(tasks) + 1:
         tr = table.rows[-1]._tr
         tr.getparent().remove(tr)
