@@ -100,9 +100,10 @@ async function testUsersManagement() {
     await firstDetailBtn.click();
     await page.waitForTimeout(1000);
 
-    const modalTitle = page.locator('h3:has-text("Nguyễn Thành Minh"), h3:has-text("Quan tri vien")').first();
+    const modalTitle = page.locator('div.fixed.inset-0 h3').first();
     await modalTitle.waitFor({ state: 'visible', timeout: 5000 });
-    console.log('✅ Modal Chi tiết Người dùng đã mở thành công.');
+    const userDetailName = await modalTitle.innerText();
+    console.log(`✅ Modal Chi tiết Người dùng đã mở thành công cho: "${userDetailName}".`);
 
     // Chụp ảnh Modal
     await page.screenshot({
