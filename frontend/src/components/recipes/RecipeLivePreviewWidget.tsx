@@ -62,6 +62,7 @@ export interface RecipeLivePreviewWidgetProps {
   onOpenFullDashboardPreview: () => void;
   onOpenNewPagePreview: () => void;
   onSwitchToStudio?: () => void;
+  onRequestApplyServings?: (targetServings: number, multiplier: number) => void;
 }
 
 const difficultyMeta: Record<number, { label: string; color: string }> = {
@@ -86,6 +87,7 @@ export default function RecipeLivePreviewWidget({
   onOpenFullDashboardPreview,
   onOpenNewPagePreview,
   onSwitchToStudio,
+  onRequestApplyServings,
 }: RecipeLivePreviewWidgetProps) {
   // 1. Chế độ xem mini: 'card' (Thẻ bìa) | 'cooking' (Nấu ăn từng bước) | 'nutrition' (Dinh dưỡng) | 'mobile' (Mô phỏng Mobile)
   const [activeTab, setActiveTab] = useState<'card' | 'cooking' | 'nutrition' | 'mobile'>('card');
@@ -400,6 +402,24 @@ export default function RecipeLivePreviewWidget({
                 </button>
               </div>
             </div>
+
+            {/* Banner gợi ý áp dụng khẩu phần mới vào bài viết nếu khác khẩu phần gốc */}
+            {interactiveServings !== baseServings && onRequestApplyServings && (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 text-xs animate-fade-in shadow-2xs">
+                <div className="text-[11px] text-orange-950 font-medium leading-tight">
+                  Xem thử: <strong className="font-bold text-orange-700">{interactiveServings} người</strong> (x{scaleMultiplier.toFixed(1)})
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRequestApplyServings(interactiveServings, scaleMultiplier)}
+                  className="px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-bold transition shadow-xs shrink-0 active:scale-95 flex items-center gap-1"
+                  title="Mở bảng xác nhận điều chỉnh khẩu phần công thức"
+                >
+                  <span>Áp dụng vào bài</span>
+                  <SlidersHorizontal className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            )}
 
             {/* Danh sách nguyên liệu tự động nhân tỷ lệ theo khẩu phần tương tác */}
             <div className="space-y-2">

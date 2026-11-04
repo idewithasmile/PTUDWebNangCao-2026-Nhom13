@@ -58,6 +58,7 @@ import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeLivePreviewWidget from '@/components/recipes/RecipeLivePreviewWidget';
+import ServingsAdjustmentModal from '@/components/recipes/ServingsAdjustmentModal';
 
 export interface GalleryFileItem {
   id: string;
@@ -146,6 +147,7 @@ export default function RecipeForm({
     control,
     handleSubmit,
     setValue,
+    getValues,
     watch,
     formState: { errors },
   } = useForm<RecipeFormData>({
@@ -569,8 +571,99 @@ export default function RecipeForm({
     }
   };
 
+  // Quản lý Modal điều chỉnh khẩu phần công thức
+  const [servingsModalState, setServingsModalState] = useState<{
+    isOpen: boolean;
+    targetServings: number;
+    multiplier: number;
+  }>({
+    isOpen: false,
+    targetServings: 2,
+    multiplier: 1,
+  });
+
+  const [adjustmentNotice, setAdjustmentNotice] = useState<string | null>(null);
+
+  const handleOpenServingsModal = (targetServings: number, multiplier: number) => {
+    setServingsModalState({
+      isOpen: true,
+      targetServings,
+      multiplier,
+    });
+  };
+
+  const handleConfirmServingsAdjustment = (options: {
+    targetServings: number;
+    multiplier: number;
+    updateIngredients: boolean;
+    updateNutrition: boolean;
+    updateSteps: boolean;
+    modifiedSteps?: Array<{
+      title?: string;
+      description: string;
+      timerMinutes?: number | null;
+      imageUrl?: string | null;
+    }>;
+  }) => {
+    // 1. Cập nhật số khẩu phần chính trên form
+    setValue('servings', options.targetServings, { shouldDirty: true, shouldValidate: true });
+
+    // 2. Cập nhật Bảng nguyên liệu
+    if (options.updateIngredients) {
+      const currentIngs = getValues('ingredients') || [];
+      const scaled = currentIngs.map((ing) => {
+        if (ing.quantity !== null && ing.quantity !== undefined && !isNaN(Number(ing.quantity))) {
+          const raw = Number(ing.quantity) * options.multiplier;
+          const rounded = raw % 1 === 0 ? raw : Number(raw.toFixed(1));
+          return { ...ing, quantity: rounded };
+        }
+        return ing;
+      });
+      setValue('ingredients', scaled, { shouldDirty: true, shouldValidate: true });
+    }
+
+    // 3. Cập nhật Dinh dưỡng
+    if (options.updateNutrition) {
+      const currentCal = getValues('calories');
+      if (currentCal) setValue('calories', Math.round(Number(currentCal) * options.multiplier), { shouldDirty: true });
+      const currentPro = getValues('protein');
+      if (currentPro) setValue('protein', Math.round(Number(currentPro) * options.multiplier), { shouldDirty: true });
+      const currentCarbs = getValues('carbs');
+      if (currentCarbs) setValue('carbs', Math.round(Number(currentCarbs) * options.multiplier), { shouldDirty: true });
+      const currentFat = getValues('fat');
+      if (currentFat) setValue('fat', Math.round(Number(currentFat) * options.multiplier), { shouldDirty: true });
+    }
+
+    // 4. Cập nhật Các bước chế biến (nếu người dùng chọn đồng bộ câu chữ)
+    if (options.updateSteps && options.modifiedSteps) {
+      setValue('steps', options.modifiedSteps, { shouldDirty: true, shouldValidate: true });
+    }
+
+    setAdjustmentNotice(
+      `Đã cập nhật công thức theo khẩu phần ${options.targetServings} người (hệ số x${options.multiplier.toFixed(1)}) thành công!`
+    );
+    setTimeout(() => setAdjustmentNotice(null), 6000);
+  };
+
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+      {/* Thông báo điều chỉnh khẩu phần thành công */}
+      {adjustmentNotice && (
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 shadow-xs animate-fade-in">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+          <div className="flex-1">
+            <h4 className="font-bold text-emerald-950">Khẩu phần đã được điều chỉnh</h4>
+            <p className="mt-0.5 leading-relaxed">{adjustmentNotice}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAdjustmentNotice(null)}
+            className="text-emerald-500 hover:text-emerald-700 font-bold p-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* 1. THÔNG BÁO LỖI SERVER HOẶC UPLOAD (NẾU CÓ) */}
       {serverError && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-xs animate-fade-in">
@@ -1765,6 +1858,7 @@ export default function RecipeForm({
             }}
             onOpenNewPagePreview={handleOpenNewPagePreview}
             onSwitchToStudio={onSwitchToStudio}
+            onRequestApplyServings={handleOpenServingsModal}
           />
         </div>
       </div>
@@ -1844,6 +1938,24 @@ export default function RecipeForm({
       </div>
     </>
   )}
+
+      {/* 5. MODAL XÁC NHẬN ĐIỀU CHỈNH KHẨU PHẦN CÔNG THỨC */}
+      <ServingsAdjustmentModal
+        isOpen={servingsModalState.isOpen}
+        onClose={() => setServingsModalState((prev) => ({ ...prev, isOpen: false }))}
+        baseServings={watchedServings || 2}
+        targetServings={servingsModalState.targetServings}
+        multiplier={servingsModalState.multiplier}
+        ingredients={watchedIngredients || []}
+        steps={watchedSteps || []}
+        nutrition={{
+          calories: watchedCalories,
+          protein: watchedProtein,
+          carbohydrates: watchedCarbs,
+          fat: watchedFat,
+        }}
+        onConfirm={handleConfirmServingsAdjustment}
+      />
     </form>
   );
 }
