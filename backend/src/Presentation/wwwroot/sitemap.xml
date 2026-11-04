@@ -17,13 +17,13 @@
   </url>
   <url>
     <loc>http://localhost:3000/categories/ghe-anh-thi-570</loc>
-    <lastmod>2026-10-21</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>http://localhost:3000/categories/pha-ba-giay-561</loc>
-    <lastmod>2026-10-07</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -134,6 +134,48 @@
     <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/banh-mi-chao-xiu-mai-sot-ca-chua-ha-noi</loc>
+    <lastmod>2026-11-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/bo-xao-luc-lac-rau-cu-tuoi-ngon-1793072944913</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/bo-bit-tet-sot-tieu-den-chuan-vi-e2e-1793072926647</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/banh-mi-kep-thit-suon-nuong-ngu-vi</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/pho-bo-tai-lan-chuan-vi-ha-thanh</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/bo-bit-tet-sot-tieu-den-chuan-vi-e2e-1793071608343</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/recipes/bo-bit-tet-sot-tieu-den-chuan-vi-e2e-1793071547332</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>http://localhost:3000/recipes/thit-heo-kho-tau-trung-cut-423468497</loc>

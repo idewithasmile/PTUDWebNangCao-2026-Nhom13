@@ -317,6 +317,7 @@ v1.MapGroup("/recipes").MapRecipesEndpoints();
 v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/files").MapFilesEndpoints();
 v1.MapGroup("/dashboard").MapDashboardEndpoints();
+v1.MapGroup("/users").MapUsersEndpoints();
 
 // Health Check Endpoints (/health, /health/live, /health/ready)
 app.MapHealthChecks();

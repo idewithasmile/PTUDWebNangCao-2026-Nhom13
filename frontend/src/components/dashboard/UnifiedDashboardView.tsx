@@ -12,6 +12,7 @@ import DashboardCategoriesView from './views/DashboardCategoriesView';
 import DashboardRecipeCreateView from './views/DashboardRecipeCreateView';
 import DashboardRecipeEditView from './views/DashboardRecipeEditView';
 import DashboardProfileSettingsView from './views/DashboardProfileSettingsView';
+import DashboardUsersView from './views/DashboardUsersView';
 
 interface UnifiedDashboardViewProps {
   user: UserProfile;
@@ -127,6 +128,10 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         )}
 
         {activeTab === 'categories' && isAdmin && <DashboardCategoriesView />}
+
+        {activeTab === 'users' && (
+          <DashboardUsersView user={user} isAdmin={isAdmin} />
+        )}
 
         {(activeTab === 'settings' || activeTab === 'profile') && (
           <DashboardProfileSettingsView currentUser={user} />

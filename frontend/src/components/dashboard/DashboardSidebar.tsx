@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
   FolderTree,
   User,
+  Users,
   ChefHat,
   ChevronDown,
   Plus,
@@ -31,6 +32,7 @@ export type DashboardTab =
   | 'recipes-create'
   | 'recipes-edit'
   | 'categories'
+  | 'users'
   | 'profile'
   | 'settings';
 
@@ -257,7 +259,28 @@ export default function DashboardSidebar({
             </button>
           )}
 
-          {/* 2 & 5. Hồ sơ cá nhân (/profile - Độc lập, không có mũi tên >) */}
+          {/* 4. Quản lý người dùng (Admin) hoặc Cộng đồng tác giả (Author) */}
+          <button
+            type="button"
+            onClick={() => onSelectTab('users')}
+            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
+              activeTab === 'users'
+                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Users className="w-4 h-4 shrink-0" />
+              <span>{isAdmin ? 'Quản lý người dùng' : 'Cộng đồng tác giả'}</span>
+            </div>
+            {isAdmin && stats?.totalAuthors !== null && stats?.totalAuthors !== undefined && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-purple-300 border border-slate-700/50">
+                {stats.totalAuthors}
+              </span>
+            )}
+          </button>
+
+          {/* 5. Hồ sơ cá nhân (/profile - Độc lập, không có mũi tên >) */}
           <button
             type="button"
             onClick={() => onSelectTab('profile')}
