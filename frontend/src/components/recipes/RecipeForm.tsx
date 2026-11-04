@@ -57,6 +57,7 @@ import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
 import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
 import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
+import RecipeLivePreviewWidget from '@/components/recipes/RecipeLivePreviewWidget';
 
 export interface GalleryFileItem {
   id: string;
@@ -1740,133 +1741,31 @@ export default function RecipeForm({
             CỘT PHẢI (WIDGET XEM TRƯỚC CÔNG THỨC - LIVE PREVIEW CARD DÍNH NỔI STICKY)
             ========================================================================= */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
-          {/* Card Live Preview Container */}
-          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden">
-            {/* Header Thẻ Xem trước */}
-            <div className="p-4 border-b border-stone-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-orange-500 font-bold">🍳</span>
-                <h4 className="text-sm font-bold text-stone-900">Xem trước công thức</h4>
-              </div>
-              <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                Live Preview
-              </span>
-            </div>
-
-            {/* 1. Ảnh món ăn lớn có Badge danh mục nổi trên ảnh */}
-            <div className="relative aspect-16/10 w-full overflow-hidden bg-stone-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={resolveMediaUrl(effectiveHeroImage)}
-                alt={watchedTitle || 'Preview'}
-                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-              />
-              {/* Badge danh mục góc trái trên ảnh */}
-              <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs text-stone-800 text-[11px] font-bold shadow-xs">
-                <span>🥗</span>
-                <span>{categoryDisplayName}</span>
-              </div>
-            </div>
-
-            {/* 2. Thân card thông tin chi tiết */}
-            <div className="p-4 sm:p-5 space-y-3.5">
-              {/* Tiêu đề công thức cập nhật realtime */}
-              <h3 className="text-base font-bold text-stone-900 line-clamp-2 leading-snug">
-                {watchedTitle?.trim() || 'Tên công thức sẽ hiển thị ở đây'}
-              </h3>
-
-              {/* Mô tả ngắn cập nhật realtime */}
-              <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
-                {watchedDescription?.trim() || 'Mô tả ngắn về món ăn sẽ xuất hiện tại đây...'}
-              </p>
-
-              {/* Hàng 3 thông số nhanh: Thời gian | Độ khó | Khẩu phần */}
-              <div className="flex items-center justify-between py-2 border-y border-stone-100 text-xs text-stone-600 font-medium">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-stone-400" />
-                  <span>{totalTimeMinutes} phút</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ChefHat className="w-3.5 h-3.5 text-stone-400" />
-                  <span>{difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-stone-400" />
-                  <span>{watchedServings || 2} người</span>
-                </div>
-              </div>
-
-              {/* Mục Nguyên liệu chính thu nhỏ */}
-              <div className="space-y-2 pt-1">
-                <h5 className="text-xs font-bold text-stone-800">Nguyên liệu chính</h5>
-                <div className="space-y-2">
-                  {validIngredients.slice(0, 3).map((ing, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                          {ing.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-stone-800 truncate">{ing.name}</span>
-                      </div>
-                      <span className="text-stone-400 font-medium text-[11px] shrink-0">
-                        {ing.quantity ? `${ing.quantity} ${ing.unit || ''}` : ing.unit || ''}
-                      </span>
-                    </div>
-                  ))}
-                  {validIngredients.length === 0 && (
-                    <p className="text-xs text-stone-400 italic">Chưa nhập nguyên liệu...</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Link Xem chi tiết -> mở preview Dashboard hoặc tab riêng */}
-              <div className="pt-2 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewMode('preview');
-                    setActiveStep(4);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="text-orange-600 hover:text-orange-700 font-bold text-xs inline-flex items-center gap-1 transition group"
-                  title="Xem trước trực quan ngay trong Dashboard"
-                >
-                  <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span>Xem trước Dashboard</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleOpenNewPagePreview}
-                  className="text-stone-400 hover:text-stone-600 text-[11px] inline-flex items-center gap-1 transition"
-                  title="Mở xem trước ở tab riêng biệt (/recipes/preview)"
-                >
-                  <span>Tab riêng</span>
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Banner chuyển sang Recipe Studio (nếu có callback) */}
-          {onSwitchToStudio && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/70 flex items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-                <div>
-                  <h5 className="text-xs font-bold text-blue-950">Recipe Studio</h5>
-                  <p className="text-[10px] text-blue-700/80">Biên tập nâng cao 5 tab</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={onSwitchToStudio}
-                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs shrink-0 active:scale-95"
-              >
-                Mở Studio 🎛️
-              </button>
-            </div>
-          )}
+          <RecipeLivePreviewWidget
+            title={watchedTitle}
+            description={watchedDescription}
+            categoryName={categoryDisplayName}
+            difficulty={watchedDifficulty}
+            prepTimeMinutes={watchedPrepTime}
+            cookTimeMinutes={watchedCookTime}
+            servings={watchedServings}
+            heroImageUrl={effectiveHeroImage}
+            ingredients={watchedIngredients}
+            steps={watchedSteps}
+            nutrition={{
+              calories: watchedCalories,
+              protein: watchedProtein,
+              carbohydrates: watchedCarbs,
+              fat: watchedFat,
+            }}
+            onOpenFullDashboardPreview={() => {
+              setViewMode('preview');
+              setActiveStep(4);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenNewPagePreview={handleOpenNewPagePreview}
+            onSwitchToStudio={onSwitchToStudio}
+          />
         </div>
       </div>
 
