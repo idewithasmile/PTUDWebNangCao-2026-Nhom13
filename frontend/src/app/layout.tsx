@@ -19,9 +19,9 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={inter.variable}>
+    <html lang="vi" className={inter.variable} suppressHydrationWarning>
       {/* Áp dụng class phông chữ Inter vào thẻ body cùng flex column để sticky footer */}
-      <body className={`${inter.className} min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-orange-500 selection:text-white`}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 antialiased selection:bg-orange-500 selection:text-white transition-colors duration-200`}>
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

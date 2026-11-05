@@ -49,7 +49,22 @@ export const recipeService = {
 
     const queryString = qs.toString();
     const endpoint = queryString ? `/recipes?${queryString}` : '/recipes';
-    return apiClient<PagedResult<RecipeSummaryDto>>(endpoint, withAuth());
+    try {
+      return await apiClient<PagedResult<RecipeSummaryDto>>(endpoint, withAuth());
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[recipeService] getRecipes fallback due to network/server offline:', err);
+      }
+      return {
+        items: [],
+        totalCount: 0,
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 12,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+    }
   },
 
   /**
@@ -63,7 +78,22 @@ export const recipeService = {
     qs.set('page', String(params.page ?? 1));
     qs.set('pageSize', String(params.pageSize ?? 10));
 
-    return apiClient<PagedResult<RecipeSummaryDto>>(`/recipes/search?${qs.toString()}`, withAuth());
+    try {
+      return await apiClient<PagedResult<RecipeSummaryDto>>(`/recipes/search?${qs.toString()}`, withAuth());
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[recipeService] searchRecipes fallback due to offline:', err);
+      }
+      return {
+        items: [],
+        totalCount: 0,
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 10,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+    }
   },
 
   /**

@@ -328,7 +328,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
       <div className="overflow-x-auto rounded-2xl border border-gray-100">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-gray-50/75 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+            <tr className="bg-gray-50/75 dark:bg-zinc-800/60 border-b border-gray-100 dark:border-zinc-800 text-[11px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
               <th className="py-3 px-4">Tiêu đề công thức</th>
               <th className="py-3 px-4">Danh mục</th>
               <th className="py-3 px-4">Tác giả</th>

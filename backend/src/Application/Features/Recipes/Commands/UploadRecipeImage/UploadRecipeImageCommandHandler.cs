@@ -12,6 +12,7 @@ namespace CulinaryBlog.Application.Features.Recipes.Commands.UploadRecipeImage;
 /// recipes/{recipeId}/{uuid}.{ext}. Ảnh đầu tiên tự IsPrimary=true
 /// (logic nằm trong Recipe.AddImage — Core Domain).
 /// Kích hoạt FR-JOB-002: Image Resize & Thumbnail Generation Job qua IBackgroundJobService.
+/// Kiểm tra hạn mức lưu trữ (MaxImagesPerRecipe và Storage Quota) trước khi tải lên.
 /// </summary>
 public class UploadRecipeImageCommandHandler(
     IRecipeRepository recipeRepository,
@@ -19,7 +20,8 @@ public class UploadRecipeImageCommandHandler(
     ICurrentUser currentUser,
     IFileStorageService fileStorage,
     ICacheService cacheService,
-    IBackgroundJobService? jobService = null)
+    IBackgroundJobService? jobService = null,
+    IStorageQuotaService? storageQuotaService = null)
     : IRequestHandler<UploadRecipeImageCommand, RecipeImageDto>
 {
     public async Task<RecipeImageDto> Handle(UploadRecipeImageCommand request, CancellationToken cancellationToken)
@@ -39,6 +41,21 @@ public class UploadRecipeImageCommandHandler(
 
         if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền thêm ảnh vào công thức của người khác.");
+
+        // Kiểm tra hạn mức số lượng ảnh cho công thức (tối đa 10 ảnh)
+        if (recipe.Images.Count >= 10)
+        {
+            throw new AppException("RECIPE_IMAGE_LIMIT_REACHED", "Công thức đã đạt giới hạn tối đa 10 hình ảnh.", 400);
+        }
+
+        if (storageQuotaService != null)
+        {
+            await storageQuotaService.EnsureRecipeImageLimitNotExceededAsync(request.RecipeId, cancellationToken);
+            if (!string.IsNullOrEmpty(currentUser.UserId))
+            {
+                await storageQuotaService.EnsureUserStorageQuotaNotExceededAsync(currentUser.UserId, request.Content.Length, cancellationToken);
+            }
+        }
 
         var ext = Path.GetExtension(request.FileName).ToLowerInvariant();
         var objectName = $"recipes/{request.RecipeId}/{Guid.NewGuid()}{ext}";

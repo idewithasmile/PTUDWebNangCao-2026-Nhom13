@@ -161,6 +161,60 @@ public class MinioFileStorageService : IFileStorageService
         }
     }
 
+    public async Task<IReadOnlyList<string>> ListAllFilesAsync(string? folder = null, CancellationToken ct = default)
+    {
+        await EnsureBucketExistsAsync(ct);
+        var list = new List<string>();
+        var args = new ListObjectsArgs()
+            .WithBucket(_bucket)
+            .WithRecursive(true);
+
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            var prefix = folder.Trim().TrimStart('/');
+            if (!prefix.EndsWith('/')) prefix += "/";
+            args = args.WithPrefix(prefix);
+        }
+
+        try
+        {
+            var observable = _client.ListObjectsEnumAsync(args, ct);
+            await foreach (var item in observable.WithCancellation(ct))
+            {
+                if (!item.IsDir && !string.IsNullOrWhiteSpace(item.Key))
+                {
+                    list.Add(item.Key);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Lỗi khi quét danh sách tệp tin trên MinIO bucket {Bucket}", _bucket);
+        }
+
+        return list;
+    }
+
+    public async Task<DateTimeOffset?> GetLastModifiedAsync(string fileUrl, CancellationToken ct = default)
+    {
+        var objectName = ExtractObjectName(fileUrl);
+        if (string.IsNullOrWhiteSpace(objectName)) return null;
+
+        try
+        {
+            var statArgs = new StatObjectArgs()
+                .WithBucket(_bucket)
+                .WithObject(objectName);
+            var stat = await _client.StatObjectAsync(statArgs, ct);
+            return stat.LastModified;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Không thể lấy metadata StatObject cho {Object}", objectName);
+            return null;
+        }
+    }
+
     private string ResolveObjectName(string fileName, string? folder, string contentType)
     {
         var sanitized = (fileName ?? string.Empty).Trim().Replace('\\', '/').TrimStart('/');

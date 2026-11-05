@@ -17,17 +17,19 @@ import {
 } from 'lucide-react';
 import { CategoryDto } from '@/lib/types/category';
 import CategoryCard from '@/components/categories/CategoryCard';
+import OfflineBanner from '@/components/common/OfflineBanner';
 import { useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
 
 interface CategoriesClientViewProps {
   initialCategories: CategoryDto[];
+  isOffline?: boolean;
 }
 
 type SortOption = 'popular' | 'name_asc' | 'name_desc' | 'default';
 type FilterTab = 'all' | 'has_recipes' | 'popular';
 
-export default function CategoriesClientView({ initialCategories }: CategoriesClientViewProps) {
+export default function CategoriesClientView({ initialCategories, isOffline }: CategoriesClientViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
@@ -98,14 +100,19 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-zinc-950/50 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 transition-colors">
+      {/* 0. Fallback thông báo Backend Offline */}
+      {isOffline && (
+        <OfflineBanner message="Hệ thống máy chủ đang khởi động hoặc tạm thời gián đoạn kết nối. Vui lòng bấm F5 để tải lại." />
+      )}
+
       {/* 1. Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
-        <Link href="/" className="hover:text-orange-600 transition-colors">
+      <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
+        <Link href="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
           Trang chủ
         </Link>
         <span>/</span>
-        <span className="font-semibold text-gray-900">Danh mục món ăn</span>
+        <span className="font-semibold text-gray-900 dark:text-zinc-100">Danh mục món ăn</span>
       </nav>
 
       {/* 2. Hero Section */}
@@ -132,37 +139,37 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
       {/* 3. Thẻ Thông Số Thống Kê Tổng Quan (Stats Bar) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Metric 1 */}
-        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-gray-100 shadow-sm transition hover:shadow-md">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600 shrink-0">
+        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-sm transition hover:shadow-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 shrink-0">
             <FolderOpen className="h-6 w-6" />
           </div>
           <div>
-            <div className="text-2xl font-black text-gray-900">{stats.totalCategories}</div>
-            <div className="text-xs font-medium text-gray-500">Danh mục phân loại</div>
+            <div className="text-2xl font-black text-gray-900 dark:text-zinc-100">{stats.totalCategories}</div>
+            <div className="text-xs font-medium text-gray-500 dark:text-zinc-400">Danh mục phân loại</div>
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-gray-100 shadow-sm transition hover:shadow-md">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shrink-0">
+        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-sm transition hover:shadow-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shrink-0">
             <UtensilsCrossed className="h-6 w-6" />
           </div>
           <div>
-            <div className="text-2xl font-black text-gray-900">{stats.totalRecipes}</div>
-            <div className="text-xs font-medium text-gray-500">Công thức đã xuất bản</div>
+            <div className="text-2xl font-black text-gray-900 dark:text-zinc-100">{stats.totalRecipes}</div>
+            <div className="text-xs font-medium text-gray-500 dark:text-zinc-400">Công thức đã xuất bản</div>
           </div>
         </div>
 
         {/* Metric 3 */}
-        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-gray-100 shadow-sm transition hover:shadow-md">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
+        <div className="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-sm transition hover:shadow-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
             <TrendingUp className="h-6 w-6" />
           </div>
           <div className="truncate">
-            <div className="text-lg font-bold text-gray-900 truncate" title={stats.topCategoryName}>
+            <div className="text-lg font-bold text-gray-900 dark:text-zinc-100 truncate" title={stats.topCategoryName}>
               {stats.topCategoryName}
             </div>
-            <div className="text-xs font-medium text-gray-500">
+            <div className="text-xs font-medium text-gray-500 dark:text-zinc-400">
               Nhiều món nhất ({stats.topCategoryCount} công thức)
             </div>
           </div>
@@ -171,9 +178,9 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
 
       {/* 4. Thanh Công Cụ Dành Cho Quản Trị Viên (Admin Action Bar) */}
       {isAdmin && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 shadow-sm">
           <div className="flex items-center gap-2.5">
-            <ShieldCheck className="h-5 w-5 text-amber-700 shrink-0" />
+            <ShieldCheck className="h-5 w-5 text-amber-700 dark:text-amber-400 shrink-0" />
             <div className="text-sm font-semibold">
               Khu vực Quản trị viên: Quản lý, tạo mới và sắp xếp danh mục món ăn
             </div>
@@ -189,23 +196,23 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
       )}
 
       {/* 5. Bộ Lọc Tìm Kiếm & Sắp Xếp Danh Mục */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Ô tìm kiếm danh mục thời gian thực */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm kiếm danh mục theo tên hoặc mô tả (ví dụ: Món Á, Tráng miệng, Khai vị...)"
-              className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-10 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+              className="w-full rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 py-2.5 pl-10 pr-10 text-sm text-gray-800 dark:text-zinc-100 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-950"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600"
+                className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
                 title="Xóa tìm kiếm"
               >
                 <X className="h-4 w-4" />
@@ -216,11 +223,11 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
           {/* Sắp xếp danh mục */}
           <div className="flex items-center gap-2 shrink-0">
             <SlidersHorizontal className="h-4 w-4 text-orange-500" />
-            <span className="text-xs text-gray-500 font-medium">Sắp xếp:</span>
+            <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Sắp xếp:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-800 outline-none focus:border-orange-500"
+              className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs font-medium text-gray-800 dark:text-zinc-200 outline-none focus:border-orange-500"
             >
               <option value="popular">Nhiều công thức nhất (Phổ biến)</option>
               <option value="name_asc">Tên danh mục: A → Z</option>
@@ -231,16 +238,16 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
         </div>
 
         {/* Tabs bộ lọc nhanh */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-50 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-50 dark:border-zinc-800/80 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500 font-medium">Bộ lọc nhanh:</span>
+            <span className="text-gray-500 dark:text-zinc-400 font-medium">Bộ lọc nhanh:</span>
             <button
               type="button"
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1.5 rounded-lg font-semibold transition ${
                 activeTab === 'all'
                   ? 'bg-orange-500 text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
               Tất cả ({initialCategories.length})
@@ -251,7 +258,7 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
               className={`px-3 py-1.5 rounded-lg font-semibold transition ${
                 activeTab === 'has_recipes'
                   ? 'bg-orange-500 text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
               Đang có công thức
@@ -262,29 +269,29 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
               className={`px-3 py-1.5 rounded-lg font-semibold transition ${
                 activeTab === 'popular'
                   ? 'bg-orange-500 text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
               }`}
             >
               Phổ biến (≥ 3 món)
             </button>
           </div>
 
-          <div className="text-gray-500 font-medium">
-            Hiển thị <strong className="text-gray-900">{filteredCategories.length}</strong> / {initialCategories.length} danh mục
+          <div className="text-gray-500 dark:text-zinc-400 font-medium">
+            Hiển thị <strong className="text-gray-900 dark:text-zinc-100">{filteredCategories.length}</strong> / {initialCategories.length} danh mục
           </div>
         </div>
       </div>
 
       {/* 6. Lưới Danh Mục (Category Grid) */}
       {filteredCategories.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-200 p-8 max-w-lg mx-auto space-y-4">
-          <ChefHat className="w-16 h-16 text-gray-300 mx-auto" />
-          <h3 className="text-lg font-bold text-gray-800">
+        <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-gray-200 dark:border-zinc-800 p-8 max-w-lg mx-auto space-y-4">
+          <ChefHat className="w-16 h-16 text-gray-300 dark:text-zinc-600 mx-auto" />
+          <h3 className="text-lg font-bold text-gray-800 dark:text-zinc-200">
             {searchTerm
               ? `Không tìm thấy danh mục nào phù hợp với "${searchTerm}"`
               : 'Chưa có danh mục nào phù hợp với bộ lọc'}
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
             Thử kiểm tra lại chính tả hoặc nhấn nút bên dưới để khôi phục lại danh sách đầy đủ.
           </p>
           <button
@@ -304,12 +311,12 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
       )}
 
       {/* 7. Khối Khám Phá Thêm Cuối Trang (Bottom CTA) */}
-      <div className="rounded-3xl bg-white border border-gray-100 p-8 sm:p-10 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-8 sm:p-10 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-zinc-100">
             Bạn chưa tìm thấy phong cách món ăn mong muốn?
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
             Hãy khám phá toàn bộ kho công thức nấu ăn hoặc chia sẻ ngay công thức tuyệt chiêu của bạn.
           </p>
         </div>
@@ -323,7 +330,7 @@ export default function CategoriesClientView({ initialCategories }: CategoriesCl
           </Link>
           <Link
             href="/recipes/create"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-800 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
           >
             <ChefHat className="h-4 w-4" />
             <span>Đăng công thức mới</span>

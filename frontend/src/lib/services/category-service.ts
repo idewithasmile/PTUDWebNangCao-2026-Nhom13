@@ -18,6 +18,21 @@ export const categoryService = {
   },
 
   /**
+   * Lấy toàn bộ danh sách danh mục an toàn trong SSR (Graceful fallback khi backend offline)
+   */
+  async getCategoriesSafe(init?: RequestInit): Promise<{ categories: CategoryDto[]; isOffline: boolean }> {
+    try {
+      const categories = await this.getCategories(init);
+      return { categories: categories ?? [], isOffline: false };
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[categoryService] getCategoriesSafe fallback to offline:', err);
+      }
+      return { categories: [], isOffline: true };
+    }
+  },
+
+  /**
    * Lấy chi tiết danh mục theo Slug kèm công thức phân trang
    */
   async getCategoryBySlug(
@@ -49,18 +64,21 @@ export const categoryService = {
   /**
    * Cập nhật danh mục (Admin - bảo toàn Slug & Concurrency)
    */
-  async updateCategory(id: string, data: UpdateCategoryInput): Promise<CategoryDto> {
-    return apiClient<CategoryDto>(`/categories/${id}`, {
+  async updateCategory(
+    id: string,
+    data: UpdateCategoryInput
+  ): Promise<CategoryDto> {
+    return apiClient<CategoryDto>(`/categories/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
 
   /**
-   * Xóa mềm danh mục (Admin - cấm xóa nếu còn recipes)
+   * Xóa mềm danh mục (Admin)
    */
   async deleteCategory(id: string): Promise<void> {
-    return apiClient<void>(`/categories/${id}`, {
+    return apiClient<void>(`/categories/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
   },
