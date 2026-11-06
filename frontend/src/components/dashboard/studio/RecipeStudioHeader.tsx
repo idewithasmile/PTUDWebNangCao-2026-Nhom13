@@ -2,23 +2,28 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { RecipeDetailDto, RecipeStatus } from '@/lib/types/recipe';
+import type { RecipeDetailDto } from '@/lib/types/recipe';
 import type { DashboardTab } from '../DashboardSidebar';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import DeleteRecipeModal from '@/components/recipes/DeleteRecipeModal';
+import { resolveMediaUrl, formatDuration } from '@/lib/utils';
 import {
   ArrowLeft,
+  ChevronRight,
   ExternalLink,
   Globe,
   EyeOff,
   Archive,
   Trash2,
-  AlertTriangle,
   Loader2,
   CheckCircle2,
   AlertCircle,
   FileText,
   Sparkles,
+  ChefHat,
+  FolderTree,
+  Clock,
+  Users,
 } from 'lucide-react';
 
 interface RecipeStudioHeaderProps {
@@ -47,7 +52,6 @@ export default function RecipeStudioHeader({
   isUnpublishing = false,
   isArchiving = false,
   isDeleting = false,
-  viewStyle = 'studio',
   onToggleViewStyle,
 }: RecipeStudioHeaderProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -67,118 +71,188 @@ export default function RecipeStudioHeader({
 
   const isAnyActionPending = isPublishing || isUnpublishing || isArchiving || isDeleting;
 
+  // Lấy ảnh đại diện ẩm thực của chính món ăn làm nền Banner, hoặc fallback ảnh ẩm thực chất lượng cao
+  const primaryImg = recipe.images?.find((img) => img.isPrimary) || recipe.images?.[0];
+  const heroImage = primaryImg
+    ? resolveMediaUrl(primaryImg.originalUrl || primaryImg.mediumUrl || primaryImg.thumbnailUrl)
+    : '/images/dashboard/banner-recipes.jpg';
+
+  const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0);
+
   return (
     <>
-      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs space-y-4">
-        {/* Top: Navigation & Status Badge */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes-mine')}
-              className="inline-flex items-center gap-1.5 font-bold hover:text-blue-600 transition"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại bài viết</span>
-            </button>
-            <span>/</span>
-            <span className="text-gray-400">Recipe Studio</span>
-          </div>
+      {/* 1. HERO BANNER: Recipe Studio 360 mang phong cách ẩm thực cao cấp */}
+      <div className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 shadow-md">
+        {/* Ảnh nền món ăn với hiệu ứng zoom nhẹ khi hover */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-45 scale-105 transition-transform duration-700 hover:scale-100 pointer-events-none"
+          style={{
+            backgroundImage: `url('${heroImage}')`,
+          }}
+        />
 
-          <div className="flex items-center gap-2">
-            {isPublished && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Đã xuất bản</span>
-              </span>
-            )}
-            {isDraft && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Bản nháp</span>
-              </span>
-            )}
-            {isArchived && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
-                <Archive className="w-3.5 h-3.5" />
-                <span>Kho lưu trữ</span>
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Lớp phủ Scrim Gradient 3 tầng chống chói, bảo đảm tương phản text chuẩn WCAG AA */}
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/80 to-stone-900/40 pointer-events-none" />
 
-        {/* Middle: Title & Slug */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight truncate">
-              {recipe.title}
-            </h1>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
-              Đường dẫn công khai: <span className="font-mono text-gray-600">/recipes/{recipe.slug}</span>
-            </p>
-          </div>
-
-          {/* Action Buttons Bar */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Nút Chuyển đổi giữa Chế độ Studio 5 Tab và Soạn thảo 1 trang */}
-            {onToggleViewStyle && (
+        {/* Nội dung chính trên Hero Banner */}
+        <div className="relative z-10 p-6 sm:p-8 space-y-6 text-white">
+          {/* Top Row: Điều hướng Breadcrumbs & Trạng thái bài viết */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-orange-200/90 flex-wrap">
               <button
                 type="button"
-                onClick={onToggleViewStyle}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-bold text-blue-700 transition shadow-2xs"
-                title={viewStyle === 'form' ? 'Chuyển sang chế độ Recipe Studio (5 Tab)' : 'Chuyển sang chế độ Soạn thảo 1 trang'}
+                onClick={() => onSelectTab('recipes')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 transition active:scale-95 shadow-xs font-bold"
               >
-                {viewStyle === 'form' ? (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Mở Studio (5 Tab)</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Xem dạng Soạn thảo 1 trang</span>
-                  </>
-                )}
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay lại danh sách</span>
               </button>
-            )}
-
-            {/* 1. Nút Xem chi tiết ở trang mới */}
-            <Link
-              href={`/recipes/${encodeURIComponent(recipe.slug)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-xs font-bold text-purple-700 transition shadow-2xs"
-              title="Mở xem bài viết ở một trang mới độc lập (/recipes/...)"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-purple-600" />
-              <span>Xem chi tiết ở trang mới ↗</span>
-            </Link>
-
-            {/* 2. Xuất bản hoặc Hủy xuất bản (FR-RCP-005) */}
-            {isPublished ? (
+              <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+              <Link
+                href="/dashboard?tab=overview"
+                className="hover:text-white transition underline-offset-2 hover:underline"
+              >
+                Trang chủ
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
               <button
                 type="button"
-                onClick={() => setIsConfirmingUnpublish(true)}
-                disabled={isAnyActionPending}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+                onClick={() => onSelectTab('recipes')}
+                className="hover:text-white transition underline-offset-2 hover:underline"
               >
-                {isUnpublishing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <EyeOff className="w-3.5 h-3.5" />
-                )}
-                <span>Gỡ xuất bản</span>
+                Công thức
               </button>
-            ) : (
-              <div className="relative group">
+              <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+              <span className="text-white font-semibold line-clamp-1 max-w-[220px]">
+                {recipe.title}
+              </span>
+            </div>
+
+            {/* Cụm huy hiệu trạng thái */}
+            <div className="flex items-center gap-2">
+              {isPublished && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Đã xuất bản</span>
+                </span>
+              )}
+              {isDraft && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Bản nháp</span>
+                </span>
+              )}
+              {isArchived && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-500/30 text-stone-300 border border-stone-500/40 backdrop-blur-md">
+                  <Archive className="w-3.5 h-3.5" />
+                  <span>Kho lưu trữ</span>
+                </span>
+              )}
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-200 border border-orange-500/40 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                <span>Recipe Studio 360°</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Middle: Tiêu đề món ăn & Metadata ẩm thực sắc nét */}
+          <div className="flex items-start gap-4 max-w-4xl pt-1">
+            <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-xl shrink-0 mt-1">
+              <ChefHat className="w-7 h-7 sm:w-8 sm:h-8" />
+            </div>
+            <div className="space-y-2.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm leading-snug">
+                {recipe.title}
+              </h1>
+
+              {/* Các thẻ thông tin ẩm thực chi tiết */}
+              <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                {recipe.categoryName && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-orange-200 font-medium">
+                    <FolderTree className="w-3.5 h-3.5 text-orange-400" />
+                    <span>{recipe.categoryName}</span>
+                  </span>
+                )}
+                {totalTime > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-stone-200 font-medium">
+                    <Clock className="w-3.5 h-3.5 text-orange-400" />
+                    <span>{formatDuration(totalTime)}</span>
+                  </span>
+                )}
+                {recipe.servings > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-stone-200 font-medium">
+                    <Users className="w-3.5 h-3.5 text-orange-400" />
+                    <span>{recipe.servings} khẩu phần</span>
+                  </span>
+                )}
+                {recipe.authorName && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-stone-200 font-medium">
+                    <ChefHat className="w-3.5 h-3.5 text-orange-400" />
+                    <span>{recipe.authorName}</span>
+                  </span>
+                )}
+              </div>
+
+              <p className="text-xs text-stone-400 font-mono">
+                Đường dẫn công khai:{' '}
+                <span className="text-orange-200/90 font-medium">
+                  /recipes/{recipe.slug}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom Toolbar: Cụm thanh công cụ tác vụ chuyên nghiệp (Kính mờ sang trọng) */}
+          <div className="border-t border-white/15 pt-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {onToggleViewStyle && (
+                <button
+                  type="button"
+                  onClick={onToggleViewStyle}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/25 text-xs font-bold text-white transition active:scale-95 shadow-sm"
+                  title="Chuyển sang chế độ Soạn thảo 1 trang"
+                >
+                  <FileText className="w-3.5 h-3.5 text-orange-300" />
+                  <span>Dạng Soạn thảo 1 trang</span>
+                </button>
+              )}
+
+              <Link
+                href={`/recipes/${encodeURIComponent(recipe.slug)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/25 text-xs font-bold text-orange-200 hover:text-white transition active:scale-95 shadow-sm"
+                title="Mở xem bài viết ở một trang mới độc lập (/recipes/...)"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Xem ở trang mới ↗</span>
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {isPublished ? (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingUnpublish(true)}
+                  disabled={isAnyActionPending}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur-md border border-amber-500/40 text-xs font-bold text-amber-200 transition active:scale-95 shadow-sm disabled:opacity-50"
+                >
+                  {isUnpublishing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  )}
+                  <span>Gỡ xuất bản</span>
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={() => setIsConfirmingPublish(true)}
                   disabled={isAnyActionPending || !canPublish}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition ${
+                  className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition active:scale-95 ${
                     canPublish
-                      ? 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
-                      : 'bg-emerald-300 cursor-not-allowed opacity-70'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
+                      : 'bg-emerald-900/60 cursor-not-allowed opacity-60 border border-emerald-700/40'
                   }`}
                 >
                   {isPublishing ? (
@@ -188,65 +262,40 @@ export default function RecipeStudioHeader({
                   )}
                   <span>Xuất bản ngay</span>
                 </button>
+              )}
 
-                {/* Tooltip cảnh báo FR-RCP-005 nếu chưa đủ điều kiện */}
-                {!canPublish && (
-                  <div className="absolute right-0 top-full mt-2 hidden group-hover:block z-50 w-72 p-3 rounded-2xl bg-gray-900 text-white text-[11px] leading-relaxed shadow-xl animate-fade-in">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-bold text-amber-300">Quy tắc xuất bản (FR-RCP-005):</p>
-                        <ul className="mt-1 space-y-1">
-                          <li className={hasIngredients ? 'text-emerald-400 font-medium' : 'text-rose-300'}>
-                            {hasIngredients ? '✓ Đã có nguyên liệu' : '✗ Cần ít nhất 1 nguyên liệu'}
-                          </li>
-                          <li className={hasSteps ? 'text-emerald-400 font-medium' : 'text-rose-300'}>
-                            {hasSteps ? '✓ Đã có bước thực hiện' : '✗ Cần ít nhất 1 bước hướng dẫn'}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              {!isArchived && (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingArchive(true)}
+                  disabled={isAnyActionPending}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-xs font-bold text-stone-300 hover:text-white transition active:scale-95 disabled:opacity-50"
+                  title="Lưu trữ công thức"
+                >
+                  {isArchiving ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Archive className="w-3.5 h-3.5 text-stone-400" />
+                  )}
+                  <span>Lưu trữ</span>
+                </button>
+              )}
 
-            {/* Phân cách trực quan giữa nhóm hành động xuất bản và nhóm lưu trữ/xóa */}
-            <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block" />
-
-            {/* 3. Lưu trữ (FR-RCP-006) */}
-            {!isArchived && (
               <button
                 type="button"
-                onClick={() => setIsConfirmingArchive(true)}
+                onClick={() => setIsConfirmingDelete(true)}
                 disabled={isAnyActionPending}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
-                title="Lưu trữ công thức"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 backdrop-blur-md border border-rose-500/40 text-xs font-bold text-rose-200 transition active:scale-95 disabled:opacity-50"
+                title="Xóa vĩnh viễn công thức"
               >
-                {isArchiving ? (
+                {isDeleting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Archive className="w-3.5 h-3.5 text-gray-500" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 )}
-                <span>Lưu trữ</span>
+                <span>Xóa</span>
               </button>
-            )}
-
-            {/* 4. Xóa vĩnh viễn (FR-RCP-007) */}
-            <button
-              type="button"
-              onClick={() => setIsConfirmingDelete(true)}
-              disabled={isAnyActionPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-100 transition disabled:opacity-50"
-              title="Xóa vĩnh viễn công thức"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="w-3.5 h-3.5" />
-              )}
-              <span>Xóa</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>

@@ -219,51 +219,35 @@ export default function DashboardRecipeEditView({
   const ingredientsCount = recipe.ingredients?.length ?? 0;
   const stepsCount = recipe.steps?.length ?? 0;
 
-  const studioTabs: TabItem[] = [
+  const studioTabs = [
     {
-      id: 'general',
+      id: 'general' as const,
       label: 'Thông tin & Dinh dưỡng',
       icon: <FileText className="w-4 h-4" />,
     },
     {
-      id: 'gallery',
+      id: 'gallery' as const,
       label: 'Thư viện hình ảnh',
       icon: <ImageIcon className="w-4 h-4" />,
-      badge: (
-        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
-          {imagesCount}
-        </span>
-      ),
+      count: imagesCount,
     },
     {
-      id: 'ingredients',
+      id: 'ingredients' as const,
       label: 'Nguyên liệu',
       icon: <Utensils className="w-4 h-4" />,
-      badge: (
-        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
-          {ingredientsCount}
-        </span>
-      ),
+      count: ingredientsCount,
     },
     {
-      id: 'steps',
+      id: 'steps' as const,
       label: 'Các bước thực hiện',
       icon: <CheckCircle2 className="w-4 h-4" />,
-      badge: (
-        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
-          {stepsCount}
-        </span>
-      ),
+      count: stepsCount,
     },
     {
-      id: 'preview',
+      id: 'preview' as const,
       label: 'Xem trước & Tổng quan',
       icon: <Eye className="w-4 h-4" />,
-      badge: (
-        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-          Live
-        </span>
-      ),
+      isLive: true,
     },
   ];
 
@@ -409,14 +393,52 @@ export default function DashboardRecipeEditView({
             onToggleViewStyle={() => setViewStyle('form')}
           />
 
-          {/* Studio Tabs Navigation */}
-          <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-2xs">
-            <Tabs
-              tabs={studioTabs}
-              activeTab={activeTab}
-              onTabChange={(id) => handleTabChange(id as StudioActiveTab)}
-              ariaLabel="Điều hướng Recipe Studio"
-            />
+          {/* Studio Tabs Navigation Mang Phong Cách Ẩm Thực Cao Cấp */}
+          <div className="bg-white p-2 sm:p-2.5 rounded-3xl border border-stone-200/80 shadow-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              {studioTabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => handleTabChange(tab.id as StudioActiveTab)}
+                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm ring-2 ring-orange-200 scale-102'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                  >
+                    <span className={isActive ? 'text-white' : 'text-orange-500'}>
+                      {tab.icon}
+                    </span>
+                    <span>{tab.label}</span>
+                    {tab.count !== undefined && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isActive
+                            ? 'bg-white/25 text-white'
+                            : 'bg-stone-100 text-stone-600 border border-stone-200'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                    {tab.isLive && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isActive
+                            ? 'bg-white text-orange-600 font-extrabold shadow-2xs'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}
+                      >
+                        Live
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Tab Contents */}
