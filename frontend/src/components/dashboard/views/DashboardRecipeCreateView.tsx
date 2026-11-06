@@ -139,9 +139,10 @@ export default function DashboardRecipeCreateView({
     try {
       const categories = await categoryService.getCategories();
       const defaultCatId = categories?.[0]?.id || '';
+      const uniqueSuffix = Date.now().toString().slice(-6);
       const newRecipe = await createMutation.mutateAsync({
-        title: 'Bản nháp công thức mới',
-        description: 'Mô tả ngắn cho công thức của bạn.',
+        title: `Bản nháp Recipe Studio ${uniqueSuffix}`,
+        description: 'Mô tả ngắn cho công thức của bạn trong Recipe Studio.',
         instructions: 'Hướng dẫn các bước nấu.',
         prepTimeMinutes: 15,
         cookTimeMinutes: 30,
@@ -166,12 +167,12 @@ export default function DashboardRecipeCreateView({
       {/* 1. HERO BANNER: Thêm mới công thức chuẩn Mockup */}
       <div className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 shadow-md">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-35 mix-blend-luminosity scale-105 transition-transform duration-700 hover:scale-100"
+          className="absolute inset-0 bg-cover bg-center opacity-50 scale-105 transition-transform duration-700 hover:scale-100"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1600&auto=format&fit=crop&q=80')`,
+            backgroundImage: `url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80')`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-900/60 to-stone-900/20" />
 
         <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
           <div className="space-y-3 max-w-2xl">
