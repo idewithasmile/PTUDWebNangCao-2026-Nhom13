@@ -10,7 +10,8 @@ import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
 import DashboardHeroBanner from '../common/DashboardHeroBanner';
-import { ArrowLeft, AlertCircle, CheckCircle2, Loader2, ChefHat } from 'lucide-react';
+import RecipeAuthorGuideModal from '@/components/recipes/RecipeAuthorGuideModal';
+import { ArrowLeft, AlertCircle, CheckCircle2, Loader2, ChefHat, BookOpen } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -24,6 +25,7 @@ export default function DashboardRecipeCreateView({
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const createMutation = useCreateRecipe();
 
   const handleSubmit = async (
@@ -150,15 +152,11 @@ export default function DashboardRecipeCreateView({
           <>
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  'Hướng dẫn tạo công thức: Điền đầy đủ Thông tin cơ bản, chọn nguyên liệu và mô tả các bước nấu. Thẻ Xem trước bên phải sẽ cập nhật trực tiếp theo dữ liệu của bạn!'
-                )
-              }
+              onClick={() => setIsGuideModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
             >
-              <span>▷</span>
-              <span>Xem hướng dẫn</span>
+              <BookOpen className="w-3.5 h-3.5 text-orange-300" />
+              <span>Sổ tay hướng dẫn</span>
             </button>
 
             <button
@@ -206,6 +204,12 @@ export default function DashboardRecipeCreateView({
           onSubmit={handleSubmit}
         />
       </div>
+
+      {/* Modal Sổ tay quy chuẩn biên soạn công thức ẩm thực */}
+      <RecipeAuthorGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+      />
     </div>
   );
 }

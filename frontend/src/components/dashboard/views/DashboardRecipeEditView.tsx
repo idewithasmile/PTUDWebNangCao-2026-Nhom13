@@ -25,6 +25,7 @@ import StudioStepsTab from '../studio/tabs/StudioStepsTab';
 import StudioPreviewTab from '../studio/tabs/StudioPreviewTab';
 import Toast, { ToastMessage } from '@/components/common/Toast';
 import { Tabs, type TabItem } from '@/components/ui/tabs';
+import RecipeAuthorGuideModal from '@/components/recipes/RecipeAuthorGuideModal';
 import {
   FileText,
   Image as ImageIcon,
@@ -37,6 +38,7 @@ import {
   ChefHat,
   ArrowLeft,
   Archive,
+  BookOpen,
 } from 'lucide-react';
 
 interface DashboardRecipeEditViewProps {
@@ -59,6 +61,7 @@ export default function DashboardRecipeEditView({
   const [viewStyle, setViewStyle] = useState<'studio' | 'form'>(
     modeParam === 'studio' ? 'studio' : 'form'
   );
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'warning', title: string, message?: string) => {
@@ -324,15 +327,11 @@ export default function DashboardRecipeEditView({
               <>
                 <button
                   type="button"
-                  onClick={() =>
-                    alert(
-                      'Hướng dẫn cập nhật: Bạn có thể sửa đổi tên món, danh mục, nguyên liệu, các bước làm hoặc ảnh. Bấm "Lưu nháp" hoặc "Đăng bài" bên dưới để hoàn tất.'
-                    )
-                  }
+                  onClick={() => setIsGuideModalOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
                 >
-                  <span>▷</span>
-                  <span>Xem hướng dẫn</span>
+                  <BookOpen className="w-3.5 h-3.5 text-orange-300" />
+                  <span>Sổ tay hướng dẫn</span>
                 </button>
 
                 <button
@@ -456,6 +455,12 @@ export default function DashboardRecipeEditView({
           )}
         </>
       )}
+
+      {/* Modal Sổ tay quy chuẩn biên soạn công thức ẩm thực */}
+      <RecipeAuthorGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+      />
     </div>
   );
 }
