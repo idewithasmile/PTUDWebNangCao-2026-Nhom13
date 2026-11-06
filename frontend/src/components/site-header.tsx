@@ -162,20 +162,6 @@ export default function SiteHeader() {
                   >
                     <span>📊 Bảng điều khiển</span>
                   </Link>
-                  <Link
-                    href="/dashboard?tab=recipes-create"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-orange-600 hover:bg-orange-50 font-bold transition"
-                  >
-                    <span>✏️ Viết công thức mới</span>
-                  </Link>
-                  <Link
-                    href="/dashboard?tab=profile"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition"
-                  >
-                    <span>👤 Hồ sơ cá nhân</span>
-                  </Link>
                   <div className="border-t border-gray-100 my-1" />
                   <button
                     type="button"
