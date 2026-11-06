@@ -222,7 +222,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
             </span>
 
             <Link
-              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(selectedRecipe.slug)}`}
+              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(selectedRecipe.slug)}&mode=studio`}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition active:scale-95"
             >
               <Edit2 className="w-3.5 h-3.5" />
@@ -241,6 +241,43 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
             </Link>
           </div>
         </div>
+
+        {/* Biểu ngữ ngữ cảnh nội bộ cho Bản nháp / Đã lưu trữ */}
+        {(selectedRecipe.status === 'Draft' || String(selectedRecipe.status) === '0') && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 shadow-2xs animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+              <p className="text-xs leading-relaxed">
+                <strong className="font-bold">Bản nháp nội bộ:</strong> Công thức này chưa được xuất bản công khai cho độc giả ngoài trang chủ. Quản trị viên và Tác giả có thể kiểm tra nội dung hoặc tiếp tục biên tập trong Recipe Studio.
+              </p>
+            </div>
+            <Link
+              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(selectedRecipe.slug)}&mode=studio`}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>Biên tập trong Studio</span>
+            </Link>
+          </div>
+        )}
+
+        {(selectedRecipe.status === 'Archived' || String(selectedRecipe.status) === '2') && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0" />
+              <p className="text-xs leading-relaxed">
+                <strong className="font-bold">Bài viết đã lưu trữ:</strong> Công thức này đang nằm trong kho lưu trữ nội bộ và tạm ẩn khỏi danh mục trang chủ.
+              </p>
+            </div>
+            <Link
+              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(selectedRecipe.slug)}&mode=studio`}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shrink-0 transition"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>Quản lý trong Studio</span>
+            </Link>
+          </div>
+        )}
 
         {/* Nội dung chi tiết công thức THỰC TẾ 100% bằng RecipeDetailView */}
         <div className="rounded-3xl border border-gray-200/80 bg-white p-6 sm:p-10 shadow-xs">
@@ -624,7 +661,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
                           {canManage && (
                             <>
                               <Link
-                                href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(recipe.slug)}`}
+                                href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(recipe.slug)}&mode=studio`}
                                 className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
                                 title="Chỉnh sửa"
                               >

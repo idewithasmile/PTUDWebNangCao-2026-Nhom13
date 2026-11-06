@@ -484,7 +484,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
 
                             {/* Sửa bài trong Recipe Studio */}
                             <Link
-                              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(recipe.slug)}`}
+                              href={`/dashboard?tab=recipes-edit&slug=${encodeURIComponent(recipe.slug)}&mode=studio`}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition"
                               title="Chỉnh sửa công thức trong Studio"
                             >
