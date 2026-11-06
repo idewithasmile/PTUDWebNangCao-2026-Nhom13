@@ -10,6 +10,7 @@ import RecipeForm from '@/components/recipes/RecipeForm';
 import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
 import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, Loader2, ChefHat } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
@@ -164,59 +165,26 @@ export default function DashboardRecipeCreateView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 1. HERO BANNER: Thêm mới công thức chuẩn Mockup */}
-      <div className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 shadow-md">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-50 scale-105 transition-transform duration-700 hover:scale-100"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80')`,
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-900/60 to-stone-900/20" />
-
-        <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
-          <div className="space-y-3 max-w-2xl">
-            {/* Breadcrumb điều hướng */}
-            <div className="flex items-center gap-2 text-xs text-orange-200/80 font-medium">
-              <button
-                type="button"
-                onClick={() => onSelectTab('overview')}
-                className="hover:text-white transition"
-              >
-                Trang chủ
-              </button>
-              <span>&gt;</span>
-              <button
-                type="button"
-                onClick={() => onSelectTab('recipes')}
-                className="hover:text-white transition"
-              >
-                Công thức
-              </button>
-              <span>&gt;</span>
-              <span className="text-white font-semibold">Thêm công thức</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                <ChefHat className="w-7 h-7" />
-              </div>
-              <div className="space-y-0.5">
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
-                  Thêm công thức mới
-                </h1>
-                <p className="text-xs sm:text-sm text-stone-300 font-normal">
-                  Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Cụm nút hành động Banner */}
-          <div className="flex items-center gap-2.5 shrink-0">
+      {/* 1. HERO BANNER: Thêm mới công thức sử dụng Reusable Component */}
+      <DashboardHeroBanner
+        backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+        icon={<ChefHat className="w-7 h-7" />}
+        title="Thêm công thức mới"
+        description="Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog"
+        breadcrumbs={[
+          { label: 'Trang chủ', onClick: () => onSelectTab('overview') },
+          { label: 'Công thức', onClick: () => onSelectTab('recipes') },
+          { label: 'Thêm công thức', active: true },
+        ]}
+        actions={
+          <>
             <button
               type="button"
-              onClick={() => alert('Hướng dẫn tạo công thức: Điền đầy đủ Thông tin cơ bản, chọn nguyên liệu và mô tả các bước nấu. Thẻ Xem trước bên phải sẽ cập nhật trực tiếp theo dữ liệu của bạn!')}
+              onClick={() =>
+                alert(
+                  'Hướng dẫn tạo công thức: Điền đầy đủ Thông tin cơ bản, chọn nguyên liệu và mô tả các bước nấu. Thẻ Xem trước bên phải sẽ cập nhật trực tiếp theo dữ liệu của bạn!'
+                )
+              }
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
             >
               <span>▷</span>
@@ -242,9 +210,9 @@ export default function DashboardRecipeCreateView({
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Quay lại</span>
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Thông báo Tiến trình tải ảnh phụ */}
       {uploadProgress && (

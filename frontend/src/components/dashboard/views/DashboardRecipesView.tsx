@@ -36,11 +36,13 @@ import {
   Tag,
   Loader2,
   RotateCcw,
+  RefreshCw,
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
   ExternalLink,
 } from 'lucide-react';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
 
 interface DashboardRecipesViewProps {
   user: UserProfile;
@@ -251,44 +253,65 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
         ))}
       </div>
 
-      {/* Header Danh sách bài viết (Khớp Screen 2 & SRS FR-RCP) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <span>
-              {subFilter === 'published'
-                ? 'Công thức đã xuất bản'
-                : subFilter === 'draft'
-                ? 'Bản nháp'
-                : subFilter === 'archived'
-                ? 'Công thức đã lưu trữ'
-                : subFilter === 'mine'
-                ? 'Công thức của tôi'
-                : 'Tất cả công thức'}
-            </span>
-            {isFetching && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            {subFilter === 'published'
-              ? 'Danh sách các công thức đã xuất bản công khai trên Culinary Blog'
-              : subFilter === 'draft'
-              ? 'Danh sách các bản nháp đang trong quá trình biên soạn'
-              : subFilter === 'archived'
-              ? 'Danh sách các công thức đã lưu trữ / ẩn tạm thời khỏi trang công khai'
-              : subFilter === 'mine' || !isAdmin
-              ? 'Danh sách các công thức do chính bạn sáng tạo'
-              : 'Quản lý toàn bộ công thức và bài viết ẩm thực trên toàn hệ thống'}
-          </p>
-        </div>
+      {/* HERO BANNER: Kho công thức ẩm thực đồng nhất với phong cách chung */}
+      <DashboardHeroBanner
+        backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+        icon={<ChefHat className="w-7 h-7" />}
+        title={
+          subFilter === 'published'
+            ? 'Công thức đã xuất bản'
+            : subFilter === 'draft'
+            ? 'Bản nháp'
+            : subFilter === 'archived'
+            ? 'Công thức đã lưu trữ'
+            : subFilter === 'mine'
+            ? 'Công thức của tôi'
+            : 'Kho công thức ẩm thực'
+        }
+        badge={
+          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-200 border border-orange-500/30">
+            {isFetching && <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-300" />}
+            <span>{totalCount.toLocaleString('vi-VN')} công thức</span>
+          </span>
+        }
+        description={
+          subFilter === 'published'
+            ? 'Danh sách các công thức đã xuất bản công khai trên Culinary Blog'
+            : subFilter === 'draft'
+            ? 'Danh sách các bản nháp đang trong quá trình biên soạn'
+            : subFilter === 'archived'
+            ? 'Danh sách các công thức đã lưu trữ / ẩn tạm thời khỏi trang công khai'
+            : subFilter === 'mine' || !isAdmin
+            ? 'Danh sách các công thức do chính bạn sáng tạo và chia sẻ'
+            : 'Quản lý toàn bộ bài viết, công thức nấu ăn và kiểm soát chất lượng ẩm thực trên toàn hệ thống'
+        }
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard?tab=overview' },
+          { label: 'Công thức ẩm thực', active: true },
+        ]}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 disabled:opacity-50"
+              title="Làm mới danh sách công thức"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </button>
 
-        <Link
-          href="/dashboard?tab=recipes-create"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Đăng công thức mới</span>
-        </Link>
-      </div>
+            <Link
+              href="/dashboard?tab=recipes-create"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Đăng công thức mới</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* Filter Bar (Khớp Screen 2 + FR-RCP-001) */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-3">

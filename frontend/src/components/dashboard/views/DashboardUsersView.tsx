@@ -24,7 +24,9 @@ import {
   X,
   CheckCircle2,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
 import type { UserProfile } from '@/types/auth';
 import type {
   PagedUsersResultDto,
@@ -153,39 +155,41 @@ export default function DashboardUsersView({
         </div>
       )}
 
-      {/* 1. Header & Giới thiệu phạm vi */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                {isAdmin ? 'Quản lý Người dùng & Tác giả' : 'Cộng đồng Tác giả & Quản trị'}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                {isAdmin
-                  ? 'Xem, tìm kiếm, lọc phân quyền và quản trị toàn bộ tài khoản trong hệ thống'
-                  : 'Khám phá danh bạ tác giả, đầu bếp ẩm thực và giao lưu chia sẻ công thức'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+      {/* 1. HERO BANNER: Quản lý Người dùng & Tác giả đồng nhất với phong cách chung */}
+      <DashboardHeroBanner
+        backgroundImage="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=1600&auto=format&fit=crop&q=80"
+        icon={<Users className="w-7 h-7" />}
+        title={isAdmin ? 'Quản lý Người dùng & Tác giả' : 'Cộng đồng Tác giả & Quản trị'}
+        badge={
+          stats ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-200 border border-blue-500/30">
+              {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-300" />}
+              <span>{stats.totalUsers.toLocaleString('vi-VN')} thành viên</span>
+            </span>
+          ) : undefined
+        }
+        description={
+          isAdmin
+            ? 'Xem, tìm kiếm, lọc phân quyền và quản trị toàn bộ tài khoản trong hệ thống'
+            : 'Khám phá danh bạ tác giả, đầu bếp ẩm thực và giao lưu chia sẻ công thức'
+        }
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard?tab=overview' },
+          { label: isAdmin ? 'Người dùng & Tác giả' : 'Cộng đồng Tác giả', active: true },
+        ]}
+        actions={
           <button
             type="button"
             onClick={() => loadUsers()}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 disabled:opacity-50"
             title="Tải lại danh sách"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* 2. Dải thẻ thống kê nhanh (KPI Summary Strip) */}
       {stats && (

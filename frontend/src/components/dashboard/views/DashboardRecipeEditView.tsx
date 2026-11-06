@@ -16,6 +16,7 @@ import type { RecipeDifficulty } from '@/lib/types/recipe';
 import { recipeService } from '@/lib/services/recipe-service';
 import RecipeForm from '@/components/recipes/RecipeForm';
 import type { DashboardTab } from '../DashboardSidebar';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
 import RecipeStudioHeader from '../studio/RecipeStudioHeader';
 import StudioGeneralTab from '../studio/tabs/StudioGeneralTab';
 import StudioGalleryTab from '../studio/tabs/StudioGalleryTab';
@@ -282,79 +283,52 @@ export default function DashboardRecipeEditView({
       {/* Điều hướng Chế độ xem: Soạn thảo đồng nhất (Form) HOẶC Studio 5 Tab */}
       {viewStyle === 'form' ? (
         <div className="space-y-6 animate-fade-in">
-          {/* HERO BANNER: Chỉnh sửa công thức đồng nhất 100% với trang Tạo mới */}
-          <div className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 shadow-md">
-            <div
-              className="absolute inset-0 bg-cover bg-center opacity-50 scale-105 transition-transform duration-700 hover:scale-100"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80')`,
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-900/60 to-stone-900/20" />
-
-            <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
-              <div className="space-y-3 max-w-2xl">
-                {/* Breadcrumb điều hướng */}
-                <div className="flex items-center gap-2 text-xs text-orange-200/80 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('overview')}
-                    className="hover:text-white transition"
-                  >
-                    Trang chủ
-                  </button>
-                  <span>&gt;</span>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('recipes-mine')}
-                    className="hover:text-white transition"
-                  >
-                    Công thức của tôi
-                  </button>
-                  <span>&gt;</span>
-                  <span className="text-white font-semibold">Chỉnh sửa</span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                    <ChefHat className="w-7 h-7" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
-                        Chỉnh sửa công thức
-                      </h1>
-                      {isPublished && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Đã xuất bản</span>
-                        </span>
-                      )}
-                      {isDraft && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          <span>Bản nháp</span>
-                        </span>
-                      )}
-                      {isArchived && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-500/30 text-stone-300 border border-stone-500/40">
-                          <Archive className="w-3.5 h-3.5" />
-                          <span>Kho lưu trữ</span>
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm text-stone-300 font-normal line-clamp-1">
-                      Cập nhật thông tin chi tiết và nguyên liệu cho bài viết &quot;{recipe.title}&quot;
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cụm nút hành động Banner */}
-              <div className="flex items-center gap-2.5 shrink-0">
+          {/* HERO BANNER: Chỉnh sửa công thức đồng nhất sử dụng Reusable Component */}
+          <DashboardHeroBanner
+            backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+            icon={<ChefHat className="w-7 h-7" />}
+            title="Chỉnh sửa công thức"
+            badge={
+              <>
+                {isPublished && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Đã xuất bản</span>
+                  </span>
+                )}
+                {isDraft && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Bản nháp</span>
+                  </span>
+                )}
+                {isArchived && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-500/30 text-stone-300 border border-stone-500/40">
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>Kho lưu trữ</span>
+                  </span>
+                )}
+              </>
+            }
+            description={
+              <span>
+                Cập nhật thông tin chi tiết và nguyên liệu cho bài viết &quot;{recipe.title}&quot;
+              </span>
+            }
+            breadcrumbs={[
+              { label: 'Trang chủ', onClick: () => onSelectTab('overview') },
+              { label: 'Công thức của tôi', onClick: () => onSelectTab('recipes-mine') },
+              { label: 'Chỉnh sửa', active: true },
+            ]}
+            actions={
+              <>
                 <button
                   type="button"
-                  onClick={() => alert('Hướng dẫn cập nhật: Bạn có thể sửa đổi tên món, danh mục, nguyên liệu, các bước làm hoặc ảnh. Bấm "Lưu nháp" hoặc "Đăng bài" bên dưới để hoàn tất.')}
+                  onClick={() =>
+                    alert(
+                      'Hướng dẫn cập nhật: Bạn có thể sửa đổi tên món, danh mục, nguyên liệu, các bước làm hoặc ảnh. Bấm "Lưu nháp" hoặc "Đăng bài" bên dưới để hoàn tất.'
+                    )
+                  }
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
                 >
                   <span>▷</span>
@@ -379,9 +353,9 @@ export default function DashboardRecipeEditView({
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Quay lại</span>
                 </button>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+          />
           <RecipeForm
             initialValues={{
               title: recipe.title,

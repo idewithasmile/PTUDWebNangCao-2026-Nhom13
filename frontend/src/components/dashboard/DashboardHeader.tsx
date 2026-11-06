@@ -16,9 +16,14 @@ import { logoutApi } from '@/features/auth/api';
 interface DashboardHeaderProps {
   user: UserProfile;
   isStudioMode?: boolean;
+  showGreeting?: boolean;
 }
 
-export default function DashboardHeader({ user, isStudioMode = false }: DashboardHeaderProps) {
+export default function DashboardHeader({
+  user,
+  isStudioMode = false,
+  showGreeting,
+}: DashboardHeaderProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -163,8 +168,8 @@ export default function DashboardHeader({ user, isStudioMode = false }: Dashboar
         </div>
       </div>
 
-      {/* 2. Greeting & Real-time Weather Bar (Hidden in Studio Mode to eliminate distraction) */}
-      {!isStudioMode && (
+      {/* 2. Greeting & Real-time Weather Bar (Hiển thị ở trang Overview hoặc khi showGreeting = true) */}
+      {(showGreeting !== undefined ? showGreeting : !isStudioMode) && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1 animate-fade-in">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">

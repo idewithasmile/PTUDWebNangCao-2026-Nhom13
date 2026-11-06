@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderTree,
+  RefreshCw,
 } from 'lucide-react';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
 
 export default function DashboardCategoriesView() {
   const queryClient = useQueryClient();
@@ -135,30 +137,49 @@ export default function DashboardCategoriesView() {
         ))}
       </div>
 
-      {/* Header Quản lý danh mục (Khớp Screen 4) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <span>Danh mục</span>
-            {isFetching && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Quản lý cơ cấu phân loại món ăn và công thức ẩm thực toàn hệ thống
-          </p>
-        </div>
+      {/* HERO BANNER: Cơ cấu danh mục ẩm thực đồng nhất với phong cách chung */}
+      <DashboardHeroBanner
+        backgroundImage="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=1600&auto=format&fit=crop&q=80"
+        icon={<FolderTree className="w-7 h-7" />}
+        title="Cơ cấu danh mục ẩm thực"
+        badge={
+          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-500/30">
+            {isFetching && <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />}
+            <span>{categories.length} nhóm danh mục</span>
+          </span>
+        }
+        description="Quản lý cơ cấu phân loại nhóm món ăn, khẩu vị và văn hóa ẩm thực toàn hệ thống"
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard?tab=overview' },
+          { label: 'Danh mục ẩm thực', active: true },
+        ]}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 disabled:opacity-50"
+              title="Làm mới danh mục"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setCategoryToEdit(null);
-            setIsFormModalOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Thêm danh mục</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryToEdit(null);
+                setIsFormModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Thêm danh mục</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Filter Bar (Khớp Screen 4) */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex flex-col sm:flex-row items-center gap-3">
