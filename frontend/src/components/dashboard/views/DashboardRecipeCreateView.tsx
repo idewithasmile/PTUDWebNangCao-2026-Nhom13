@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useCreateRecipe } from '@/features/recipes/hooks';
 import { recipeService } from '@/lib/services/recipe-service';
-import { categoryService } from '@/lib/services/category-service';
 import type { RecipeFormData } from '@/features/recipes/schemas';
 import type { RecipeDifficulty } from '@/lib/types/recipe';
 import RecipeForm from '@/components/recipes/RecipeForm';
@@ -11,7 +10,7 @@ import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
 import DashboardHeroBanner from '../common/DashboardHeroBanner';
-import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, Loader2, ChefHat } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle2, Loader2, ChefHat } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -134,35 +133,6 @@ export default function DashboardRecipeCreateView({
     }
   };
 
-  const handleQuickStudioCreate = async () => {
-    setServerError(null);
-    setUploadProgress('Đang khởi tạo bản nháp mới để mở Recipe Studio (5 Tab)...');
-    try {
-      const categories = await categoryService.getCategories();
-      const defaultCatId = categories?.[0]?.id || '';
-      const uniqueSuffix = Date.now().toString().slice(-6);
-      const newRecipe = await createMutation.mutateAsync({
-        title: `Bản nháp Recipe Studio ${uniqueSuffix}`,
-        description: 'Mô tả ngắn cho công thức của bạn trong Recipe Studio.',
-        instructions: 'Hướng dẫn các bước nấu.',
-        prepTimeMinutes: 15,
-        cookTimeMinutes: 30,
-        servings: 4,
-        difficulty: 1 as RecipeDifficulty,
-        categoryId: defaultCatId,
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-      });
-      setUploadProgress(null);
-      window.location.href = `/dashboard?tab=recipes-edit&slug=${encodeURIComponent(newRecipe.slug)}`;
-    } catch (err: unknown) {
-      setUploadProgress(null);
-      setServerError(toErrorMessage(err, 'Không thể khởi tạo Recipe Studio.'));
-    }
-  };
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* 1. HERO BANNER: Thêm mới công thức sử dụng Reusable Component */}
@@ -189,17 +159,6 @@ export default function DashboardRecipeCreateView({
             >
               <span>▷</span>
               <span>Xem hướng dẫn</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleQuickStudioCreate}
-              disabled={createMutation.isPending || Boolean(uploadProgress)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
-              title="Mở Recipe Studio với 5 Tab chuyên nghiệp"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Mở Recipe Studio</span>
             </button>
 
             <button
@@ -245,7 +204,6 @@ export default function DashboardRecipeCreateView({
           isSubmitting={createMutation.isPending || Boolean(uploadProgress)}
           serverError={serverError}
           onSubmit={handleSubmit}
-          onSwitchToStudio={handleQuickStudioCreate}
         />
       </div>
     </div>
