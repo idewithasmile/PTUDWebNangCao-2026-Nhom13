@@ -96,10 +96,21 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     staleTime: 60 * 60 * 1000,
   });
 
+  // Trạng thái mặc định tương ứng với từng subFilter
+  const defaultStatusForSubFilter =
+    subFilter === 'draft'
+      ? '0'
+      : subFilter === 'published'
+      ? '1'
+      : subFilter === 'archived'
+      ? '2'
+      : 'ALL';
+
   // Query bài viết
   const queryParams = useMemo(() => {
-    // Nếu không phải Admin hoặc đang lọc theo trạng thái tác giả thì lấy bài viết của chính tác giả (onlyMine = true)
-    const onlyMine = !isAdmin || subFilter !== 'all';
+    // Admin có quyền quản trị toàn hệ thống trên mọi tab (all, published, draft, archived).
+    // Chỉ khi là Author hoặc khi chọn tab 'mine' thì mới giới hạn theo tác giả hiện tại (onlyMine = true).
+    const onlyMine = !isAdmin || subFilter === 'mine';
     return {
       page,
       pageSize,
@@ -117,7 +128,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     setSearchTerm('');
     setDebouncedSearch('');
     setSelectedCategory('');
-    setSelectedStatus(subFilter === 'draft' ? '0' : 'ALL');
+    setSelectedStatus(defaultStatusForSubFilter);
     setSelectedDifficulty('');
     setSelectedMaxTime('');
     setSelectedSortBy('newest');
@@ -130,7 +141,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
     selectedDifficulty !== '' ||
     selectedMaxTime ||
     selectedSortBy !== 'newest' ||
-    (selectedStatus !== 'ALL' && subFilter !== 'draft')
+    selectedStatus !== defaultStatusForSubFilter
   );
 
   const {
