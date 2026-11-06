@@ -83,10 +83,10 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
 
       {/* 2. Cột phải: Toàn bộ nội dung Bảng điều khiển (Dashboard Canvas) */}
       <div className="flex-1 min-w-0 p-5 sm:p-7 space-y-6 overflow-x-hidden">
-        {/* Header trên cùng (Chỉ hiển thị lời chào ở tab Tổng quan; các tab khác đã có Hero Banner làm tâm điểm) */}
+        {/* Header trên cùng (Top Navigation Bar: Thanh tìm kiếm & Thông tin tài khoản) */}
         <DashboardHeader
           user={user}
-          showGreeting={activeTab === 'overview'}
+          showGreeting={false}
           isStudioMode={activeTab === 'recipes-create' || activeTab === 'recipes-edit'}
         />
 
