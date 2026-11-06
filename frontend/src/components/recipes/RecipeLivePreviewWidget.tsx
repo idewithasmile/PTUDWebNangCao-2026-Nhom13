@@ -30,6 +30,7 @@ import {
   Droplets,
   Layers,
   SlidersHorizontal,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export interface RecipeLivePreviewWidgetProps {
@@ -316,15 +317,20 @@ export default function RecipeLivePreviewWidget({
         <div className="space-y-4 animate-fade-in">
           {/* Ảnh bìa + Badge + Nút tương tác thả tim / bookmark */}
           <div className="relative aspect-16/10 w-full overflow-hidden bg-stone-100 group">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={resolveMediaUrl(
-                heroImageUrl ||
-                  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'
-              )}
-              alt={title || 'Preview'}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
+            {heroImageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={resolveMediaUrl(heroImageUrl)}
+                alt={title || 'Preview'}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-stone-400 p-4 text-center">
+                <ImageIcon className="w-10 h-10 mb-2 stroke-[1.5] text-stone-300" />
+                <span className="text-xs font-semibold text-stone-500">Chưa có ảnh đại diện</span>
+                <span className="text-[10px] text-stone-400 mt-0.5">Tải ảnh lên để xem trước</span>
+              </div>
+            )}
             {/* Badge danh mục */}
             <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs text-stone-800 text-[11px] font-bold shadow-xs">
               <span>🥗</span>
@@ -663,16 +669,20 @@ export default function RecipeLivePreviewWidget({
 
             {/* Màn hình điện thoại */}
             <div className="p-3 space-y-2.5 max-h-72 overflow-y-auto">
-              <div className="aspect-16/9 rounded-xl overflow-hidden bg-stone-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={resolveMediaUrl(
-                    heroImageUrl ||
-                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'
-                  )}
-                  alt="Mobile view"
-                  className="w-full h-full object-cover"
-                />
+              <div className="aspect-16/9 rounded-xl overflow-hidden bg-stone-100 flex items-center justify-center">
+                {heroImageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={resolveMediaUrl(heroImageUrl)}
+                    alt="Mobile view"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 p-2 text-center bg-stone-100">
+                    <ImageIcon className="w-6 h-6 mb-1 text-stone-300" />
+                    <span className="text-[10px] font-medium text-stone-400">Chưa có ảnh</span>
+                  </div>
+                )}
               </div>
 
               <div>

@@ -158,42 +158,22 @@ export default function RecipeForm({
       instructions: initialValues?.instructions ?? '',
       primaryImageUrl: initialValues?.primaryImageUrl ?? '',
       categoryId: initialValues?.categoryId ?? '',
-      prepTimeMinutes: initialValues?.prepTimeMinutes ?? 15,
-      cookTimeMinutes: initialValues?.cookTimeMinutes ?? 20,
-      servings: initialValues?.servings ?? 2,
+      prepTimeMinutes: initialValues?.prepTimeMinutes ?? ('' as unknown as number),
+      cookTimeMinutes: initialValues?.cookTimeMinutes ?? ('' as unknown as number),
+      servings: initialValues?.servings ?? ('' as unknown as number),
       difficulty: initialValues?.difficulty ?? 1,
-      calories: initialValues?.calories ?? 0,
-      protein: initialValues?.protein ?? 0,
-      carbs: initialValues?.carbs ?? 0,
-      fat: initialValues?.fat ?? 0,
+      calories: initialValues?.calories ?? ('' as unknown as number),
+      protein: initialValues?.protein ?? ('' as unknown as number),
+      carbs: initialValues?.carbs ?? ('' as unknown as number),
+      fat: initialValues?.fat ?? ('' as unknown as number),
       ingredients:
         initialValues?.ingredients && initialValues.ingredients.length > 0
           ? initialValues.ingredients
-          : [
-              { name: 'Thịt bò tươi', quantity: 300, unit: 'g', notes: 'Thái lát mỏng' },
-              { name: 'Bông cải xanh (Súp lơ)', quantity: 200, unit: 'g', notes: 'Cắt miếng vừa ăn' },
-              { name: 'Cà rốt', quantity: 1, unit: 'củ', notes: 'Gọt vỏ tỉa hoa' },
-            ],
+          : [],
       steps:
         initialValues?.steps && initialValues.steps.length > 0
           ? initialValues.steps
-          : [
-              {
-                title: 'Sơ chế nguyên liệu',
-                description: 'Thịt bò rửa sạch, thái lát mỏng vừa ăn. Bông cải xanh chẻ nhỏ ngâm nước muối loãng. Cà rốt tỉa hoa.',
-                timerMinutes: 10,
-              },
-              {
-                title: 'Xào rau củ thanh ngọt',
-                description: 'Phi thơm tỏi băm, cho cà rốt và bông cải xanh vào xào chín tới cùng 1 thìa hạt nêm.',
-                timerMinutes: 5,
-              },
-              {
-                title: 'Xào thịt bò và hoàn thiện',
-                description: 'Xào thịt bò lửa lớn trong 3 phút cho chín mềm, đảo đều cùng rau củ, rắc tiêu đen và dọn ra đĩa.',
-                timerMinutes: 5,
-              },
-            ],
+          : [],
     },
   });
 
@@ -478,13 +458,13 @@ export default function RecipeForm({
     selectedPreviewImage ||
     primaryGalleryItem?.previewUrl ||
     watchedImageUrl ||
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80';
+    '';
 
   const validIngredients = watchedIngredients?.filter((i) => i.name && i.name.trim().length > 0) || [];
   const validSteps = watchedSteps?.filter((s) => s.description && s.description.trim().length > 0) || [];
 
   const totalTimeMinutes =
-    (Number(watchedPrepTime) || 0) + (Number(watchedCookTime) || 0) || 35;
+    (Number(watchedPrepTime) || 0) + (Number(watchedCookTime) || 0);
 
   // Dữ liệu cho modal xem trước toàn màn hình
   const previewImages: RecipeImageDto[] = galleryItems.map((item, idx) => ({
@@ -972,7 +952,7 @@ export default function RecipeForm({
                 </div>
                 <div>
                   <p className="text-[11px] text-stone-400 font-medium">Chuẩn bị</p>
-                  <p className="text-sm font-bold text-stone-900">{watchedPrepTime || 0} phút</p>
+                  <p className="text-sm font-bold text-stone-900">{watchedPrepTime ? `${watchedPrepTime} phút` : '--'}</p>
                 </div>
               </div>
 
@@ -982,7 +962,7 @@ export default function RecipeForm({
                 </div>
                 <div>
                   <p className="text-[11px] text-stone-400 font-medium">Nấu nướng</p>
-                  <p className="text-sm font-bold text-stone-900">{watchedCookTime || 0} phút</p>
+                  <p className="text-sm font-bold text-stone-900">{watchedCookTime ? `${watchedCookTime} phút` : '--'}</p>
                 </div>
               </div>
 
@@ -992,7 +972,7 @@ export default function RecipeForm({
                 </div>
                 <div>
                   <p className="text-[11px] text-stone-400 font-medium">Tổng thời gian</p>
-                  <p className="text-sm font-bold text-stone-900">{totalTimeMinutes} phút</p>
+                  <p className="text-sm font-bold text-stone-900">{totalTimeMinutes > 0 ? `${totalTimeMinutes} phút` : '--'}</p>
                 </div>
               </div>
 
@@ -1002,7 +982,7 @@ export default function RecipeForm({
                 </div>
                 <div>
                   <p className="text-[11px] text-stone-400 font-medium">Khẩu phần</p>
-                  <p className="text-sm font-bold text-stone-900">{watchedServings || 1} người</p>
+                  <p className="text-sm font-bold text-stone-900">{watchedServings ? `${watchedServings} người` : '--'}</p>
                 </div>
               </div>
             </div>
@@ -1563,61 +1543,85 @@ export default function RecipeForm({
                 </div>
 
                 {/* Danh sách các bước */}
-                <div className="space-y-3">
-                  {stepFields.map((field, idx) => (
-                    <div
-                      key={field.id}
-                      className="rounded-2xl border border-stone-200 bg-white p-3.5 sm:p-4 space-y-2.5 relative group hover:border-orange-300 transition"
+                {stepFields.length === 0 ? (
+                  <div className="text-center py-10 px-4 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50">
+                    <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mx-auto mb-2.5">
+                      <ChefHat className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs font-bold text-stone-700">Chưa có bước chế biến nào</p>
+                    <p className="text-[11px] text-stone-400 mt-1 max-w-sm mx-auto mb-4">
+                      Hãy chia nhỏ quy trình nấu thành các bước rõ ràng kèm thời gian để người đọc dễ dàng làm theo.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        appendStep({
+                          title: 'Bước 1: Sơ chế nguyên liệu',
+                          description: '',
+                          timerMinutes: null,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition active:scale-95"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {/* Số bước hình tròn cam */}
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold shrink-0">
-                            {idx + 1}
-                          </span>
-                          <input
-                            type="text"
-                            {...register(`steps.${idx}.title`)}
-                            placeholder={`Tiêu đề bước ${idx + 1} (VD: Sơ chế nguyên liệu...)`}
-                            className="font-bold text-xs sm:text-sm text-stone-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-stone-400 placeholder:font-normal w-full"
-                          />
-                        </div>
-
-                        {/* Thời gian và Action buttons */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <div className="inline-flex items-center gap-1 text-[11px] text-stone-500 bg-stone-50 px-2 py-1 rounded-lg border border-stone-200">
-                            <Clock className="w-3 h-3 text-orange-500" />
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm bước đầu tiên</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {stepFields.map((field, idx) => (
+                      <div
+                        key={field.id}
+                        className="rounded-2xl border border-stone-200 bg-white p-3.5 sm:p-4 space-y-2.5 relative group hover:border-orange-300 transition"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {/* Số bước hình tròn cam */}
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold shrink-0">
+                              {idx + 1}
+                            </span>
                             <input
-                              type="number"
-                              {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
-                              placeholder="0"
-                              min="0"
-                              className="w-8 text-center font-bold text-stone-800 bg-transparent outline-none p-0"
+                              type="text"
+                              {...register(`steps.${idx}.title`)}
+                              placeholder={`Tiêu đề bước ${idx + 1} (VD: Sơ chế nguyên liệu...)`}
+                              className="font-bold text-xs sm:text-sm text-stone-900 bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-stone-400 placeholder:font-normal w-full"
                             />
-                            <span>phút</span>
                           </div>
 
-                          {idx > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => moveStep(idx, idx - 1)}
-                              className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
-                              title="Chuyển lên"
-                            >
-                              <MoveUp className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {idx < stepFields.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => moveStep(idx, idx + 1)}
-                              className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
-                              title="Chuyển xuống"
-                            >
-                              <MoveDown className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {stepFields.length > 1 && (
+                          {/* Thời gian và Action buttons */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="inline-flex items-center gap-1 text-[11px] text-stone-500 bg-stone-50 px-2 py-1 rounded-lg border border-stone-200">
+                              <Clock className="w-3 h-3 text-orange-500" />
+                              <input
+                                type="number"
+                                {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
+                                placeholder="0"
+                                min="0"
+                                className="w-8 text-center font-bold text-stone-800 bg-transparent outline-none p-0"
+                              />
+                              <span>phút</span>
+                            </div>
+
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveStep(idx, idx - 1)}
+                                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                                title="Chuyển lên"
+                              >
+                                <MoveUp className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {idx < stepFields.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveStep(idx, idx + 1)}
+                                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                                title="Chuyển xuống"
+                              >
+                                <MoveDown className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => removeStep(idx)}
@@ -1626,20 +1630,20 @@ export default function RecipeForm({
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Nội dung chi tiết bước */}
-                      <textarea
-                        rows={2}
-                        {...register(`steps.${idx}.description`)}
-                        placeholder="Mô tả chi tiết những gì cần làm trong bước này..."
-                        className="w-full rounded-xl border border-stone-200 bg-stone-50/50 p-2.5 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed"
-                      />
-                    </div>
-                  ))}
-                </div>
+                        {/* Nội dung chi tiết bước */}
+                        <textarea
+                          rows={2}
+                          {...register(`steps.${idx}.description`)}
+                          placeholder="Mô tả chi tiết những gì cần làm trong bước này..."
+                          className="w-full rounded-xl border border-stone-200 bg-stone-50/50 p-2.5 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1663,47 +1667,65 @@ export default function RecipeForm({
                   </button>
                 </div>
 
-                <div className="space-y-2.5">
-                  {ingredientFields.map((field, idx) => (
-                    <div
-                      key={field.id}
-                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 rounded-xl border border-stone-200 bg-white hover:border-orange-200 transition"
+                {ingredientFields.length === 0 ? (
+                  <div className="text-center py-10 px-4 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50">
+                    <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mx-auto mb-2.5">
+                      <UtensilsCrossed className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs font-bold text-stone-700">Chưa có nguyên liệu nào</p>
+                    <p className="text-[11px] text-stone-400 mt-1 max-w-sm mx-auto mb-4">
+                      Khai báo tên và định lượng rõ ràng giúp người nấu chuẩn bị đầy đủ thực phẩm trước khi chế biến.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => appendIngredient({ name: '', quantity: null, unit: '', notes: '' })}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition active:scale-95"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="w-5 text-center text-xs font-bold text-stone-400">
-                          #{idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.name`)}
-                          placeholder="Tên nguyên liệu (VD: Thịt bò, Nước mắm...)"
-                          className="flex-1 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-orange-500"
-                        />
-                      </div>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm nguyên liệu đầu tiên</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {ingredientFields.map((field, idx) => (
+                      <div
+                        key={field.id}
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 rounded-xl border border-stone-200 bg-white hover:border-orange-200 transition"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="w-5 text-center text-xs font-bold text-stone-400">
+                            #{idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            {...register(`ingredients.${idx}.name`)}
+                            placeholder="Tên nguyên liệu (VD: Thịt bò, Nước mắm...)"
+                            className="flex-1 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-orange-500"
+                          />
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          step="any"
-                          {...register(`ingredients.${idx}.quantity`, {
-                            setValueAs: (v) => (v === '' ? null : Number(v)),
-                          })}
-                          placeholder="Số lượng"
-                          className="w-20 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 text-right"
-                        />
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.unit`)}
-                          placeholder="Đơn vị (g, ml, quả)"
-                          className="w-24 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
-                        />
-                        <input
-                          type="text"
-                          {...register(`ingredients.${idx}.notes`)}
-                          placeholder="Ghi chú (tùy chọn)"
-                          className="w-28 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 hidden sm:block"
-                        />
-                        {ingredientFields.length > 1 && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            step="any"
+                            {...register(`ingredients.${idx}.quantity`, {
+                              setValueAs: (v) => (v === '' ? null : Number(v)),
+                            })}
+                            placeholder="Số lượng"
+                            className="w-20 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 text-right"
+                          />
+                          <input
+                            type="text"
+                            {...register(`ingredients.${idx}.unit`)}
+                            placeholder="Đơn vị (g, ml, quả)"
+                            className="w-24 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                          />
+                          <input
+                            type="text"
+                            {...register(`ingredients.${idx}.notes`)}
+                            placeholder="Ghi chú (tùy chọn)"
+                            className="w-28 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 hidden sm:block"
+                          />
                           <button
                             type="button"
                             onClick={() => removeIngredient(idx)}
@@ -1712,11 +1734,11 @@ export default function RecipeForm({
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
