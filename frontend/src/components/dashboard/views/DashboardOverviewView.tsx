@@ -56,7 +56,7 @@ export default function DashboardOverviewView({
     <div className="space-y-6 animate-fade-in">
       {/* 1. HERO BANNER: Chào mừng tổng quan hệ thống ẩm thực */}
       <DashboardHeroBanner
-        backgroundImage="https://images.unsplash.com/photo-1543353071-873f17a7a088?w=1600&auto=format&fit=crop&q=80"
+        backgroundImage="/images/dashboard/banner-overview.jpg"
         icon={<ChefHat className="w-7 h-7" />}
         title={`Xin chào, ${user.displayName || user.userName}! 👋`}
         badge={

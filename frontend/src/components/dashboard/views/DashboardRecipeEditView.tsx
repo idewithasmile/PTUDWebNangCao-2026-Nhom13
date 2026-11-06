@@ -288,7 +288,7 @@ export default function DashboardRecipeEditView({
         <div className="space-y-6 animate-fade-in">
           {/* HERO BANNER: Chỉnh sửa công thức đồng nhất sử dụng Reusable Component */}
           <DashboardHeroBanner
-            backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+            backgroundImage="/images/dashboard/banner-recipes.jpg"
             icon={<ChefHat className="w-7 h-7" />}
             title="Chỉnh sửa công thức"
             badge={

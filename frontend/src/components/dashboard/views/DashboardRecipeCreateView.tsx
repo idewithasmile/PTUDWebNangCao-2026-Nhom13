@@ -139,7 +139,7 @@ export default function DashboardRecipeCreateView({
     <div className="space-y-6 animate-fade-in">
       {/* 1. HERO BANNER: Thêm mới công thức sử dụng Reusable Component */}
       <DashboardHeroBanner
-        backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+        backgroundImage="/images/dashboard/banner-recipes.jpg"
         icon={<ChefHat className="w-7 h-7" />}
         title="Thêm công thức mới"
         description="Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog"

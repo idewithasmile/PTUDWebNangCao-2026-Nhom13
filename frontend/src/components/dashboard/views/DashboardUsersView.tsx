@@ -157,7 +157,8 @@ export default function DashboardUsersView({
 
       {/* 1. HERO BANNER: Quản lý Người dùng & Tác giả đồng nhất với phong cách chung */}
       <DashboardHeroBanner
-        backgroundImage="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=1600&auto=format&fit=crop&q=80"
+        backgroundImage="/images/dashboard/banner-users.jpg"
+        backgroundOpacity="opacity-60"
         icon={<Users className="w-7 h-7" />}
         title={isAdmin ? 'Quản lý Người dùng & Tác giả' : 'Cộng đồng Tác giả & Quản trị'}
         badge={

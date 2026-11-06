@@ -255,7 +255,7 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
 
       {/* HERO BANNER: Kho công thức ẩm thực đồng nhất với phong cách chung */}
       <DashboardHeroBanner
-        backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80"
+        backgroundImage="/images/dashboard/banner-recipes.jpg"
         icon={<ChefHat className="w-7 h-7" />}
         title={
           subFilter === 'published'

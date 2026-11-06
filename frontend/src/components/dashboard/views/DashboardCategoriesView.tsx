@@ -139,7 +139,7 @@ export default function DashboardCategoriesView() {
 
       {/* HERO BANNER: Cơ cấu danh mục ẩm thực đồng nhất với phong cách chung */}
       <DashboardHeroBanner
-        backgroundImage="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=1600&auto=format&fit=crop&q=80"
+        backgroundImage="/images/dashboard/banner-categories.jpg"
         icon={<FolderTree className="w-7 h-7" />}
         title="Cơ cấu danh mục ẩm thực"
         badge={
