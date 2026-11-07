@@ -171,9 +171,18 @@ public static class RecipesEndpoints
         return group;
     }
 
-    private static async Task<IResult> CreateRecipe(CreateRecipeCommand command, IMediator mediator)
+    private static async Task<IResult> CreateRecipe(
+        CreateRecipeCommand command,
+        IMediator mediator,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore? cacheStore = null,
+        CancellationToken ct = default)
     {
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(command, ct);
+        if (cacheStore != null)
+        {
+            await cacheStore.EvictByTagAsync("recipes", ct);
+            await cacheStore.EvictByTagAsync("categories", ct);
+        }
         return Results.Created($"/api/v1/recipes/{result.Slug}", result);
     }
 
@@ -196,14 +205,21 @@ public static class RecipesEndpoints
     private static async Task<IResult> UpdateRecipe(
         Guid id,
         CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe.UpdateRecipeCommand command,
-        IMediator mediator)
+        IMediator mediator,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore? cacheStore = null,
+        CancellationToken ct = default)
     {
         if (id != command.Id)
         {
             return Results.BadRequest(new { message = "Id trên URL không khớp với Id trong body." });
         }
 
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(command, ct);
+        if (cacheStore != null)
+        {
+            await cacheStore.EvictByTagAsync("recipes", ct);
+            await cacheStore.EvictByTagAsync("categories", ct);
+        }
         return Results.Ok(result);
     }
 
@@ -215,6 +231,7 @@ public static class RecipesEndpoints
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.PublishRecipe.PublishRecipeCommand(id), ct);
         await cacheStore.EvictByTagAsync("recipes", ct);
+        await cacheStore.EvictByTagAsync("categories", ct);
         return Results.Ok(result);
     }
 
@@ -226,6 +243,7 @@ public static class RecipesEndpoints
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.UnpublishRecipe.UnpublishRecipeCommand(id), ct);
         await cacheStore.EvictByTagAsync("recipes", ct);
+        await cacheStore.EvictByTagAsync("categories", ct);
         return Results.Ok(result);
     }
 
@@ -237,6 +255,7 @@ public static class RecipesEndpoints
     {
         var result = await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.ArchiveRecipe.ArchiveRecipeCommand(id), ct);
         await cacheStore.EvictByTagAsync("recipes", ct);
+        await cacheStore.EvictByTagAsync("categories", ct);
         return Results.Ok(result);
     }
 
@@ -248,6 +267,7 @@ public static class RecipesEndpoints
     {
         await mediator.Send(new CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipe.DeleteRecipeCommand(id), ct);
         await cacheStore.EvictByTagAsync("recipes", ct);
+        await cacheStore.EvictByTagAsync("categories", ct);
         return Results.NoContent();
     }
 

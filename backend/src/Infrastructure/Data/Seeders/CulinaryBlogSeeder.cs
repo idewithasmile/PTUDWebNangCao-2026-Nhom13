@@ -394,6 +394,12 @@ public static class CulinaryBlogSeeder
             }
             else
             {
+                if (user.DisplayName != def.DisplayName || (user.DisplayName != null && user.DisplayName.Contains('?')))
+                {
+                    user.DisplayName = def.DisplayName;
+                    await userManager.UpdateAsync(user);
+                }
+
                 foreach (var role in def.Roles)
                 {
                     try

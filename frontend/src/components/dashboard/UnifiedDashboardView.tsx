@@ -72,7 +72,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
   const currentStats = stats ?? defaultStats;
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f4f7fc]">
+    <div className="flex min-h-screen w-full bg-[#f4f7fc] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 transition-colors duration-200">
       {/* 1. Cột trái: Sidebar màu xanh đen chuẩn theo hình ảnh Master Mockup */}
       <DashboardSidebar
         user={user}
@@ -146,7 +146,7 @@ export default function UnifiedDashboardView({ user }: UnifiedDashboardViewProps
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen w-full bg-[#f4f7fc] flex items-center justify-center">
+        <div className="min-h-screen w-full bg-[#f4f7fc] dark:bg-zinc-950 flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
         </div>
       }

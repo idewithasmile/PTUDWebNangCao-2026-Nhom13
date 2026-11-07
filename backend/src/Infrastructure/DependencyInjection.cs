@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Auth.Services;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Interfaces;
@@ -54,6 +55,10 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IFileStorageService, MinioFileStorageService>();
 
+        // Storage Quota Configuration & Service
+        services.Configure<StorageQuotaOptions>(config.GetSection(StorageQuotaOptions.SectionName));
+        services.AddScoped<IStorageQuotaService, StorageQuotaService>();
+
         // FR-JOB services & abstractions (CONS-001)
         services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -67,6 +72,8 @@ public static class DependencyInjection
         services.AddScoped<RecipeImageResizeJob>();
         services.AddScoped<ISitemapGenerationJob, SitemapGenerationJob>();
         services.AddScoped<SitemapGenerationJob>();
+        services.AddScoped<IPurgeOrphanFilesJob, PurgeOrphanFilesJob>();
+        services.AddScoped<PurgeOrphanFilesJob>();
 
         // FR-AUTH services (Member A — module Auth).
         services.AddScoped<IRefreshTokenStore, AuthRefreshTokenStore>();
@@ -93,7 +100,7 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Đăng ký các Recurring Jobs cho Hangfire (FR-JOB-003).
+    /// Đăng ký các Recurring Jobs cho Hangfire (FR-JOB-003, Vấn đề 7).
     /// </summary>
     public static IApplicationBuilder UseHangfireJobs(this IApplicationBuilder app)
     {
@@ -106,6 +113,13 @@ public static class DependencyInjection
                 // FR-JOB-003: Recurring Job tạo sitemap hàng ngày lúc 02:00 AM UTC
                 recurringJobs.AddOrUpdate<ISitemapGenerationJob>(
                     "sitemap-generation",
+                    job => job.ExecuteAsync(CancellationToken.None),
+                    "0 2 * * *",
+                    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+                // Vấn đề 7: Recurring Job quét và xóa file mồ côi trên MinIO hàng ngày lúc 02:00 AM UTC
+                recurringJobs.AddOrUpdate<IPurgeOrphanFilesJob>(
+                    "purge-orphan-files",
                     job => job.ExecuteAsync(CancellationToken.None),
                     "0 2 * * *",
                     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
