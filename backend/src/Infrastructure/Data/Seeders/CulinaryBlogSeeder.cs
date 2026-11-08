@@ -179,18 +179,12 @@ public static class CulinaryBlogSeeder
             }
         }
 
-        // 3. Clean Slate Reset: Purge dữ liệu cũ từ RecipeImages, RecipeIngredients, RecipeSteps, Recipes
-        if (db.Database.IsRelational())
+        // 3. Chỉ nạp Master Dataset khi cơ sở dữ liệu chưa có công thức nào
+        // Tuyệt đối không TRUNCATE TABLE trên mỗi lần restart để bảo toàn các công thức do người dùng/tác giả tạo.
+        var hasRecipes = await db.Recipes.IgnoreQueryFilters().AnyAsync();
+        if (hasRecipes)
         {
-            await db.Database.ExecuteSqlRawAsync(@"TRUNCATE TABLE ""RecipeImages"", ""RecipeIngredients"", ""RecipeSteps"", ""Recipes"" CASCADE;");
-        }
-        else
-        {
-            db.RecipeImages.RemoveRange(db.RecipeImages);
-            db.RecipeIngredients.RemoveRange(db.RecipeIngredients);
-            db.RecipeSteps.RemoveRange(db.RecipeSteps);
-            db.Recipes.RemoveRange(db.Recipes);
-            await db.SaveChangesAsync();
+            return;
         }
 
         // 4. Ingest Master Dataset
