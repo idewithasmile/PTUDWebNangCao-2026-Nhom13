@@ -165,20 +165,6 @@ export default function SiteHeader() {
                   >
                     <span>📊 Bảng điều khiển</span>
                   </Link>
-                  <Link
-                    href="/dashboard?tab=recipes-create"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800 font-bold transition"
-                  >
-                    <span>✏️ Viết công thức mới</span>
-                  </Link>
-                  <Link
-                    href="/dashboard?tab=profile"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 font-medium transition"
-                  >
-                    <span>👤 Hồ sơ cá nhân</span>
-                  </Link>
                   <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />
                   <button
                     type="button"
@@ -295,23 +281,6 @@ export default function SiteHeader() {
                       <span>{user.displayName}</span>
                     </span>
                     <span className="text-[11px] text-gray-400 dark:text-zinc-500 font-medium">Bảng điều khiển →</span>
-                  </Link>
-
-                  <Link
-                    href="/dashboard?tab=recipes-create"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    <span>Đăng công thức mới</span>
-                  </Link>
-
-                  <Link
-                    href="/dashboard?tab=settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-800 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300"
-                  >
-                    Hồ sơ & Cài đặt
                   </Link>
 
                   <button
