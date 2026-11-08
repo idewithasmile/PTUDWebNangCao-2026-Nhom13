@@ -532,6 +532,22 @@ export default function RecipeLivePreviewWidget({
                 {currentStep?.description || 'Chưa có hướng dẫn cho bước này.'}
               </p>
 
+              {/* Ảnh minh họa của bước nấu */}
+              {currentStep?.imageUrl && (
+                <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 max-h-48 shadow-2xs group/stepimg relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveMediaUrl(currentStep.imageUrl)}
+                    alt={currentStep.title || `Ảnh minh họa bước ${activeStepIndex + 1}`}
+                    className="w-full h-40 object-cover group-hover/stepimg:scale-102 transition duration-300"
+                  />
+                  <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] text-white font-medium flex items-center gap-1">
+                    <ImageIcon className="w-2.5 h-2.5" />
+                    <span>Ảnh bước {activeStepIndex + 1}</span>
+                  </div>
+                </div>
+              )}
+
               {/* BỘ ĐẾM THỜI GIAN NẤU MINI TƯƠNG TÁC THẬT */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/80 flex items-center justify-between">
                 <div>

@@ -141,6 +141,33 @@ export default function RecipeForm({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secondaryFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(null);
+  const stepFileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+
+  const handleStepImageUpload = async (stepIndex: number, file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError(`Tệp ảnh của bước ${stepIndex + 1} vượt quá kích thước 5MB.`);
+      return;
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      setUploadError('Định dạng ảnh không hợp lệ. Vui lòng chọn ảnh JPEG, PNG, WebP hoặc AVIF.');
+      return;
+    }
+
+    setUploadingStepIndex(stepIndex);
+    setUploadError(null);
+    try {
+      const res = await fileService.uploadFile(file, 'steps');
+      if (res?.url) {
+        setValue(`steps.${stepIndex}.imageUrl`, res.url);
+      }
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Tải ảnh minh họa cho bước thất bại.');
+    } finally {
+      setUploadingStepIndex(null);
+    }
+  };
 
   const {
     register,
@@ -362,21 +389,25 @@ export default function RecipeForm({
         title: 'Sơ chế & Ướp thịt bò',
         description: 'Thịt bò rửa sạch thấm khô, thái lát mỏng. Ướp cùng 1 thìa tỏi băm, 1 thìa dầu hào, 1 thìa dầu ăn để thịt mềm.',
         timerMinutes: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&auto=format&fit=crop&q=80',
       },
       {
         title: 'Chần sơ bông cải xanh và cà rốt',
         description: 'Đun sôi nồi nước có chút muối, thả bông cải và cà rốt vào chần nhanh trong 1 phút rồi vớt ra ngâm nước đá để giữ màu xanh tươi giòn.',
         timerMinutes: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
       },
       {
         title: 'Xào rau củ cùng sốt tỏi',
         description: 'Đun nóng chảo với chút dầu, phi thơm tỏi rồi trút rau củ vào đảo nhanh tay cùng 1 muỗng hạt nêm.',
         timerMinutes: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
       },
       {
         title: 'Xào thịt bò & Trình bày đĩa',
         description: 'Bật lửa lớn, cho thịt bò vào xào nhanh 2 phút vừa chín tới, đổ rau củ vào đảo đều 30 giây, rưới chút dầu mè, rắc tiêu và bày ra đĩa thưởng thức.',
         timerMinutes: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
       },
     ]);
 
@@ -1533,6 +1564,7 @@ export default function RecipeForm({
                         title: `Bước ${stepFields.length + 1}: `,
                         description: '',
                         timerMinutes: null,
+                        imageUrl: '',
                       })
                     }
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-500 text-orange-600 hover:bg-orange-50 text-xs font-bold transition active:scale-95"
@@ -1559,6 +1591,7 @@ export default function RecipeForm({
                           title: 'Bước 1: Sơ chế nguyên liệu',
                           description: '',
                           timerMinutes: null,
+                          imageUrl: '',
                         })
                       }
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition active:scale-95"
@@ -1640,6 +1673,98 @@ export default function RecipeForm({
                           placeholder="Mô tả chi tiết những gì cần làm trong bước này..."
                           className="w-full rounded-xl border border-stone-200 bg-stone-50/50 p-2.5 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed"
                         />
+
+                        {/* Ảnh minh họa của bước */}
+                        <div className="pt-2.5 border-t border-stone-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                          {watchedSteps?.[idx]?.imageUrl ? (
+                            <div className="flex items-center gap-3">
+                              <div className="relative group/stepimg w-16 h-16 rounded-xl overflow-hidden border border-stone-200 bg-stone-50 shrink-0 shadow-2xs">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={resolveMediaUrl(watchedSteps[idx].imageUrl!)}
+                                  alt={`Ảnh minh họa bước ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setValue(`steps.${idx}.imageUrl`, '')}
+                                  className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 text-white hover:bg-red-600 transition"
+                                  title="Xóa ảnh bước này"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <p className="text-[11px] font-bold text-stone-700 truncate">
+                                  Ảnh minh họa bước {idx + 1}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => stepFileInputRefs.current[idx]?.click()}
+                                    disabled={uploadingStepIndex === idx}
+                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-orange-600 hover:text-orange-700 underline cursor-pointer"
+                                  >
+                                    {uploadingStepIndex === idx ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <UploadCloud className="w-3 h-3" />
+                                    )}
+                                    <span>Đổi ảnh</span>
+                                  </button>
+                                  <span className="text-[10px] text-stone-300">•</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setValue(`steps.${idx}.imageUrl`, '')}
+                                    className="text-[11px] font-medium text-stone-400 hover:text-red-500 transition cursor-pointer"
+                                  >
+                                    Xóa
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+                              <button
+                                type="button"
+                                onClick={() => stepFileInputRefs.current[idx]?.click()}
+                                disabled={uploadingStepIndex === idx}
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-orange-50 hover:border-orange-300 text-[11px] font-bold text-stone-700 transition active:scale-95 shrink-0 cursor-pointer"
+                              >
+                                {uploadingStepIndex === idx ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                                ) : (
+                                  <UploadCloud className="w-3.5 h-3.5 text-orange-500" />
+                                )}
+                                <span>Tải ảnh bước {idx + 1}</span>
+                              </button>
+
+                              <div className="relative flex-1">
+                                <input
+                                  type="text"
+                                  {...register(`steps.${idx}.imageUrl`)}
+                                  placeholder="hoặc dán liên kết URL ảnh minh họa..."
+                                  className="w-full text-[11px] px-3 py-1.5 rounded-xl border border-stone-200 bg-stone-50/50 placeholder:text-stone-400 outline-none focus:bg-white focus:border-orange-400 transition"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <input
+                            ref={(el) => {
+                              stepFileInputRefs.current[idx] = el;
+                            }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/avif"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleStepImageUpload(idx, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>

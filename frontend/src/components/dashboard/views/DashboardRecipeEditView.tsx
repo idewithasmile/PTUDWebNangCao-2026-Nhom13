@@ -367,6 +367,7 @@ export default function DashboardRecipeEditView({
                 title: s.title,
                 description: s.description,
                 timerMinutes: s.timerMinutes,
+                imageUrl: s.imageUrl || '',
               })),
             }}
             isEdit={true}
