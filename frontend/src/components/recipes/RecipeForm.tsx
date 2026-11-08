@@ -438,12 +438,27 @@ export default function RecipeForm({
   const onValidationError = (formErrors: FieldErrors<RecipeFormData>) => {
     const errorKeys = Object.keys(formErrors);
     if (errorKeys.length > 0) {
-      const firstError = formErrors[errorKeys[0] as keyof RecipeFormData];
-      setUploadError(
-        firstError?.message
-          ? String(firstError.message)
-          : 'Vui lòng kiểm tra lại các trường thông tin bắt buộc còn thiếu.'
-      );
+      const errorMap: Record<string, string> = {
+        title: 'Vui lòng nhập tên công thức (tối thiểu 5 ký tự).',
+        description: 'Vui lòng nhập mô tả ngắn (tối thiểu 10 ký tự).',
+        instructions: 'Vui lòng nhập hướng dẫn thực hiện chung (tối thiểu 5 ký tự).',
+        categoryId: 'Vui lòng chọn danh mục cho món ăn.',
+        prepTimeMinutes: 'Thời gian chuẩn bị tối thiểu 1 phút.',
+        cookTimeMinutes: 'Thời gian nấu tối thiểu 1 phút.',
+        servings: 'Số khẩu phần tối thiểu 1 người.',
+        ingredients: 'Vui lòng kiểm tra lại danh sách nguyên liệu (tên không được để trống).',
+        steps: 'Vui lòng kiểm tra lại các bước nấu (mô tả bước không được để trống).',
+      };
+
+      const firstKey = errorKeys[0];
+      const firstError = formErrors[firstKey as keyof RecipeFormData];
+      const rawMsg = firstError?.message ? String(firstError.message) : '';
+      const friendlyMessage =
+        rawMsg && !rawMsg.includes('Expected') && !rawMsg.includes('received nan')
+          ? rawMsg
+          : (errorMap[firstKey] || 'Vui lòng kiểm tra lại các trường thông tin bắt buộc còn thiếu.');
+
+      setUploadError(friendlyMessage);
       setViewMode('edit');
       if (errorKeys.includes('ingredients')) {
         setActiveStep(2);
@@ -1076,6 +1091,26 @@ export default function RecipeForm({
             </div>
           </div>
 
+          {/* Thông báo lỗi nếu việc kiểm tra form thất bại khi đang xem trước */}
+          {uploadError && (
+            <div className="sticky bottom-24 z-30 flex items-start justify-between gap-3 rounded-2xl border border-red-300 bg-red-50 p-4 text-xs text-red-800 shadow-xl animate-fade-in">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-red-900">Chưa thể xuất bản công thức</h4>
+                  <p className="mt-0.5 leading-relaxed">{uploadError}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadError(null)}
+                className="text-stone-400 hover:text-stone-700 text-xs font-bold px-2 py-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Sticky Footer trong Chế độ xem trước */}
           <div className="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200 p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-stone-500">
@@ -1498,7 +1533,10 @@ export default function RecipeForm({
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          {...register('calories', { valueAsNumber: true })}
+                          {...register('calories', {
+                            setValueAs: (v) =>
+                              v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v),
+                          })}
                           placeholder="0"
                           min="0"
                           className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
@@ -1517,7 +1555,10 @@ export default function RecipeForm({
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          {...register('protein', { valueAsNumber: true })}
+                          {...register('protein', {
+                            setValueAs: (v) =>
+                              v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v),
+                          })}
                           placeholder="0"
                           min="0"
                           className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
@@ -1536,7 +1577,10 @@ export default function RecipeForm({
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          {...register('carbs', { valueAsNumber: true })}
+                          {...register('carbs', {
+                            setValueAs: (v) =>
+                              v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v),
+                          })}
                           placeholder="0"
                           min="0"
                           className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
@@ -1555,7 +1599,10 @@ export default function RecipeForm({
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          {...register('fat', { valueAsNumber: true })}
+                          {...register('fat', {
+                            setValueAs: (v) =>
+                              v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v),
+                          })}
                           placeholder="0"
                           min="0"
                           className="w-full text-xs font-bold text-stone-800 bg-transparent outline-none p-0"
@@ -1690,7 +1737,8 @@ export default function RecipeForm({
                           type="number"
                           step="any"
                           {...register(`ingredients.${idx}.quantity`, {
-                            setValueAs: (v) => (v === '' ? null : Number(v)),
+                            setValueAs: (v) =>
+                              v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v),
                           })}
                           placeholder="Số lượng"
                           className="w-20 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500 text-right"
@@ -1852,7 +1900,10 @@ export default function RecipeForm({
                             <Clock className="w-3 h-3 text-orange-500" />
                             <input
                               type="number"
-                              {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
+                              {...register(`steps.${idx}.timerMinutes`, {
+                                setValueAs: (v) =>
+                                  v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v),
+                              })}
                               placeholder="0"
                               min="0"
                               className="w-8 text-center font-bold text-stone-800 bg-transparent outline-none p-0"
@@ -2421,6 +2472,26 @@ export default function RecipeForm({
           />
         </div>
       </div>
+
+      {/* Thông báo lỗi nổi bật ở chân trang nếu việc kiểm tra form thất bại */}
+      {uploadError && (
+        <div className="sticky bottom-24 z-20 flex items-start justify-between gap-3 rounded-2xl border border-red-300 bg-red-50 p-4 text-xs text-red-800 shadow-xl animate-fade-in mb-2">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+            <div>
+              <h4 className="font-bold text-red-900">Chưa thể xuất bản công thức</h4>
+              <p className="mt-0.5 leading-relaxed">{uploadError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="text-stone-400 hover:text-stone-700 text-xs font-bold px-2 py-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 4. THANH HÀNH ĐỘNG DƯỚI CÙNG (FOOTER ACTIONS BAR CHUẨN MOCKUP) */}
       <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200 p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
