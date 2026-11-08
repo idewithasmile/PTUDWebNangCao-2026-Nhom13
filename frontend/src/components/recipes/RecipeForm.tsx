@@ -1259,6 +1259,26 @@ export default function RecipeForm({
                     />
                   </div>
 
+                  {/* Thông báo lỗi upload ảnh trực tiếp ngay dưới ô kéo thả */}
+                  {uploadError && (
+                    <div className="flex items-start justify-between gap-2.5 p-3 rounded-xl border border-red-200 bg-red-50 text-xs text-red-800 shadow-xs animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-red-900">Lưu ý tải ảnh</p>
+                          <p className="mt-0.5 text-stone-700">{uploadError}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUploadError(null)}
+                        className="text-stone-400 hover:text-stone-700 text-xs font-bold px-1.5 py-0.5"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
                   {/* Ô dán URL ảnh trực tiếp */}
                   <div className="flex items-center gap-1.5 bg-stone-50 p-2 rounded-xl border border-stone-200">
                     <input
@@ -2676,6 +2696,27 @@ export default function RecipeForm({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 5. FLOATING TOAST NOTIFICATION - Luôn nổi ở góc màn hình dù người dùng ở bất kỳ vị trí cuộn nào */}
+      {uploadError && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md bg-white/95 backdrop-blur-md border border-red-200 rounded-2xl shadow-2xl p-4 flex items-start gap-3 animate-fade-in">
+          <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
+            <AlertCircle className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-bold text-red-900">Thông báo từ hệ thống</h4>
+            <p className="text-xs text-stone-600 mt-0.5 leading-relaxed break-words">{uploadError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="text-stone-400 hover:text-stone-700 text-xs font-bold p-1 rounded-lg hover:bg-stone-100 transition cursor-pointer"
+            title="Đóng thông báo"
+          >
+            ✕
+          </button>
         </div>
       )}
     </form>
