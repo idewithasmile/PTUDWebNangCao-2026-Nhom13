@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   useRecipeDetail,
   usePublishRecipe,
@@ -17,28 +17,20 @@ import { recipeService } from '@/lib/services/recipe-service';
 import RecipeForm from '@/components/recipes/RecipeForm';
 import type { DashboardTab } from '../DashboardSidebar';
 import DashboardHeroBanner from '../common/DashboardHeroBanner';
-import RecipeStudioHeader from '../studio/RecipeStudioHeader';
-import StudioGeneralTab from '../studio/tabs/StudioGeneralTab';
-import StudioGalleryTab from '../studio/tabs/StudioGalleryTab';
-import StudioIngredientsTab from '../studio/tabs/StudioIngredientsTab';
-import StudioStepsTab from '../studio/tabs/StudioStepsTab';
-import StudioPreviewTab from '../studio/tabs/StudioPreviewTab';
 import Toast, { ToastMessage } from '@/components/common/Toast';
-import { Tabs, type TabItem } from '@/components/ui/tabs';
 import RecipeAuthorGuideModal from '@/components/recipes/RecipeAuthorGuideModal';
 import {
-  FileText,
-  Image as ImageIcon,
-  Utensils,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
-  Eye,
   ChefHat,
   ArrowLeft,
   Archive,
   BookOpen,
+  Send,
+  Eye,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react';
 
 interface DashboardRecipeEditViewProps {
@@ -46,21 +38,11 @@ interface DashboardRecipeEditViewProps {
   onSelectTab: (tab: DashboardTab) => void;
 }
 
-type StudioActiveTab = 'general' | 'gallery' | 'ingredients' | 'steps' | 'preview';
-
 export default function DashboardRecipeEditView({
   slug,
   onSelectTab,
 }: DashboardRecipeEditViewProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const studioTabParam = (searchParams.get('studioTab') as StudioActiveTab) || 'general';
-  const modeParam = searchParams.get('mode');
-
-  const [activeTab, setActiveTab] = useState<StudioActiveTab>(studioTabParam);
-  const [viewStyle, setViewStyle] = useState<'studio' | 'form'>(
-    modeParam === 'studio' ? 'studio' : 'form'
-  );
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -73,7 +55,7 @@ export default function DashboardRecipeEditView({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Lấy dữ liệu bài viết
+  // Lấy dữ liệu chi tiết công thức
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
 
   const publishMutation = usePublishRecipe();
@@ -85,8 +67,8 @@ export default function DashboardRecipeEditView({
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-gray-100 p-8 shadow-xs">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <p className="text-xs text-gray-500 font-medium">Đang tải Recipe Studio...</p>
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <p className="text-xs text-gray-500 font-medium">Đang tải dữ liệu công thức...</p>
       </div>
     );
   }
@@ -112,13 +94,10 @@ export default function DashboardRecipeEditView({
     );
   }
 
-  // Chuyển đổi tab Studio
-  const handleTabChange = (tab: StudioActiveTab) => {
-    setActiveTab(tab);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('studioTab', tab);
-    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
-  };
+  const statusNum = Number(recipe.status);
+  const isPublished = recipe.status === 'Published' || statusNum === 1;
+  const isDraft = recipe.status === 'Draft' || statusNum === 0;
+  const isArchived = recipe.status === 'Archived' || statusNum === 2;
 
   // Header quick actions
   const handlePublish = async () => {
@@ -152,6 +131,9 @@ export default function DashboardRecipeEditView({
   };
 
   const handleDelete = async () => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn công thức "${recipe.title}" không?`)) {
+      return;
+    }
     try {
       await deleteMutation.mutateAsync(recipe.id);
       addToast('success', 'Đã xóa công thức', `Công thức "${recipe.title}" đã được xóa vĩnh viễn.`);
@@ -170,6 +152,7 @@ export default function DashboardRecipeEditView({
   ) => {
     if (!recipe) return;
     try {
+      // 1. Cập nhật thông tin chính của công thức (FR-RCP-004)
       await updateMutation.mutateAsync({
         id: recipe.id,
         title: formData.title,
@@ -187,7 +170,7 @@ export default function DashboardRecipeEditView({
         rowVersionBase64: recipe.rowVersionBase64 || '',
       });
 
-      // Tải ảnh phụ nếu có
+      // 2. Tải ảnh phụ lên MinIO nếu có
       if (secondaryFiles.length > 0) {
         for (const f of secondaryFiles) {
           try {
@@ -198,67 +181,113 @@ export default function DashboardRecipeEditView({
         }
       }
 
-      // Xử lý chuyển đổi trạng thái nếu người dùng bấm Xuất bản hoặc Lưu trữ
-      const statusNum = Number(recipe.status);
-      if (targetStatus === 'publish' && recipe.status !== 'Published' && statusNum !== 1) {
+      // 3. Đồng bộ hóa Danh sách Nguyên liệu (FR-RCP-009)
+      if (formData.ingredients && formData.ingredients.length > 0) {
+        const existingIngs = recipe.ingredients || [];
+        // Xóa nguyên liệu không còn trong form
+        for (const oldIng of existingIngs) {
+          if (!formData.ingredients.some((newIng) => newIng.name.trim().toLowerCase() === oldIng.name.trim().toLowerCase())) {
+            try {
+              await recipeService.deleteIngredient(recipe.id, oldIng.id);
+            } catch (e) {
+              console.warn('Lỗi xóa nguyên liệu cũ:', e);
+            }
+          }
+        }
+        // Thêm hoặc cập nhật nguyên liệu
+        for (const newIng of formData.ingredients) {
+          if (!newIng.name?.trim()) continue;
+          const matched = existingIngs.find(
+            (oldIng) => oldIng.name.trim().toLowerCase() === newIng.name.trim().toLowerCase()
+          );
+          if (matched) {
+            try {
+              await recipeService.updateIngredient(recipe.id, matched.id, {
+                name: newIng.name.trim(),
+                quantity: newIng.quantity,
+                unit: newIng.unit,
+                notes: newIng.notes,
+              });
+            } catch (e) {
+              console.warn('Lỗi cập nhật nguyên liệu:', e);
+            }
+          } else {
+            try {
+              await recipeService.addIngredient(recipe.id, {
+                name: newIng.name.trim(),
+                quantity: newIng.quantity,
+                unit: newIng.unit,
+                notes: newIng.notes,
+              });
+            } catch (e) {
+              console.warn('Lỗi thêm nguyên liệu mới:', e);
+            }
+          }
+        }
+      }
+
+      // 4. Đồng bộ hóa Các bước chế biến (FR-RCP-010)
+      if (formData.steps && formData.steps.length > 0) {
+        const existingSteps = recipe.steps || [];
+        // Cập nhật hoặc thêm bước mới theo index
+        for (let i = 0; i < formData.steps.length; i++) {
+          const s = formData.steps[i];
+          if (!s.description?.trim()) continue;
+          if (i < existingSteps.length) {
+            try {
+              await recipeService.updateStep(recipe.id, existingSteps[i].id, {
+                title: s.title || null,
+                description: s.description,
+                timerMinutes: s.timerMinutes || null,
+                imageUrl: s.imageUrl || null,
+              });
+            } catch (e) {
+              console.warn('Lỗi cập nhật bước chế biến:', e);
+            }
+          } else {
+            try {
+              await recipeService.addStep(recipe.id, {
+                title: s.title || null,
+                description: s.description,
+                timerMinutes: s.timerMinutes || null,
+                imageUrl: s.imageUrl || null,
+              });
+            } catch (e) {
+              console.warn('Lỗi thêm bước chế biến mới:', e);
+            }
+          }
+        }
+        // Xóa các bước thừa nếu tác giả giảm bớt số bước
+        if (existingSteps.length > formData.steps.length) {
+          for (let i = formData.steps.length; i < existingSteps.length; i++) {
+            try {
+              await recipeService.deleteRecipeStep(recipe.id, existingSteps[i].id);
+            } catch (e) {
+              console.warn('Lỗi xóa bước thừa:', e);
+            }
+          }
+        }
+      }
+
+      // 5. Xử lý chuyển đổi trạng thái nếu người dùng chọn Xuất bản, Lưu trữ hoặc Bản nháp
+      if (targetStatus === 'publish' && !isPublished) {
         await publishMutation.mutateAsync(recipe.id);
-      } else if (targetStatus === 'archive' && recipe.status !== 'Archived' && statusNum !== 2) {
+      } else if (targetStatus === 'archive' && !isArchived) {
         await archiveMutation.mutateAsync(recipe.id);
-      } else if (targetStatus === 'draft' && recipe.status !== 'Draft' && statusNum !== 0) {
+      } else if (targetStatus === 'draft' && !isDraft) {
         await unpublishMutation.mutateAsync(recipe.id);
       }
 
-      addToast('success', 'Lưu thành công', 'Công thức đã được cập nhật thành công!');
+      addToast('success', 'Lưu thành công', 'Công thức ẩm thực đã được cập nhật hoàn chỉnh!');
       refetch();
     } catch (err: unknown) {
       addToast('error', 'Cập nhật thất bại', toErrorMessage(err, 'Vui lòng kiểm tra lại dữ liệu.'));
     }
   };
 
-  const imagesCount = recipe.images?.length ?? 0;
-  const ingredientsCount = recipe.ingredients?.length ?? 0;
-  const stepsCount = recipe.steps?.length ?? 0;
-
-  const studioTabs = [
-    {
-      id: 'general' as const,
-      label: 'Thông tin & Dinh dưỡng',
-      icon: <FileText className="w-4 h-4" />,
-    },
-    {
-      id: 'gallery' as const,
-      label: 'Thư viện hình ảnh',
-      icon: <ImageIcon className="w-4 h-4" />,
-      count: imagesCount,
-    },
-    {
-      id: 'ingredients' as const,
-      label: 'Nguyên liệu',
-      icon: <Utensils className="w-4 h-4" />,
-      count: ingredientsCount,
-    },
-    {
-      id: 'steps' as const,
-      label: 'Các bước thực hiện',
-      icon: <CheckCircle2 className="w-4 h-4" />,
-      count: stepsCount,
-    },
-    {
-      id: 'preview' as const,
-      label: 'Xem trước & Tổng quan',
-      icon: <Eye className="w-4 h-4" />,
-      isLive: true,
-    },
-  ];
-
-  const statusNum = Number(recipe.status);
-  const isPublished = recipe.status === 'Published' || statusNum === 1;
-  const isDraft = recipe.status === 'Draft' || statusNum === 0;
-  const isArchived = recipe.status === 'Archived' || statusNum === 2;
-
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Toast Notifications Container */}
+      {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none">
         {toasts.map((toast) => (
           <div key={toast.id} className="pointer-events-auto">
@@ -267,219 +296,182 @@ export default function DashboardRecipeEditView({
         ))}
       </div>
 
-      {/* Điều hướng Chế độ xem: Soạn thảo đồng nhất (Form) HOẶC Studio 5 Tab */}
-      {viewStyle === 'form' ? (
-        <div className="space-y-6 animate-fade-in">
-          {/* HERO BANNER: Chỉnh sửa công thức đồng nhất sử dụng Reusable Component */}
-          <DashboardHeroBanner
-            backgroundImage="/images/dashboard/banner-recipes.jpg"
-            icon={<ChefHat className="w-7 h-7" />}
-            title="Chỉnh sửa công thức"
-            badge={
-              <>
-                {isPublished && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Đã xuất bản</span>
-                  </span>
-                )}
-                {isDraft && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Bản nháp</span>
-                  </span>
-                )}
-                {isArchived && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-500/30 text-stone-300 border border-stone-500/40">
-                    <Archive className="w-3.5 h-3.5" />
-                    <span>Kho lưu trữ</span>
-                  </span>
-                )}
-              </>
-            }
-            description={
-              <span>
-                Cập nhật thông tin chi tiết và nguyên liệu cho bài viết &quot;{recipe.title}&quot;
+      {/* HERO BANNER: Chỉnh sửa công thức theo phong cách ẩm thực */}
+      <DashboardHeroBanner
+        backgroundImage="/images/dashboard/banner-recipes.jpg"
+        icon={<ChefHat className="w-7 h-7" />}
+        title={`Chỉnh sửa: ${recipe.title}`}
+        badge={
+          <>
+            {isPublished && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Đã xuất bản</span>
               </span>
-            }
-            breadcrumbs={[
-              { label: 'Trang chủ', onClick: () => onSelectTab('overview') },
-              { label: 'Công thức của tôi', onClick: () => onSelectTab('recipes-mine') },
-              { label: 'Chỉnh sửa', active: true },
-            ]}
-            actions={
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsGuideModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-orange-300" />
-                  <span>Sổ tay hướng dẫn</span>
-                </button>
+            )}
+            {isDraft && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Bản nháp</span>
+              </span>
+            )}
+            {isArchived && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-500/30 text-stone-300 border border-stone-500/40">
+                <Archive className="w-3.5 h-3.5" />
+                <span>Kho lưu trữ</span>
+              </span>
+            )}
+            {recipe.categoryName && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white border border-white/20">
+                {recipe.categoryName}
+              </span>
+            )}
+          </>
+        }
+        description={
+          <span>
+            Hoàn thiện công thức từng bước theo quy chuẩn chuyên nghiệp với Live Preview thời gian thực
+          </span>
+        }
+        breadcrumbs={[
+          { label: 'Trang chủ', onClick: () => onSelectTab('overview') },
+          { label: 'Công thức của tôi', onClick: () => onSelectTab('recipes-mine') },
+          { label: 'Chỉnh sửa công thức', active: true },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsGuideModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-orange-300" />
+              <span className="hidden sm:inline">Sổ tay hướng dẫn</span>
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => setViewStyle('studio')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white shadow-sm transition active:scale-95"
-                  title="Chuyển sang chế độ biên tập Recipe Studio (5 Tab)"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Mở Recipe Studio</span>
-                </button>
+            {isPublished && (
+              <a
+                href={`/recipes/${recipe.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-xs font-bold text-white border border-emerald-500 transition active:scale-95 shadow-xs"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Xem trên Web</span>
+              </a>
+            )}
 
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('recipes-mine')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 backdrop-blur-sm text-xs font-bold text-stone-200 border border-stone-700 transition active:scale-95"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Quay lại</span>
-                </button>
-              </>
-            }
-          />
-          <RecipeForm
-            initialValues={{
-              title: recipe.title,
-              description: recipe.description,
-              instructions: recipe.instructions,
-              prepTimeMinutes: recipe.prepTimeMinutes,
-              cookTimeMinutes: recipe.cookTimeMinutes,
-              servings: recipe.servings,
-              difficulty: typeof recipe.difficulty === 'number' ? recipe.difficulty : 1,
-              categoryId: recipe.categoryId,
-              calories: recipe.nutrition?.calories ?? 0,
-              protein: recipe.nutrition?.protein ?? 0,
-              carbs: recipe.nutrition?.carbohydrates ?? 0,
-              fat: recipe.nutrition?.fat ?? 0,
-              primaryImageUrl:
-                recipe.images?.find((i) => i.isPrimary)?.originalUrl ||
-                recipe.images?.[0]?.originalUrl ||
-                '',
-              ingredients: recipe.ingredients?.map((i) => ({
-                name: i.name,
-                quantity: i.quantity,
-                unit: i.unit || '',
-                notes: i.notes || '',
-              })),
-              steps: recipe.steps?.map((s) => ({
-                title: s.title,
-                description: s.description,
-                timerMinutes: s.timerMinutes,
-                imageUrl: s.imageUrl || '',
-              })),
-            }}
-            isEdit={true}
-            isSubmitting={updateMutation.isPending || publishMutation.isPending || archiveMutation.isPending}
-            onSubmit={handleFormSubmit}
-            onSwitchToStudio={() => setViewStyle('studio')}
-          />
-        </div>
-      ) : (
-        <>
-          {/* Header Studio Bar (FR-RCP-005, 006, 007) */}
-          <RecipeStudioHeader
-            recipe={recipe}
-            onSelectTab={onSelectTab}
-            onPublish={handlePublish}
-            onUnpublish={handleUnpublish}
-            onArchive={handleArchive}
-            onDelete={handleDelete}
-            isPublishing={publishMutation.isPending}
-            isUnpublishing={unpublishMutation.isPending}
-            isArchiving={archiveMutation.isPending}
-            isDeleting={deleteMutation.isPending}
-            viewStyle={viewStyle}
-            onToggleViewStyle={() => setViewStyle('form')}
-          />
+            {isPublished && (
+              <button
+                type="button"
+                onClick={handleUnpublish}
+                disabled={unpublishMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/80 hover:bg-amber-500 text-xs font-bold text-white border border-amber-400 transition active:scale-95 shadow-xs"
+                title="Chuyển về trạng thái bản nháp"
+              >
+                {unpublishMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
+                <span>Gỡ xuất bản</span>
+              </button>
+            )}
 
-          {/* Studio Tabs Navigation Mang Phong Cách Ẩm Thực Cao Cấp */}
-          <div className="bg-white p-2 sm:p-2.5 rounded-3xl border border-stone-200/80 shadow-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              {studioTabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => handleTabChange(tab.id as StudioActiveTab)}
-                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                      isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm ring-2 ring-orange-200 scale-102'
-                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                    }`}
-                  >
-                    <span className={isActive ? 'text-white' : 'text-orange-500'}>
-                      {tab.icon}
-                    </span>
-                    <span>{tab.label}</span>
-                    {tab.count !== undefined && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isActive
-                            ? 'bg-white/25 text-white'
-                            : 'bg-stone-100 text-stone-600 border border-stone-200'
-                        }`}
-                      >
-                        {tab.count}
-                      </span>
-                    )}
-                    {tab.isLive && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isActive
-                            ? 'bg-white text-orange-600 font-extrabold shadow-2xs'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        }`}
-                      >
-                        Live
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {isDraft && (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-xs font-bold text-white shadow-sm transition active:scale-95"
+              >
+                {publishMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span>Xuất bản</span>
+              </button>
+            )}
+
+            {!isArchived && (
+              <button
+                type="button"
+                onClick={handleArchive}
+                disabled={archiveMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-stone-200 border border-white/20 transition active:scale-95"
+                title="Lưu trữ công thức"
+              >
+                <Archive className="w-3.5 h-3.5 text-stone-300" />
+                <span className="hidden sm:inline">Lưu trữ</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-bold text-red-300 border border-red-500/40 transition active:scale-95"
+              title="Xóa công thức"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Xóa</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab('recipes-mine')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 backdrop-blur-sm text-xs font-bold text-stone-200 border border-stone-700 transition active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại</span>
+            </button>
           </div>
+        }
+      />
 
-          {/* Tab Contents */}
-          {activeTab === 'general' && (
-            <StudioGeneralTab recipe={recipe} onRefresh={refetch} />
-          )}
+      {/* FORM SOẠN THẢO TỪNG BƯỚC ĐỒNG NHẤT CÓ LIVE PREVIEW THỜI GIAN THỰC */}
+      <RecipeForm
+        initialValues={{
+          title: recipe.title,
+          description: recipe.description,
+          instructions: recipe.instructions,
+          prepTimeMinutes: recipe.prepTimeMinutes,
+          cookTimeMinutes: recipe.cookTimeMinutes,
+          servings: recipe.servings,
+          difficulty: typeof recipe.difficulty === 'number' ? recipe.difficulty : 1,
+          categoryId: recipe.categoryId,
+          calories: recipe.nutrition?.calories ?? 0,
+          protein: recipe.nutrition?.protein ?? 0,
+          carbs: recipe.nutrition?.carbohydrates ?? 0,
+          fat: recipe.nutrition?.fat ?? 0,
+          primaryImageUrl:
+            recipe.images?.find((i) => i.isPrimary)?.originalUrl ||
+            recipe.images?.[0]?.originalUrl ||
+            '',
+          ingredients: recipe.ingredients?.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit || '',
+            notes: i.notes || '',
+          })),
+          steps: recipe.steps?.map((s) => ({
+            title: s.title,
+            description: s.description,
+            timerMinutes: s.timerMinutes,
+            imageUrl: s.imageUrl || '',
+          })),
+        }}
+        isEdit={true}
+        isSubmitting={
+          updateMutation.isPending ||
+          publishMutation.isPending ||
+          archiveMutation.isPending
+        }
+        onSubmit={handleFormSubmit}
+      />
 
-          {activeTab === 'gallery' && (
-            <StudioGalleryTab recipe={recipe} onRefresh={refetch} />
-          )}
-
-          {activeTab === 'ingredients' && (
-            <StudioIngredientsTab recipe={recipe} onRefresh={refetch} />
-          )}
-
-          {activeTab === 'steps' && (
-            <StudioStepsTab
-              recipe={recipe}
-              onRefresh={refetch}
-              onSwitchTab={(tab) => handleTabChange(tab)}
-            />
-          )}
-
-          {activeTab === 'preview' && (
-            <StudioPreviewTab
-              recipe={recipe}
-              onRefresh={refetch}
-              onSwitchTab={(tab) => handleTabChange(tab)}
-              onPublish={handlePublish}
-              onUnpublish={handleUnpublish}
-              onArchive={handleArchive}
-              isPublishing={publishMutation.isPending}
-              isUnpublishing={unpublishMutation.isPending}
-              isArchiving={archiveMutation.isPending}
-            />
-          )}
-        </>
-      )}
-
-      {/* Modal Sổ tay quy chuẩn biên soạn công thức ẩm thực */}
+      {/* Modal Sổ tay hướng dẫn */}
       <RecipeAuthorGuideModal
         isOpen={isGuideModalOpen}
         onClose={() => setIsGuideModalOpen(false)}

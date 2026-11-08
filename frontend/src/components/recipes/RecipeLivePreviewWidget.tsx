@@ -60,9 +60,9 @@ export interface RecipeLivePreviewWidgetProps {
     carbohydrates?: number | null;
     fat?: number | null;
   };
+  activePreviewTab?: 'card' | 'cooking' | 'nutrition' | 'mobile';
   onOpenFullDashboardPreview: () => void;
   onOpenNewPagePreview: () => void;
-  onSwitchToStudio?: () => void;
   onRequestApplyServings?: (targetServings: number, multiplier: number) => void;
 }
 
@@ -85,13 +85,21 @@ export default function RecipeLivePreviewWidget({
   ingredients = [],
   steps = [],
   nutrition,
+  activePreviewTab,
   onOpenFullDashboardPreview,
   onOpenNewPagePreview,
-  onSwitchToStudio,
   onRequestApplyServings,
 }: RecipeLivePreviewWidgetProps) {
   // 1. Chế độ xem mini: 'card' (Thẻ bìa) | 'cooking' (Nấu ăn từng bước) | 'nutrition' (Dinh dưỡng) | 'mobile' (Mô phỏng Mobile)
-  const [activeTab, setActiveTab] = useState<'card' | 'cooking' | 'nutrition' | 'mobile'>('card');
+  const [activeTab, setActiveTab] = useState<'card' | 'cooking' | 'nutrition' | 'mobile'>(
+    activePreviewTab || 'card'
+  );
+
+  useEffect(() => {
+    if (activePreviewTab) {
+      setActiveTab(activePreviewTab);
+    }
+  }, [activePreviewTab]);
 
   // 2. Tương tác khẩu phần ăn (Realtime Scaling Calculator)
   const [interactiveServings, setInteractiveServings] = useState(servings || 2);
@@ -757,23 +765,6 @@ export default function RecipeLivePreviewWidget({
             <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
           </button>
         </div>
-
-        {/* Banner chuyển sang Recipe Studio (nếu có callback) */}
-        {onSwitchToStudio && (
-          <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-blue-900 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              <span className="text-[11px]">Recipe Studio 5 tab</span>
-            </div>
-            <button
-              type="button"
-              onClick={onSwitchToStudio}
-              className="px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition active:scale-95"
-            >
-              Mở Studio 🎛️
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
