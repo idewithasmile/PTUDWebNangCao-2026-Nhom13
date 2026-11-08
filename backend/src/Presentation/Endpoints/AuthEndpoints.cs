@@ -71,11 +71,22 @@ public static class AuthEndpoints
         // FR-AUTH-005: Đăng xuất — 204, idempotent.
         group.MapPost("/logout", async (ISender sender, HttpContext http) =>
         {
-            await sender.Send(new LogoutCommand(
-                GetUserId(http), http.Request.Cookies[RefreshCookieName]));
+            var userId = http.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? http.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var refreshToken = http.Request.Cookies[RefreshCookieName];
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await sender.Send(new LogoutCommand(userId, refreshToken));
+            }
+            else if (!string.IsNullOrEmpty(refreshToken))
+            {
+                await sender.Send(new LogoutCommand("anonymous", refreshToken));
+            }
+
             ClearRefreshCookie(http);
             return Results.NoContent();
-        }).RequireAuthorization();
+        });
 
         // FR-AUTH-006: Xem profile — 200 { id, email, userName, displayName, avatarUrl, bio, roles, createdAt }.
         group.MapGet("/me", async (ISender sender, HttpContext http) =>

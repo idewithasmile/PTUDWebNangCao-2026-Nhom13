@@ -40,7 +40,7 @@ export default function SiteHeader() {
       onError: (e) => {
         qc.setQueryData(authKeys.me, null);
         if (process.env.NODE_ENV !== 'production') {
-          console.error('[header] logout failed, force local logout:', toErrorMessage(e, 'Đăng xuất thất bại.'));
+          console.warn('[header] logout failed, force local logout:', toErrorMessage(e, 'Đăng xuất thất bại.'));
         }
         router.push('/login');
       },

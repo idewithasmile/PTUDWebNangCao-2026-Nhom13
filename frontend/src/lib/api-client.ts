@@ -220,7 +220,8 @@ export async function apiClient<T>(
     const isAuthEndpoint =
       endpoint.includes('/auth/login') ||
       endpoint.includes('/auth/register') ||
-      endpoint.includes('/auth/refresh');
+      endpoint.includes('/auth/refresh') ||
+      endpoint.includes('/auth/logout');
     const isRetry = options._isRetry;
 
     if (res.status === 401 && !isAuthEndpoint && !isRetry && typeof window !== 'undefined') {
