@@ -52,6 +52,8 @@ import {
   Edit3,
   GripVertical,
   Check,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
 import RecipeIngredientsList from '@/components/recipes/RecipeIngredientsList';
@@ -133,6 +135,9 @@ export default function RecipeForm({
   const [isUploadingPrimary, setIsUploadingPrimary] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
+  const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
+  const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
+  const instructionsTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secondaryFileInputRef = useRef<HTMLInputElement>(null);
@@ -228,6 +233,21 @@ export default function RecipeForm({
   const watchedInstructions = watch('instructions');
   const watchedIngredients = watch('ingredients');
   const watchedSteps = watch('steps');
+
+  // Tự động điều chỉnh chiều cao của khung soạn thảo Bí quyết & Mẹo
+  const adjustInstructionsHeight = () => {
+    const el = instructionsTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const minH = isInstructionsExpanded ? 240 : 100;
+    el.style.height = `${Math.max(minH, el.scrollHeight)}px`;
+  };
+
+  useEffect(() => {
+    if (activeStep === 3) {
+      adjustInstructionsHeight();
+    }
+  }, [activeStep, isInstructionsExpanded, watchedInstructions]);
 
   // Lấy danh mục từ backend
   useEffect(() => {
@@ -1443,16 +1463,16 @@ export default function RecipeForm({
                         Mô tả ngắn <span className="text-red-500">*</span>
                       </label>
                       <span className="text-[11px] text-stone-400">
-                        {watchedDescription?.length || 0}/200
+                        {watchedDescription?.length || 0}/500
                       </span>
                     </div>
                     <textarea
-                      rows={2}
-                      maxLength={200}
+                      rows={4}
+                      maxLength={500}
                       {...register('description')}
                       disabled={isSubmitting}
                       placeholder="Nhập mô tả ngắn gợi cảm hứng về món ăn..."
-                      className="w-full rounded-xl border border-stone-300 p-2.5 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed"
+                      className="w-full min-h-[105px] rounded-xl border border-stone-300 p-3 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed resize-y"
                     />
                     {errors.description && (
                       <p className="text-[11px] font-semibold text-red-600">
@@ -1873,10 +1893,10 @@ export default function RecipeForm({
 
                       {/* Nội dung chi tiết bước */}
                       <textarea
-                        rows={2}
+                        rows={3}
                         {...register(`steps.${idx}.description`)}
                         placeholder="Mô tả chi tiết những gì cần làm trong bước này..."
-                        className="w-full rounded-xl border border-stone-200 bg-stone-50/50 p-2.5 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed"
+                        className="w-full min-h-[76px] rounded-xl border border-stone-200 bg-stone-50/50 p-3 text-xs outline-none transition focus:bg-white focus:border-orange-500 leading-relaxed resize-y"
                       />
 
                       {/* Ảnh minh họa của bước */}
@@ -1992,19 +2012,97 @@ export default function RecipeForm({
               )}
 
               {/* Khung Bí quyết & Mẹo nấu ăn gia truyền */}
-              <div className="pt-4 border-t border-stone-100 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-500" />
-                  <h4 className="text-xs font-bold text-stone-900">Bí quyết & Mẹo nấu ăn từ đầu bếp</h4>
-                  <span className="text-[10px] text-stone-400 font-normal">(tùy chọn)</span>
+              <div className="pt-4 border-t border-stone-100 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                    <h4 className="text-xs font-bold text-stone-900">Bí quyết & Mẹo nấu ăn từ đầu bếp</h4>
+                    <span className="text-[10px] text-stone-400 font-normal">(tùy chọn)</span>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {watchedInstructions && watchedInstructions.trim().length > 0 && (
+                      <span className="text-[10px] text-stone-400 font-medium">
+                        {watchedInstructions.length} ký tự
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsInstructionsExpanded((prev) => {
+                          const next = !prev;
+                          if (!next && instructionsTextareaRef.current) {
+                            instructionsTextareaRef.current.style.height = '110px';
+                          }
+                          return next;
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 transition cursor-pointer active:scale-95"
+                      title={isInstructionsExpanded ? 'Thu gọn khung nhập' : 'Mở rộng khung nhập'}
+                    >
+                      {isInstructionsExpanded ? (
+                        <>
+                          <Minimize2 className="w-3 h-3" />
+                          <span>Thu gọn</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="w-3 h-3" />
+                          <span>Mở rộng để xem</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsInstructionsModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-stone-600 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 transition cursor-pointer active:scale-95"
+                      title="Mở trình soạn thảo rộng toàn cảnh"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span className="hidden sm:inline">Soạn thảo rộng</span>
+                    </button>
+                  </div>
                 </div>
-                <textarea
-                  rows={4}
-                  {...register('instructions')}
-                  disabled={isSubmitting}
-                  placeholder="Chia sẻ bí quyết chọn nguyên liệu tươi, cách ướp gia vị đậm đà hoặc mẹo điều chỉnh nhiệt độ lửa..."
-                  className="w-full rounded-xl border border-stone-300 p-3 text-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed"
-                />
+
+                <div className="relative">
+                  <textarea
+                    rows={isInstructionsExpanded ? 8 : 4}
+                    {...register('instructions')}
+                    ref={(el) => {
+                      register('instructions').ref(el);
+                      instructionsTextareaRef.current = el;
+                    }}
+                    onFocus={() => {
+                      if (!isInstructionsExpanded) {
+                        setIsInstructionsExpanded(true);
+                      }
+                    }}
+                    onInput={() => {
+                      adjustInstructionsHeight();
+                    }}
+                    disabled={isSubmitting}
+                    placeholder="Chia sẻ bí quyết chọn nguyên liệu tươi, cách ướp gia vị đậm đà hoặc mẹo điều chỉnh nhiệt độ lửa..."
+                    className={`w-full rounded-xl border border-stone-300 p-3 text-xs outline-none transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed resize-y ${
+                      isInstructionsExpanded ? 'min-h-[220px] bg-amber-50/20' : 'min-h-[110px]'
+                    }`}
+                  />
+                  {isInstructionsExpanded && (
+                    <div className="mt-1 flex items-center justify-between text-[11px] text-stone-400">
+                      <span>💡 Khung nhập đã tự động mở rộng để bạn dễ dàng quan sát toàn bộ nội dung.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsInstructionsExpanded(false);
+                          if (instructionsTextareaRef.current) {
+                            instructionsTextareaRef.current.style.height = '110px';
+                          }
+                        }}
+                        className="text-stone-500 hover:text-stone-800 underline font-medium cursor-pointer ml-2 shrink-0"
+                      >
+                        Thu gọn lại
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Thanh điều hướng chân Bước 3 */}
@@ -2417,6 +2515,98 @@ export default function RecipeForm({
         }}
         onConfirm={handleConfirmServingsAdjustment}
       />
+
+      {/* 6. MODAL SOẠN THẢO RỘNG BÍ QUYẾT & MẸO NẤU ĂN */}
+      {isInstructionsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full border border-stone-200 flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-900">Soạn thảo Bí quyết & Mẹo nấu ăn</h3>
+                  <p className="text-[11px] text-stone-400">Không gian viết rộng rãi, nhìn tổng quan toàn bộ nội dung</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsInstructionsModalOpen(false)}
+                className="p-1.5 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick chips / templates */}
+            <div className="px-6 py-2.5 border-b border-stone-100 bg-amber-50/40 flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-semibold text-amber-900">Gợi ý nhanh:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const current = getValues('instructions') || '';
+                  const addition = (current.length > 0 ? '\n' : '') + '💡 *Mẹo chọn nguyên liệu:* ';
+                  setValue('instructions', current + addition, { shouldDirty: true });
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-800 hover:bg-amber-100/60 font-medium transition cursor-pointer"
+              >
+                + Mẹo chọn nguyên liệu
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const current = getValues('instructions') || '';
+                  const addition = (current.length > 0 ? '\n' : '') + '🔥 *Lưu ý nhiệt độ:* ';
+                  setValue('instructions', current + addition, { shouldDirty: true });
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-800 hover:bg-amber-100/60 font-medium transition cursor-pointer"
+              >
+                + Lưu ý nhiệt độ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const current = getValues('instructions') || '';
+                  const addition = (current.length > 0 ? '\n' : '') + '🧂 *Bí quyết nêm nếm:* ';
+                  setValue('instructions', current + addition, { shouldDirty: true });
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-800 hover:bg-amber-100/60 font-medium transition cursor-pointer"
+              >
+                + Bí quyết nêm nếm
+              </button>
+            </div>
+
+            {/* Modal Body: Large Textarea */}
+            <div className="p-6 flex-1 overflow-y-auto">
+              <textarea
+                rows={12}
+                value={watchedInstructions || ''}
+                onChange={(e) => setValue('instructions', e.target.value, { shouldDirty: true })}
+                placeholder="Chia sẻ bí quyết chọn nguyên liệu tươi ngon, cách ướp gia vị đậm đà, mẹo điều chỉnh nhiệt độ lửa hoặc các lưu ý đặc biệt giúp món ăn đạt chuẩn vị..."
+                className="w-full h-full min-h-[300px] rounded-2xl border border-stone-200 p-4 text-xs sm:text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 leading-relaxed font-sans"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-stone-100 bg-stone-50/70">
+              <span className="text-xs text-stone-500 font-medium">
+                {watchedInstructions?.length || 0} ký tự | {watchedInstructions ? watchedInstructions.trim().split(/\s+/).filter(Boolean).length : 0} từ
+              </span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsInstructionsModalOpen(false)}
+                  className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                >
+                  Xác nhận & Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
