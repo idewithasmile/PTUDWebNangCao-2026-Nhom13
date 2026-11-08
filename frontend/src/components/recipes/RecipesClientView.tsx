@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -27,7 +27,11 @@ export default function RecipesClientView() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isLoggedIn = hasSession();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(hasSession());
+  }, []);
 
   // Đọc params từ URL searchParams
   const filters = useMemo<GetRecipesParams>(() => {
