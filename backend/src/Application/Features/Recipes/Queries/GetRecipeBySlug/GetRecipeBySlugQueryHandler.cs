@@ -58,7 +58,9 @@ public class GetRecipeBySlugQueryHandler(
             recipe.Steps.Select(s => new RecipeStepDto(s.Id, s.StepNumber, s.Title, s.Description, s.TimerMinutes, s.ImageUrl)).ToList(),
             recipe.Ingredients.Select(i => new RecipeIngredientDto(i.Id, i.Name, i.Quantity, i.Unit, i.Notes, i.OrderIndex)).ToList(),
             recipe.Images.Select(i => new RecipeImageDto(i.Id, i.OriginalUrl, i.MediumUrl, i.ThumbnailUrl, i.AltText, i.IsPrimary, i.OrderIndex)).ToList(),
-            recipe.RowVersion != null ? Convert.ToBase64String(recipe.RowVersion) : null
+            recipe.RowVersion != null ? Convert.ToBase64String(recipe.RowVersion) : null,
+            recipe.ViewCount,
+            recipe.BookmarkCount
         );
     }
 }

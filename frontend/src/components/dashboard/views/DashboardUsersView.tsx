@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   Search,
@@ -44,6 +45,7 @@ export default function DashboardUsersView({
   user,
   isAdmin,
 }: DashboardUsersViewProps) {
+  const queryClient = useQueryClient();
   // State quản lý danh sách & bộ lọc
   const [data, setData] = useState<PagedUsersResultDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,6 +122,7 @@ export default function DashboardUsersView({
       setToastMessage(res.message || 'Cập nhật trạng thái người dùng thành công.');
       setUserToToggle(null);
       await loadUsers();
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi khi cập nhật trạng thái.';
       alert(msg);

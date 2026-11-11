@@ -60,6 +60,8 @@ export interface RecipeDetailDto {
   ingredients: RecipeIngredientDto[];
   images: RecipeImageDto[];
   rowVersionBase64?: string | null;
+  viewCount?: number;
+  bookmarkCount?: number;
 }
 
 // --- RecipeDto (trả về từ Backend sau khi Create/Update/Publish/Unpublish/Archive) ---
@@ -184,11 +186,22 @@ export interface GetRecipesParams {
   categoryId?: string;
   difficulty?: RecipeDifficulty;
   maxTotalTimeMinutes?: number;
-  sortBy?: 'newest' | 'oldest' | 'time_asc' | 'time_desc';
+  sortBy?:
+    | 'newest'
+    | 'oldest'
+    | 'time_asc'
+    | 'time_desc'
+    | 'views_desc'
+    | 'views_asc'
+    | 'bookmarks_desc'
+    | 'bookmarks_asc'
+    | 'hot'
+    | 'trending';
   page?: number;
   pageSize?: number;
   onlyMine?: boolean;
   status?: RecipeStatus;
+  days?: number;
 }
 
 export interface SearchRecipesParams {

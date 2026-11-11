@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
-  Search,
-  Bell,
   Sun,
   Moon,
   CloudSun,
@@ -14,6 +12,7 @@ import {
   User,
   Calendar,
   Clock,
+  Bookmark,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/auth';
 import { logoutApi } from '@/features/auth/api';
@@ -32,7 +31,6 @@ export default function DashboardHeader({
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [timeStr, setTimeStr] = useState('18:24');
   const [dateStr, setDateStr] = useState('Thứ Ba, 16/09/2026');
@@ -67,25 +65,6 @@ export default function DashboardHeader({
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        const input = document.getElementById('dashboard-search-input');
-        input?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/recipes?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await logoutApi();
@@ -99,35 +78,25 @@ export default function DashboardHeader({
 
   return (
     <div className="space-y-6">
-      {/* 1. Top Bar: Search + Notification + User Pill */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Thanh tìm kiếm toàn hệ thống */}
-        <div className="flex items-center gap-3 flex-1 max-w-xl">
-          <form onSubmit={handleSearchSubmit} className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              id="dashboard-search-input"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm bài viết, công thức, danh mục... (Ctrl + K)"
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-            />
-          </form>
+      {/* 1. Top Bar: Quick Nav + Notification + User Pill */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Left: Quick Return to Home & Context */}
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800/80 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-zinc-800 dark:hover:text-orange-400 text-gray-600 dark:text-zinc-300 transition text-xs font-semibold"
+            title="Quay lại trang chủ Culinary Blog"
+          >
+            <span>← Về trang chủ</span>
+          </Link>
+          <span className="hidden sm:inline text-gray-300 dark:text-zinc-700">•</span>
+          <span className="hidden sm:inline text-xs text-gray-400 dark:text-zinc-500 font-medium">
+            Khu vực Quản trị & Sáng tạo Ẩm thực
+          </span>
         </div>
 
-        {/* Right Controls: Notifications + Theme + User Pill */}
+        {/* Right Controls: Theme + User Pill */}
         <div className="flex items-center justify-end gap-3 shrink-0">
-          {/* Bell Notification */}
-          <button
-            type="button"
-            className="relative p-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-zinc-400 hover:text-orange-500 hover:bg-gray-50 dark:hover:bg-zinc-800 shadow-2xs transition"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center">
-              3
-            </span>
-          </button>
 
           {/* Dark / Light Toggle */}
           <button
@@ -183,6 +152,15 @@ export default function DashboardHeader({
                 >
                   <User className="w-4 h-4" />
                   <span>Hồ sơ cá nhân</span>
+                </Link>
+
+                <Link
+                  href="/dashboard?tab=recipes-saved"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 dark:hover:text-orange-400 transition"
+                >
+                  <Bookmark className="w-4 h-4 text-orange-500" />
+                  <span>Món ăn đã lưu</span>
                 </Link>
 
                 <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />

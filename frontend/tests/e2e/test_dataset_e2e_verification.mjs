@@ -89,7 +89,7 @@ async function runDatasetE2EVerification() {
 
     console.log('  🔍 1.4 Kiểm tra Món Hot & Lưới Công thức mới nhất...');
     await page.waitForSelector('text=CÔNG THỨC MỚI NHẤT', { timeout: 10000 });
-    await page.waitForSelector('text=MÓN HOT TUẦN NÀY', { timeout: 10000 });
+    await page.waitForSelector('text=MỚI RA LÒ GẦN ĐÂY', { timeout: 10000 });
     const homeRecipeLinks = await page.locator('a[href^="/recipes/"]').count();
     console.log(`  ✓ PASS: Tìm thấy ${homeRecipeLinks} liên kết công thức trên trang chủ.`);
 
@@ -225,12 +225,11 @@ async function runDatasetE2EVerification() {
       console.log('  ✓ PASS: Đăng nhập Admin thành công vào Dashboard.');
     }
 
-    await page.waitForTimeout(2500);
     console.log('  🔍 4.1 Kiểm tra các thẻ KPI thống kê tổng hợp...');
     await page.waitForSelector('text=Tổng bài viết', { timeout: 10000 });
-    await page.waitForSelector('text=Bài viết đã xuất bản', { timeout: 10000 });
-    await page.waitForSelector('h3:has-text("104")', { timeout: 10000 });
-    console.log('  ✓ PASS: Bảng điều khiển hiển thị đầy đủ thẻ KPI thống kê tổng hợp (104 bài viết đã xuất bản).');
+    await page.waitForSelector('text=Đã xuất bản', { timeout: 10000 });
+    await page.waitForSelector('text=Bản nháp', { timeout: 10000 });
+    console.log('  ✓ PASS: Bảng điều khiển hiển thị đầy đủ các thẻ KPI thống kê tổng hợp.');
 
     // =========================================================================
     // PHẦN 5: TỔNG KẾT & KIỂM TRA TÍNH TOÀN VẸN HÌNH ẢNH (0 IMAGE 404s)

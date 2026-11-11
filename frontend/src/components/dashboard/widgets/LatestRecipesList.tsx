@@ -1,15 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRecipes } from '@/features/recipes/hooks';
-import { ChefHat, ArrowRight, Clock, Users } from 'lucide-react';
+import { ChefHat, ArrowRight, Clock, Users, Eye, Bookmark, Flame } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/utils';
 
 export default function LatestRecipesList() {
+  const [activeTab, setActiveTab] = useState<'newest' | 'top_saved'>('newest');
+
   const { data: recipesData, isLoading } = useRecipes({
     page: 1,
     pageSize: 5,
-    sortBy: 'newest',
+    sortBy: activeTab === 'newest' ? 'newest' : 'bookmarks_desc',
   });
 
   const recipes = recipesData?.items ?? [];
@@ -17,11 +20,37 @@ export default function LatestRecipesList() {
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs flex flex-col justify-between h-full">
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-900">Bài viết mới nhất</h3>
+        <div className="flex items-center justify-between mb-4 gap-2">
+          {/* Switcher: Mới nhất vs Yêu thích nhất */}
+          <div className="inline-flex items-center bg-gray-100 p-1 rounded-xl text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setActiveTab('newest')}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                activeTab === 'newest'
+                  ? 'bg-white text-gray-900 shadow-xs'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Mới nhất
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('top_saved')}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
+                activeTab === 'top_saved'
+                  ? 'bg-white text-rose-600 shadow-xs'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Flame className="w-3 h-3 text-rose-500" />
+              <span>Yêu thích nhất</span>
+            </button>
+          </div>
+
           <Link
             href="/recipes"
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition shrink-0"
           >
             <span>Xem tất cả</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -36,7 +65,9 @@ export default function LatestRecipesList() {
               ))}
             </div>
           ) : recipes.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">Chưa có bài viết mới</p>
+            <p className="text-xs text-gray-400 text-center py-6">
+              {activeTab === 'newest' ? 'Chưa có bài viết mới' : 'Chưa có công thức nào được lưu'}
+            </p>
           ) : (
             recipes.map((recipe) => (
               <div
@@ -90,17 +121,26 @@ export default function LatestRecipesList() {
                     {recipe.categoryName || 'Ẩm thực'}
                   </p>
 
-                  <div className="flex items-center gap-3 text-[10px] text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-gray-400" />
-                      {recipe.totalTimeMinutes || 30} phút
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3 h-3 text-gray-400" />
-                      {recipe.servings || 2} người
-                    </span>
-                    <span>•</span>
-                    <span>{new Date(recipe.createdAt).toLocaleDateString('vi-VN')}</span>
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-0.5">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        {recipe.totalTimeMinutes || 30}p
+                      </span>
+                      <span>•</span>
+                      <span>{new Date(recipe.createdAt).toLocaleDateString('vi-VN')}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span className="flex items-center gap-0.5 text-sky-600">
+                        <Eye className="w-3 h-3 text-sky-500" />
+                        {(recipe.viewCount ?? 0).toLocaleString('vi-VN')}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-rose-600">
+                        <Bookmark className="w-3 h-3 text-rose-500" />
+                        {(recipe.bookmarkCount ?? 0).toLocaleString('vi-VN')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

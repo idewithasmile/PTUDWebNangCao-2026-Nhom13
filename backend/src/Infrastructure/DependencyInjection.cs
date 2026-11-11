@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace CulinaryBlog.Infrastructure;
 
@@ -49,7 +50,9 @@ public static class DependencyInjection
         .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<CulinaryBlogDbContext>();
 
-        services.AddStackExchangeRedisCache(opt => opt.Configuration = config.GetConnectionString("Redis"));
+        var redisConn = config.GetConnectionString("Redis") ?? "localhost:6379";
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConn));
+        services.AddStackExchangeRedisCache(opt => opt.Configuration = redisConn);
         services.AddScoped<ICacheService, RedisCacheService>();
 
         services.AddScoped<IJwtService, JwtService>();
@@ -74,6 +77,8 @@ public static class DependencyInjection
         services.AddScoped<SitemapGenerationJob>();
         services.AddScoped<IPurgeOrphanFilesJob, PurgeOrphanFilesJob>();
         services.AddScoped<PurgeOrphanFilesJob>();
+        services.AddScoped<ISyncRecipeViewsJob, SyncRecipeViewsJob>();
+        services.AddScoped<SyncRecipeViewsJob>();
 
         // FR-AUTH services (Member A — module Auth).
         services.AddScoped<IRefreshTokenStore, AuthRefreshTokenStore>();
@@ -89,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IRecipeBookmarkRepository, RecipeBookmarkRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddHttpContextAccessor();
 
@@ -122,6 +128,13 @@ public static class DependencyInjection
                     "purge-orphan-files",
                     job => job.ExecuteAsync(CancellationToken.None),
                     "0 2 * * *",
+                    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+                // Định kỳ 5 phút/lần đồng bộ lượt xem từ Redis về PostgreSQL
+                recurringJobs.AddOrUpdate<ISyncRecipeViewsJob>(
+                    "sync-recipe-views",
+                    job => job.ExecuteAsync(CancellationToken.None),
+                    "*/5 * * * *",
                     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
             }
         }

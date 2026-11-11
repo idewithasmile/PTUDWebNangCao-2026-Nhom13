@@ -15,5 +15,7 @@ public record RecipeSummaryDto(
     string AuthorId,
     string AuthorName,
     DateTime CreatedAt,
-    string? ThumbnailUrl // Bổ sung ảnh thumbnail đại diện
+    string? ThumbnailUrl, // Bổ sung ảnh thumbnail đại diện
+    long ViewCount = 0,
+    int BookmarkCount = 0
 );

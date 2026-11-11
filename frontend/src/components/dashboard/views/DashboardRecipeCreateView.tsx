@@ -153,10 +153,13 @@ export default function DashboardRecipeCreateView({
             <button
               type="button"
               onClick={() => setIsGuideModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
             >
               <BookOpen className="w-3.5 h-3.5 text-orange-300" />
               <span>Sổ tay hướng dẫn</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold text-orange-200">
+                2026
+              </span>
             </button>
 
             <button

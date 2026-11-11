@@ -29,6 +29,8 @@ export interface RecipeSummaryDto {
   createdAt: string;
   publishedAt?: string | null;
   thumbnailUrl: string | null;
+  viewCount?: number;
+  bookmarkCount?: number;
 }
 
 export interface PagedResult<T> {

@@ -42,6 +42,7 @@ export const recipeService = {
     if (params.difficulty !== undefined) qs.set('difficulty', String(params.difficulty));
     if (params.maxTotalTimeMinutes) qs.set('maxTotalTimeMinutes', String(params.maxTotalTimeMinutes));
     if (params.sortBy) qs.set('sortBy', params.sortBy);
+    if (params.days) qs.set('days', String(params.days));
     if (params.onlyMine) qs.set('onlyMine', 'true');
     if (params.status !== undefined) qs.set('status', String(params.status));
     qs.set('page', String(params.page ?? 1));

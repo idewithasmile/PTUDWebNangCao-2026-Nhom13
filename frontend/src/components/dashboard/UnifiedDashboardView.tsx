@@ -13,6 +13,7 @@ import DashboardRecipeCreateView from './views/DashboardRecipeCreateView';
 import DashboardRecipeEditView from './views/DashboardRecipeEditView';
 import DashboardProfileSettingsView from './views/DashboardProfileSettingsView';
 import DashboardUsersView from './views/DashboardUsersView';
+import DashboardSavedRecipesView from './views/DashboardSavedRecipesView';
 
 interface UnifiedDashboardViewProps {
   user: UserProfile;
@@ -119,6 +120,8 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         {activeTab === 'recipes-archived' && (
           <DashboardRecipesView user={user} subFilter="archived" />
         )}
+
+        {activeTab === 'recipes-saved' && <DashboardSavedRecipesView />}
 
         {activeTab === 'recipes-create' && (
           <DashboardRecipeCreateView user={user} onSelectTab={handleSelectTab} />

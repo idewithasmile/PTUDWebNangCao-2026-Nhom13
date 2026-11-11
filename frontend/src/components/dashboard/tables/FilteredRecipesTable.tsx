@@ -12,6 +12,7 @@ import {
 } from '@/features/recipes/hooks';
 import { categoryService } from '@/lib/services/category-service';
 import type { RecipeSummaryDto, RecipeStatus, RecipeDifficulty } from '@/lib/types/category';
+import type { GetRecipesParams } from '@/lib/types/recipe';
 import type { UserProfile } from '@/types/auth';
 import { toErrorMessage } from '@/features/auth/hooks';
 import { ConfirmDialog } from '@/components/ui/dialog';
@@ -36,6 +37,7 @@ import {
   ChefHat,
   Clock,
   Layers,
+  Bookmark,
 } from 'lucide-react';
 
 interface FilteredRecipesTableProps {
@@ -52,6 +54,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
+  const [sortBy, setSortBy] = useState<GetRecipesParams['sortBy']>('newest');
   const [adminScope, setAdminScope] = useState<'all' | 'mine'>(isAdmin ? 'all' : 'mine');
 
   // Debounce ô tìm kiếm 350ms
@@ -79,6 +82,11 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
     setPage(1);
   };
 
+  const handleSortChange = (val: GetRecipesParams['sortBy']) => {
+    setSortBy(val);
+    setPage(1);
+  };
+
   // 2. Fetch danh sách Danh mục cho Dropdown bộ lọc
   const { data: categories = [] } = useQuery({
     queryKey: ['categories', 'all'],
@@ -96,9 +104,10 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
       categoryId: selectedCategory || undefined,
       difficulty: selectedDifficulty !== '' ? (Number(selectedDifficulty) as RecipeDifficulty) : undefined,
       status: selectedStatus !== 'ALL' ? (selectedStatus as RecipeStatus) : undefined,
+      sortBy: sortBy || undefined,
       onlyMine,
     };
-  }, [page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedStatus, isAdmin, adminScope]);
+  }, [page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedStatus, sortBy, isAdmin, adminScope]);
 
   const {
     data: recipesData,
@@ -189,6 +198,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
     setSelectedCategory('');
     setSelectedStatus('ALL');
     setSelectedDifficulty('');
+    setSortBy('newest');
     setPage(1);
   };
 
@@ -256,9 +266,9 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
       </div>
 
       {/* Thanh bộ lọc đa chiều (Filter Bar) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-gray-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 pt-2 border-t border-gray-100">
         {/* Lọc 1: Ô tìm kiếm từ khóa */}
-        <div className="relative lg:col-span-2">
+        <div className="relative sm:col-span-2">
           <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -299,7 +309,22 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
           </select>
         </div>
 
-        {/* Lọc 4: Độ khó + Nút Reset */}
+        {/* Lọc 4: Sắp xếp theo tương tác & thời gian */}
+        <div>
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value as GetRecipesParams['sortBy'])}
+            className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition font-medium"
+          >
+            <option value="newest">Mới nhất</option>
+            <option value="oldest">Cũ nhất</option>
+            <option value="views_desc">Lượt xem nhiều nhất 🔥</option>
+            <option value="bookmarks_desc">Lượt lưu nhiều nhất 🔖</option>
+            <option value="time_asc">Nấu nhanh nhất</option>
+          </select>
+        </div>
+
+        {/* Lọc 5: Độ khó + Nút Reset */}
         <div className="flex items-center gap-2">
           <select
             value={selectedDifficulty}
@@ -333,6 +358,8 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
               <th className="py-3 px-4">Danh mục</th>
               <th className="py-3 px-4">Tác giả</th>
               <th className="py-3 px-4">Trạng thái</th>
+              <th className="py-3 px-4 text-center">Lượt xem</th>
+              <th className="py-3 px-4 text-center">Lượt lưu</th>
               <th className="py-3 px-4">Thời gian</th>
               <th className="py-3 px-4 text-right">Thao tác</th>
             </tr>
@@ -340,7 +367,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-gray-400">
+                <td colSpan={8} className="py-12 text-center text-gray-400">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
                     <span>Đang tải danh sách bài viết từ máy chủ...</span>
@@ -349,7 +376,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
               </tr>
             ) : recipes.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-gray-400">
+                <td colSpan={8} className="py-12 text-center text-gray-400">
                   <p className="font-semibold text-gray-500">Không tìm thấy công thức nào</p>
                   <p className="text-[11px] mt-1">Vui lòng thử điều chỉnh lại từ khóa hoặc bộ lọc của bạn.</p>
                 </td>
@@ -429,7 +456,23 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                       )}
                     </td>
 
-                    {/* Cột 5: Thời gian */}
+                    {/* Cột 5: Lượt xem */}
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full text-[11px]" title="Tổng lượt xem">
+                        <Eye className="w-3 h-3 text-sky-500" />
+                        {(recipe.viewCount ?? 0).toLocaleString('vi-VN')}
+                      </span>
+                    </td>
+
+                    {/* Cột 6: Lượt lưu */}
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full text-[11px]" title="Tổng lượt lưu">
+                        <Bookmark className="w-3 h-3 text-rose-500" />
+                        {(recipe.bookmarkCount ?? 0).toLocaleString('vi-VN')}
+                      </span>
+                    </td>
+
+                    {/* Cột 7: Thời gian */}
                     <td className="py-3.5 px-4 text-gray-500 text-[11px]">
                       {new Date(recipe.createdAt).toLocaleDateString('vi-VN')}
                     </td>
@@ -449,7 +492,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                         {/* Chuyển đổi trạng thái nhanh */}
                         {canManage && (
                           <>
-                            {recipe.status === 'Draft' && (
+                            {(recipe.status === 'Draft' || String(recipe.status) === '0') && (
                               <button
                                 type="button"
                                 onClick={() => setActionConfirm({ type: 'publish', recipe })}
@@ -460,7 +503,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                               </button>
                             )}
 
-                            {recipe.status === 'Published' && (
+                            {(recipe.status === 'Published' || String(recipe.status) === '1') && (
                               <button
                                 type="button"
                                 onClick={() => setActionConfirm({ type: 'unpublish', recipe })}
@@ -471,7 +514,7 @@ export default function FilteredRecipesTable({ user, isAdmin }: FilteredRecipesT
                               </button>
                             )}
 
-                            {recipe.status !== 'Archived' && (
+                            {(recipe.status !== 'Archived' && String(recipe.status) !== '2') && (
                               <button
                                 type="button"
                                 onClick={() => setActionConfirm({ type: 'archive', recipe })}

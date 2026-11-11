@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   useRecipeDetail,
@@ -30,7 +31,6 @@ import {
   Send,
   Eye,
   Trash2,
-  ExternalLink,
 } from 'lucide-react';
 
 interface DashboardRecipeEditViewProps {
@@ -44,6 +44,7 @@ export default function DashboardRecipeEditView({
 }: DashboardRecipeEditViewProps) {
   const router = useRouter();
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [lastActionStatus, setLastActionStatus] = useState<'published' | 'archived' | 'draft' | 'saved' | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'warning', title: string, message?: string) => {
@@ -103,8 +104,9 @@ export default function DashboardRecipeEditView({
   const handlePublish = async () => {
     try {
       await publishMutation.mutateAsync(recipe.id);
+      setLastActionStatus('published');
       addToast('success', 'Xuất bản thành công', `Công thức "${recipe.title}" đã được hiển thị công khai.`);
-      refetch();
+      await refetch();
     } catch (err: unknown) {
       addToast('error', 'Không thể xuất bản', toErrorMessage(err, 'Vui lòng kiểm tra lại điều kiện công thức.'));
     }
@@ -113,8 +115,9 @@ export default function DashboardRecipeEditView({
   const handleUnpublish = async () => {
     try {
       await unpublishMutation.mutateAsync(recipe.id);
+      setLastActionStatus('draft');
       addToast('success', 'Đã gỡ xuất bản', `Công thức "${recipe.title}" đã chuyển về bản nháp.`);
-      refetch();
+      await refetch();
     } catch (err: unknown) {
       addToast('error', 'Hủy xuất bản thất bại', toErrorMessage(err, 'Không thể hủy xuất bản công thức.'));
     }
@@ -123,8 +126,9 @@ export default function DashboardRecipeEditView({
   const handleArchive = async () => {
     try {
       await archiveMutation.mutateAsync(recipe.id);
+      setLastActionStatus('archived');
       addToast('success', 'Đã lưu trữ', `Công thức "${recipe.title}" đã chuyển vào kho lưu trữ.`);
-      refetch();
+      await refetch();
     } catch (err: unknown) {
       addToast('error', 'Lưu trữ thất bại', toErrorMessage(err, 'Không thể lưu trữ công thức.'));
     }
@@ -168,6 +172,7 @@ export default function DashboardRecipeEditView({
         carbs: Number(formData.carbs || 0),
         fat: Number(formData.fat || 0),
         rowVersionBase64: recipe.rowVersionBase64 || '',
+        primaryImageUrl: formData.primaryImageUrl || undefined,
       });
 
       // 2. Tải ảnh phụ lên MinIO nếu có
@@ -278,8 +283,15 @@ export default function DashboardRecipeEditView({
         await unpublishMutation.mutateAsync(recipe.id);
       }
 
+      setLastActionStatus(
+        targetStatus === 'publish'
+          ? 'published'
+          : targetStatus === 'archive'
+          ? 'archived'
+          : 'saved'
+      );
       addToast('success', 'Lưu thành công', 'Công thức ẩm thực đã được cập nhật hoàn chỉnh!');
-      refetch();
+      await refetch();
     } catch (err: unknown) {
       addToast('error', 'Cập nhật thất bại', toErrorMessage(err, 'Vui lòng kiểm tra lại dữ liệu.'));
     }
@@ -343,22 +355,24 @@ export default function DashboardRecipeEditView({
             <button
               type="button"
               onClick={() => setIsGuideModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
             >
               <BookOpen className="w-3.5 h-3.5 text-orange-300" />
               <span className="hidden sm:inline">Sổ tay hướng dẫn</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold text-orange-200">
+                2026
+              </span>
             </button>
 
             {isPublished && (
-              <a
+              <Link
                 href={`/recipes/${recipe.slug}`}
-                target="_blank"
-                rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-xs font-bold text-white border border-emerald-500 transition active:scale-95 shadow-xs"
+                title="Xem công thức trên trang web"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <BookOpen className="w-3.5 h-3.5" />
                 <span>Xem trên Web</span>
-              </a>
+              </Link>
             )}
 
             {isPublished && (
@@ -430,8 +444,60 @@ export default function DashboardRecipeEditView({
         }
       />
 
+      {/* Thông báo cập nhật trạng thái kèm điều hướng nhanh */}
+      {lastActionStatus && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-slide-up">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-emerald-900">
+                {lastActionStatus === 'published'
+                  ? 'Công thức đã được xuất bản công khai thành công!'
+                  : lastActionStatus === 'archived'
+                  ? 'Công thức đã được chuyển vào kho lưu trữ!'
+                  : lastActionStatus === 'draft'
+                  ? 'Công thức đã được chuyển về bản nháp riêng tư!'
+                  : 'Đã lưu và đồng bộ toàn bộ dữ liệu công thức!'}
+              </p>
+              <p className="text-[11px] text-emerald-700">
+                Hệ thống và thanh điều hướng đã cập nhật trạng thái mới nhất theo thời gian thực.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isPublished && (
+              <Link
+                href={`/recipes/${recipe.slug}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs active:scale-95"
+                title="Xem bài viết trên trang web"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Xem bài viết</span>
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => onSelectTab('recipes-mine')}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Danh sách bài viết</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLastActionStatus(null)}
+              className="p-1 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 transition text-xs font-bold"
+              title="Đóng thông báo"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FORM SOẠN THẢO TỪNG BƯỚC ĐỒNG NHẤT CÓ LIVE PREVIEW THỜI GIAN THỰC */}
       <RecipeForm
+        key={`${recipe.id}-${recipe.status}-${recipe.rowVersionBase64 || ''}`}
         initialValues={{
           title: recipe.title,
           description: recipe.description,
@@ -463,6 +529,7 @@ export default function DashboardRecipeEditView({
           })),
         }}
         isEdit={true}
+        currentStatus={recipe.status}
         isSubmitting={
           updateMutation.isPending ||
           publishMutation.isPending ||

@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
+import GlobalToastContainer from '@/components/common/GlobalToastContainer';
+import ScrollToTopButton from '@/components/common/ScrollToTopButton';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -14,7 +16,13 @@ export default function AppShell({ children }: AppShellProps) {
 
   if (isDashboard) {
     // Với các route thuộc /dashboard, render toàn màn hình không có SiteHeader và SiteFooter của trang web công khai
-    return <div className="min-h-screen w-full bg-[#f4f7fc] text-slate-800 antialiased">{children}</div>;
+    return (
+      <div className="min-h-screen w-full bg-[#f4f7fc] text-slate-800 antialiased">
+        {children}
+        <GlobalToastContainer />
+        <ScrollToTopButton />
+      </div>
+    );
   }
 
   // Các trang công khai thông thường (Trang chủ, Công thức, Danh mục, Đăng nhập, Hồ sơ...)
@@ -23,6 +31,8 @@ export default function AppShell({ children }: AppShellProps) {
       <SiteHeader />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">{children}</main>
       <SiteFooter />
+      <GlobalToastContainer />
+      <ScrollToTopButton />
     </>
   );
 }

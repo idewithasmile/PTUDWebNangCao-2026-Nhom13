@@ -19,7 +19,8 @@ public record UpdateRecipeCommand(
     decimal Protein,
     decimal Carbs,
     decimal Fat,
-    string RowVersionBase64) : IRequest<RecipeDto>, ICacheInvalidator
+    string RowVersionBase64,
+    string? PrimaryImageUrl = null) : IRequest<RecipeDto>, ICacheInvalidator
 {
     public IReadOnlyList<string> CacheKeysToInvalidate => ["categories:all"];
 }

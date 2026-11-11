@@ -12,11 +12,17 @@ using CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipeStep;
 using CulinaryBlog.Application.Features.Recipes.Commands.UploadRecipeImage;
 using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
+using CulinaryBlog.Application.Features.Recipes.Commands.ToggleRecipeBookmark;
+using CulinaryBlog.Application.Features.Recipes.Commands.SyncLocalBookmarks;
+using CulinaryBlog.Application.Features.Recipes.Queries.GetMyBookmarks;
+using CulinaryBlog.Application.Features.Recipes.Queries.GetBatchRecipesSummary;
+using CulinaryBlog.Application.Features.Recipes.Queries.CheckRecipeBookmarkStatus;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using StackExchange.Redis;
 
 namespace CulinaryBlog.API.Endpoints;
 
@@ -33,10 +39,7 @@ public static class RecipesEndpoints
 
         group.MapGet("/", GetRecipes)
             .AllowAnonymous()
-            .CacheOutput(policy => policy
-                .Expire(TimeSpan.FromMinutes(5))
-                .SetVaryByQuery("page", "pageSize", "searchTerm", "categoryId", "difficulty", "maxTotalTimeMinutes", "sortBy", "onlyMine", "status")
-                .Tag("recipes"))
+            .CacheOutput("PublicRecipes")
             .Produces<PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/search", SearchRecipes)
@@ -49,9 +52,7 @@ public static class RecipesEndpoints
 
         group.MapGet("/{slug}", GetRecipeBySlug)
             .AllowAnonymous()
-            .CacheOutput(policy => policy
-                .Expire(TimeSpan.FromMinutes(60))
-                .Tag("recipes"))
+            .CacheOutput("PublicRecipeDetail")
             .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -167,6 +168,40 @@ public static class RecipesEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        // Ghi nhận lượt xem (hỗ trợ cả ẩn danh và đã đăng nhập, qua Redis buffer)
+        group.MapPost("/{id:guid}/view", RecordView)
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status204NoContent);
+
+        // Lưu / Bỏ lưu công thức (Bookmark toggle)
+        group.MapPost("/{id:guid}/bookmark", ToggleBookmark)
+            .RequireAuthorization()
+            .Produces<ToggleBookmarkResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        // Kiểm tra trạng thái lưu công thức của người dùng hiện tại
+        group.MapGet("/{id:guid}/bookmark-status", CheckBookmarkStatus)
+            .AllowAnonymous()
+            .Produces<bool>(StatusCodes.Status200OK);
+
+        // Lấy danh sách món đã lưu của người dùng hiện tại
+        group.MapGet("/bookmarks/me", GetMyBookmarks)
+            .RequireAuthorization()
+            .Produces<PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        // Đồng bộ danh sách món từ localStorage của khách vãng lai khi vừa đăng nhập
+        group.MapPost("/bookmarks/sync", SyncLocalBookmarks)
+            .RequireAuthorization()
+            .Produces<SyncLocalBookmarksResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        // Lấy danh sách tóm tắt cho nhiều công thức (dành cho trang /saved-recipes của khách vãng lai)
+        group.MapPost("/batch-summary", GetBatchSummary)
+            .AllowAnonymous()
+            .Produces<List<RecipeSummaryDto>>(StatusCodes.Status200OK);
 
         return group;
     }
@@ -462,6 +497,89 @@ public static class RecipesEndpoints
             isAdmin);
 
         var result = await mediator.Send(query, ct);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> RecordView(
+        Guid id,
+        HttpContext context,
+        IConnectionMultiplexer redis)
+    {
+        var db = redis.GetDatabase();
+
+        string viewerId;
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            viewerId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? context.User.FindFirst("sub")?.Value
+                ?? "anon";
+        }
+        else
+        {
+            var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown_ip";
+            var ua = context.Request.Headers.UserAgent.ToString();
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var hash = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes($"{ip}_{ua}"));
+            viewerId = Convert.ToHexString(hash)[..16];
+        }
+
+        string cooldownKey = $"view_lock:{id}:{viewerId}";
+        bool isNew = await db.StringSetAsync(cooldownKey, "1", TimeSpan.FromMinutes(30), When.NotExists);
+
+        if (isNew)
+        {
+            await db.StringIncrementAsync($"recipe:view:buffer:{id}");
+        }
+
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ToggleBookmark(
+        Guid id,
+        ClaimsPrincipal user,
+        ISender sender)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("sub")?.Value
+            ?? string.Empty;
+
+        var result = await sender.Send(new ToggleRecipeBookmarkCommand(id, userId));
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> CheckBookmarkStatus(
+        Guid id,
+        ISender sender)
+    {
+        var result = await sender.Send(new CheckRecipeBookmarkStatusQuery(id));
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetMyBookmarks(
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        [FromQuery] string? search,
+        [FromQuery] string? category,
+        [FromQuery] string? sortBy,
+        ISender sender)
+    {
+        var result = await sender.Send(new GetMyBookmarksQuery(page ?? 1, pageSize ?? 10, search, category, sortBy));
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> SyncLocalBookmarks(
+        [FromBody] List<Guid> recipeIds,
+        ISender sender)
+    {
+        var result = await sender.Send(new SyncLocalBookmarksCommand(recipeIds));
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetBatchSummary(
+        [FromBody] List<Guid> recipeIds,
+        ISender sender)
+    {
+        var result = await sender.Send(new GetBatchRecipesSummaryQuery(recipeIds));
         return Results.Ok(result);
     }
 }

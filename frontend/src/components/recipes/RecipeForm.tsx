@@ -81,6 +81,7 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 interface RecipeFormProps {
   initialValues?: Partial<RecipeFormData>;
   isEdit?: boolean;
+  currentStatus?: 'Draft' | 'Published' | 'Archived' | number | string;
   isSubmitting: boolean;
   serverError?: string | null;
   onSubmit: (
@@ -89,6 +90,157 @@ interface RecipeFormProps {
     targetStatus?: 'draft' | 'publish' | 'archive'
   ) => Promise<void>;
 }
+
+// Danh sách công thức mẫu Việt Nam phong phú cho chức năng Điền mẫu nhanh
+const sampleRecipes = [
+  {
+    title: 'Bò Xào Bông Cải Xanh Giòn Ngọt',
+    description:
+      'Món bò xào bông cải xanh thanh đạm nhưng đậm đà, thịt bò mềm ngọt tự nhiên hòa quyện cùng bông cải xanh giòn sần sật và nước sốt tỏi tiêu thơm lừng.',
+    instructions:
+      'Mẹo xào thịt bò mềm không dai: Ướp thịt với một thìa dầu ăn và bột bắp trong 15 phút. Xào trên chảo gang thật nóng với lửa lớn, chỉ đảo nhanh trong 2-3 phút rồi tắt bếp ngay.',
+    prepTimeMinutes: 15,
+    cookTimeMinutes: 20,
+    servings: 3,
+    difficulty: 1,
+    calories: 420,
+    protein: 35,
+    carbs: 18,
+    fat: 14,
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
+    imageAlt: 'Bò xào súp lơ cà rốt',
+    ingredients: [
+      { name: 'Thịt bò thăn', quantity: 300, unit: 'g', notes: 'Thái mỏng ngang thớ' },
+      { name: 'Bông cải xanh (Súp lơ)', quantity: 200, unit: 'g', notes: 'Chẻ vừa ăn, ngâm muối' },
+      { name: 'Cà rốt tươi', quantity: 1, unit: 'củ', notes: 'Tỉa hoa thái mỏng' },
+      { name: 'Tỏi băm & Hành tím', quantity: 30, unit: 'g', notes: 'Phi thơm vàng' },
+      { name: 'Dầu hào & Nước tương', quantity: 2, unit: 'muỗng canh', notes: 'Gia vị xào đậm đà' },
+      { name: 'Tiêu đen & Dầu mè', quantity: 1, unit: 'thìa cà phê', notes: 'Tạo mùi thơm cuối cùng' },
+    ],
+    steps: [
+      {
+        title: 'Sơ chế & Ướp thịt bò',
+        description: 'Thịt bò rửa sạch thấm khô, thái lát mỏng. Ướp cùng 1 thìa tỏi băm, 1 thìa dầu hào, 1 thìa dầu ăn để thịt mềm.',
+        timerMinutes: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Chần sơ bông cải xanh và cà rốt',
+        description: 'Đun sôi nồi nước có chút muối, thả bông cải và cà rốt vào chần nhanh trong 1 phút rồi vớt ra ngâm nước đá để giữ màu xanh tươi giòn.',
+        timerMinutes: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Xào rau củ cùng sốt tỏi',
+        description: 'Đun nóng chảo với chút dầu, phi thơm tỏi rồi trút rau củ vào đảo nhanh tay cùng 1 muỗng hạt nêm.',
+        timerMinutes: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Xào thịt bò & Trình bày đĩa',
+        description: 'Bật lửa lớn, cho thịt bò vào xào nhanh 2 phút vừa chín tới, đổ rau củ vào đảo đều 30 giây, rưới chút dầu mè, rắc tiêu và bày ra đĩa thưởng thức.',
+        timerMinutes: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
+      },
+    ],
+  },
+  {
+    title: 'Canh Chua Cá Hồi Kiểu Nam Bộ',
+    description:
+      'Món canh chua cá hồi béo ngậy thơm ngon, nước canh chua dịu thanh mát từ me và cà chua, thơm mùi ngò ôm, ngò gai ăn kèm bún hoặc cơm nóng cực cuốn.',
+    instructions:
+      'Bí quyết nấu cá hồi không tanh: Rửa cá qua rượu trắng và gừng đập dập. Thả cá vào nồi khi nước sôi bùng và không đậy nắp trong lúc nấu.',
+    prepTimeMinutes: 20,
+    cookTimeMinutes: 25,
+    servings: 4,
+    difficulty: 2,
+    calories: 380,
+    protein: 32,
+    carbs: 14,
+    fat: 16,
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80',
+    imageAlt: 'Canh chua cá hồi Nam Bộ',
+    ingredients: [
+      { name: 'Đầu hoặc phi lê cá hồi', quantity: 400, unit: 'g', notes: 'Rửa sạch thấm khô' },
+      { name: 'Cốt me chua', quantity: 50, unit: 'g', notes: 'Ngâm nước ấm lấy nước cốt' },
+      { name: 'Dọc mùng (Bạc hà)', quantity: 150, unit: 'g', notes: 'Tước vỏ, bóp muối' },
+      { name: 'Đậu bắp & Cà chua', quantity: 200, unit: 'g', notes: 'Cắt lát chéo vừa ăn' },
+      { name: 'Giá đỗ & Thơm (Dứa)', quantity: 150, unit: 'g', notes: 'Rửa sạch để ráo' },
+      { name: 'Ngò ôm, ngò gai, ớt tươi', quantity: 30, unit: 'g', notes: 'Cắt nhỏ rắc lên mặt canh' },
+    ],
+    steps: [
+      {
+        title: 'Sơ chế nguyên liệu & Nấu nước dùng chua',
+        description: 'Đun sôi 1.2 lít nước, cho nước cốt me và thơm vào nấu sôi lăn tăn để tạo vị chua ngọt tự nhiên.',
+        timerMinutes: 8,
+        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Thả cá hồi & Vớt bọt',
+        description: 'Khi nước sôi bùng, thả cá hồi vào nấu chín trong 5-7 phút, chú ý hớt bọt kỹ để nước canh trong vắt.',
+        timerMinutes: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Cho rau quả & Nêm gia vị',
+        description: 'Cho cà chua, đậu bắp, bạc hà vào nấu 2 phút, thêm nước mắm ngon, đường phèn cho vừa khẩu vị đậm đà.',
+        timerMinutes: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Hoàn tất & Thưởng thức',
+        description: 'Tắt bếp, cho giá đỗ, rắc ngò ôm, ngò gai và vài lát ớt chỉ thiên lên trên, múc ra tô lớn thưởng thức khi còn nóng.',
+        timerMinutes: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop&q=80',
+      },
+    ],
+  },
+  {
+    title: 'Bánh Mì Chảo Thập Cẩm Sài Gòn',
+    description:
+      'Chảo bánh mì nóng hổi xèo xèo với trứng ốp la lòng đào, pate béo ngậy, xúc xích rán giòn và xíu mại thơm lừng chấm cùng sốt cà chua sánh mịn.',
+    instructions:
+      'Bí quyết nước sốt sánh ngon: Phi thơm tỏi tây và hành tím, dùng cà chua tươi băm nhuyễn xào nhừ rồi nêm chút dầu hào và bơ lạt.',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 15,
+    servings: 2,
+    difficulty: 1,
+    calories: 520,
+    protein: 26,
+    carbs: 45,
+    fat: 22,
+    imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&auto=format&fit=crop&q=80',
+    imageAlt: 'Bánh mì chảo thập cẩm Sài Gòn',
+    ingredients: [
+      { name: 'Trứng gà tươi', quantity: 2, unit: 'quả', notes: 'Ốp la lòng đào' },
+      { name: 'Pate gan heo béo', quantity: 80, unit: 'g', notes: 'Áp chảo cho thơm' },
+      { name: 'Xúc xích Đức hoặc phô mai', quantity: 2, unit: 'cây', notes: 'Khía chéo nhẹ' },
+      { name: 'Xíu mại sốt cà chua', quantity: 2, unit: 'viên', notes: 'Thịt băm nấm mèo' },
+      { name: 'Bánh mì giòn', quantity: 2, unit: 'ổ', notes: 'Nướng nóng giòn rụm' },
+      { name: 'Dưa leo, ngò rí, tiêu đen', quantity: 50, unit: 'g', notes: 'Ăn kèm chống ngấy' },
+    ],
+    steps: [
+      {
+        title: 'Làm nóng chảo gang & Chiên xúc xích, pate',
+        description: 'Làm nóng chảo gang nhỏ với 1 thìa bơ lạt, cho xúc xích và miếng pate vào áp chảo vàng xém thơm phức.',
+        timerMinutes: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Ốp la trứng & Nấu sốt cà chua',
+        description: 'Đập trứng gà vào góc chảo giữ lòng đào, múc 2 muỗng nước sốt xíu mại cà chua nóng hổi rưới quanh chảo.',
+        timerMinutes: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        title: 'Trình bày & Dùng kèm bánh mì',
+        description: 'Rắc tiêu xay, trang trí cọng ngò rí và vài lát ớt, dọn kèm đĩa dưa leo thái lát và bánh mì nóng giòn rụm.',
+        timerMinutes: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=600&auto=format&fit=crop&q=80',
+      },
+    ],
+  },
+];
 
 // Danh sách ảnh mẫu chất lượng cao
 const sampleImages = [
@@ -101,10 +253,16 @@ const sampleImages = [
 export default function RecipeForm({
   initialValues,
   isEdit = false,
+  currentStatus,
   isSubmitting,
   serverError,
   onSubmit,
 }: RecipeFormProps) {
+  const isStatusPublished = currentStatus === 'Published' || String(currentStatus) === '1';
+  const isStatusArchived = currentStatus === 'Archived' || String(currentStatus) === '2';
+  const isStatusDraft = currentStatus === 'Draft' || String(currentStatus) === '0' || (!isStatusPublished && !isStatusArchived);
+
+  const [sampleRecipeIndex, setSampleRecipeIndex] = useState(0);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
@@ -367,72 +525,39 @@ export default function RecipeForm({
     setUrlInput('');
   };
 
-  // Điền mẫu hoàn chỉnh (Ẩm thực Việt Nam: Bò xào bông cải xanh sốt tỏi & Bánh mì chảo)
+  // Điền mẫu hoàn chỉnh (Luân phiên các món ăn Việt Nam phong phú)
   const handleFillSample = () => {
-    setValue('title', 'Bò Xào Bông Cải Xanh Giòn Ngọt');
-    setValue(
-      'description',
-      'Món bò xào bông cải xanh thanh đạm nhưng đậm đà, thịt bò mềm ngọt tự nhiên hòa quyện cùng bông cải xanh giòn sần sật và nước sốt tỏi tiêu thơm lừng.'
-    );
-    setValue(
-      'instructions',
-      'Mẹo xào thịt bò mềm không dai: Ướp thịt với một thìa dầu ăn và bột bắp trong 15 phút. Xào trên chảo gang thật nóng với lửa lớn, chỉ đảo nhanh trong 2-3 phút rồi tắt bếp ngay.'
-    );
-    setValue('prepTimeMinutes', 15);
-    setValue('cookTimeMinutes', 20);
-    setValue('servings', 3);
-    setValue('difficulty', 1);
-    setValue('calories', 420);
-    setValue('protein', 35);
-    setValue('carbs', 18);
-    setValue('fat', 14);
+    const sample = sampleRecipes[sampleRecipeIndex % sampleRecipes.length];
+    setSampleRecipeIndex((prev) => prev + 1);
+
+    setValue('title', sample.title);
+    setValue('description', sample.description);
+    setValue('instructions', sample.instructions);
+    setValue('prepTimeMinutes', sample.prepTimeMinutes);
+    setValue('cookTimeMinutes', sample.cookTimeMinutes);
+    setValue('servings', sample.servings);
+    setValue('difficulty', sample.difficulty as 1 | 2 | 3);
+    setValue('calories', sample.calories);
+    setValue('protein', sample.protein);
+    setValue('carbs', sample.carbs);
+    setValue('fat', sample.fat);
 
     if (categories.length > 0) {
       setValue('categoryId', categories[0].id);
     }
 
-    setValue('ingredients', [
-      { name: 'Thịt bò thăn', quantity: 300, unit: 'g', notes: 'Thái mỏng ngang thớ' },
-      { name: 'Bông cải xanh (Súp lơ)', quantity: 200, unit: 'g', notes: 'Chẻ vừa ăn, ngâm muối' },
-      { name: 'Cà rốt tươi', quantity: 1, unit: 'củ', notes: 'Tỉa hoa thái mỏng' },
-      { name: 'Tỏi băm & Hành tím', quantity: 30, unit: 'g', notes: 'Phi thơm vàng' },
-      { name: 'Dầu hào & Nước tương', quantity: 2, unit: 'muỗng canh', notes: 'Gia vị xào đậm đà' },
-      { name: 'Tiêu đen & Dầu mè', quantity: 1, unit: 'thìa cà phê', notes: 'Tạo mùi thơm cuối cùng' },
-    ]);
+    setValue('ingredients', sample.ingredients);
+    setValue('steps', sample.steps);
 
-    setValue('steps', [
+    setGalleryItems([
       {
-        title: 'Sơ chế & Ướp thịt bò',
-        description: 'Thịt bò rửa sạch thấm khô, thái lát mỏng. Ướp cùng 1 thìa tỏi băm, 1 thìa dầu hào, 1 thìa dầu ăn để thịt mềm.',
-        timerMinutes: 10,
-        imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        title: 'Chần sơ bông cải xanh và cà rốt',
-        description: 'Đun sôi nồi nước có chút muối, thả bông cải và cà rốt vào chần nhanh trong 1 phút rồi vớt ra ngâm nước đá để giữ màu xanh tươi giòn.',
-        timerMinutes: 3,
-        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        title: 'Xào rau củ cùng sốt tỏi',
-        description: 'Đun nóng chảo với chút dầu, phi thơm tỏi rồi trút rau củ vào đảo nhanh tay cùng 1 muỗng hạt nêm.',
-        timerMinutes: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        title: 'Xào thịt bò & Trình bày đĩa',
-        description: 'Bật lửa lớn, cho thịt bò vào xào nhanh 2 phút vừa chín tới, đổ rau củ vào đảo đều 30 giây, rưới chút dầu mè, rắc tiêu và bày ra đĩa thưởng thức.',
-        timerMinutes: 3,
-        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
+        id: `sample-${Date.now()}`,
+        previewUrl: sample.imageUrl,
+        isPrimary: true,
+        name: sample.imageAlt,
       },
     ]);
-
-    if (galleryItems.length === 0) {
-      handleAddFromUrl(
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-        'Bò xào súp lơ cà rốt'
-      );
-    }
+    setValue('primaryImageUrl', sample.imageUrl);
   };
 
   const onValidationError = (formErrors: FieldErrors<RecipeFormData>) => {
@@ -931,7 +1056,7 @@ export default function RecipeForm({
                 ) : (
                   <Save className="w-3.5 h-3.5" />
                 )}
-                <span>Lưu nháp</span>
+                <span>{isStatusPublished ? 'Gỡ về nháp' : 'Lưu nháp'}</span>
               </button>
 
               {/* Nút Lưu trữ */}
@@ -947,7 +1072,7 @@ export default function RecipeForm({
                 ) : (
                   <Archive className="w-3.5 h-3.5 text-amber-600" />
                 )}
-                <span>Lưu trữ</span>
+                <span>{isStatusArchived ? 'Cập nhật kho' : 'Lưu trữ'}</span>
               </button>
 
               {/* Nút Đăng bài */}
@@ -962,7 +1087,7 @@ export default function RecipeForm({
                 ) : (
                   <Send className="w-3.5 h-3.5" />
                 )}
-                <span>Đăng bài ngay</span>
+                <span>{isStatusPublished ? 'Cập nhật xuất bản' : 'Đăng bài ngay'}</span>
               </button>
             </div>
           </div>
@@ -984,9 +1109,28 @@ export default function RecipeForm({
                   <ChefHat className="w-3 h-3" />
                   Độ khó: {difficultyLabels[watchedDifficulty || 1]?.label || 'Dễ'}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium">
-                  {isEdit ? 'Đang cập nhật' : 'Bản nháp mới'}
-                </span>
+                {isEdit ? (
+                  isStatusPublished ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Đã xuất bản
+                    </span>
+                  ) : isStatusArchived ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 text-[11px] font-bold border border-stone-300">
+                      <Archive className="w-3 h-3 text-stone-500" />
+                      Đã lưu trữ
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      Bản nháp
+                    </span>
+                  )
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium">
+                    Bản nháp mới
+                  </span>
+                )}
               </div>
 
               <h1 className="text-2xl sm:text-4xl font-extrabold text-stone-900 tracking-tight leading-tight">
@@ -2389,8 +2533,10 @@ export default function RecipeForm({
                         <Save className="w-4 h-4" />
                       )}
                     </div>
-                    <span>Lưu bản nháp</span>
-                    <span className="text-[10px] text-stone-400 font-normal">Chỉ bạn mới xem được</span>
+                    <span>{isStatusPublished ? 'Gỡ về bản nháp' : 'Lưu bản nháp'}</span>
+                    <span className="text-[10px] text-stone-400 font-normal">
+                      {isStatusPublished ? 'Ẩn khỏi công khai về nháp' : 'Chỉ bạn mới xem được'}
+                    </span>
                   </button>
 
                   {/* Nút 2: Lưu trữ */}
@@ -2407,7 +2553,7 @@ export default function RecipeForm({
                         <Archive className="w-4 h-4" />
                       )}
                     </div>
-                    <span>Lưu vào kho</span>
+                    <span>{isStatusArchived ? 'Cập nhật kho lưu trữ' : 'Lưu vào kho'}</span>
                     <span className="text-[10px] text-amber-600 font-normal">Tạm ẩn khỏi công khai</span>
                   </button>
 
@@ -2425,8 +2571,10 @@ export default function RecipeForm({
                         <Send className="w-4 h-4" />
                       )}
                     </div>
-                    <span>Đăng bài ngay</span>
-                    <span className="text-[10px] text-orange-100 font-normal">Công khai cho cộng đồng</span>
+                    <span>{isStatusPublished ? 'Cập nhật bài viết' : 'Đăng bài ngay'}</span>
+                    <span className="text-[10px] text-orange-100 font-normal">
+                      {isStatusPublished ? 'Đang hiển thị công khai' : 'Công khai cho cộng đồng'}
+                    </span>
                   </button>
                 </div>
               </div>

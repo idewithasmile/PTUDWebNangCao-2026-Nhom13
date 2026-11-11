@@ -37,6 +37,14 @@ public class GetDashboardStatsQueryHandler(
         var draft = await recipesQuery.CountAsync(r => r.Status == RecipeStatus.Draft, ct);
         var archived = await recipesQuery.CountAsync(r => r.Status == RecipeStatus.Archived, ct);
 
+        long totalViews = 0;
+        int totalBookmarks = 0;
+        if (total > 0)
+        {
+            totalViews = await recipesQuery.SumAsync(r => r.ViewCount, ct);
+            totalBookmarks = await recipesQuery.SumAsync(r => r.BookmarkCount, ct);
+        }
+
         int? totalAuthors = null;
         if (isSystemScope)
         {
@@ -106,7 +114,9 @@ public class GetDashboardStatsQueryHandler(
             totalAuthors,
             categoryDist,
             activity7Days,
-            isSystemScope
+            isSystemScope,
+            totalViews,
+            totalBookmarks
         );
     }
 }

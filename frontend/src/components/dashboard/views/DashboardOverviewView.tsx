@@ -10,7 +10,7 @@ import ActivityTrendChart from '../charts/ActivityTrendChart';
 import CategoryDonutChart from '../charts/CategoryDonutChart';
 import FilteredRecipesTable from '../tables/FilteredRecipesTable';
 import LatestRecipesList from '../widgets/LatestRecipesList';
-import { ChefHat, ShieldCheck, Plus, ExternalLink, Calendar, Clock } from 'lucide-react';
+import { ChefHat, ShieldCheck, Plus, BookOpen, Calendar, Clock } from 'lucide-react';
 
 interface DashboardOverviewViewProps {
   user: UserProfile;
@@ -86,10 +86,10 @@ export default function DashboardOverviewView({
 
             <Link
               href="/"
-              target="_blank"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+              title="Quay về trang chủ website"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 text-orange-300" />
               <span>Xem trang Blog</span>
             </Link>
 

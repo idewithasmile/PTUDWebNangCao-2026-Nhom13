@@ -40,7 +40,7 @@ import {
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
-  ExternalLink,
+  BookOpen,
 } from 'lucide-react';
 import DashboardHeroBanner from '../common/DashboardHeroBanner';
 
@@ -231,13 +231,11 @@ export default function DashboardRecipesView({ user, subFilter = 'all' }: Dashbo
 
             <Link
               href={`/recipes/${encodeURIComponent(selectedRecipe.slug)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs border border-orange-200 transition"
-              title="Mở xem ở trang web công khai ngoài Dashboard"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs border border-orange-200 transition active:scale-95 shadow-2xs"
+              title="Xem bài viết trên trang web"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Mở tab mới ↗</span>
+              <BookOpen className="w-3.5 h-3.5 text-orange-600" />
+              <span>Xem bài viết</span>
             </Link>
           </div>
         </div>

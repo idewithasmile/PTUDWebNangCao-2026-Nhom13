@@ -20,5 +20,7 @@ public record DashboardStatsDto(
     int? TotalAuthors,
     List<CategoryDistributionDto> CategoryDistribution,
     List<DailyActivityDto> Activity7Days,
-    bool IsSystemScope
+    bool IsSystemScope,
+    long TotalViews = 0,
+    int TotalBookmarks = 0
 );

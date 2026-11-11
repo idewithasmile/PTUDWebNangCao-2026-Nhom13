@@ -14,6 +14,7 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<RecipeBookmark> RecipeBookmarks => Set<RecipeBookmark>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

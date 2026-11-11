@@ -82,12 +82,23 @@ public class GetRecipesQueryHandler(
             queryable = queryable.Where(r => (r.PrepTimeMinutes + r.CookTimeMinutes) <= request.MaxTotalTimeMinutes.Value);
         }
 
+        if (request.Days.HasValue && request.Days.Value > 0)
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-request.Days.Value);
+            queryable = queryable.Where(r => r.CreatedAt >= cutoff);
+        }
+
         // 3. Sorting
         queryable = request.SortBy?.ToLower() switch
         {
             "oldest" => queryable.OrderBy(r => r.CreatedAt),
             "time_asc" => queryable.OrderBy(r => r.PrepTimeMinutes + r.CookTimeMinutes),
             "time_desc" => queryable.OrderByDescending(r => r.PrepTimeMinutes + r.CookTimeMinutes),
+            "views_desc" => queryable.OrderByDescending(r => r.ViewCount).ThenByDescending(r => r.CreatedAt),
+            "views_asc" => queryable.OrderBy(r => r.ViewCount).ThenByDescending(r => r.CreatedAt),
+            "bookmarks_desc" => queryable.OrderByDescending(r => r.BookmarkCount).ThenByDescending(r => r.CreatedAt),
+            "bookmarks_asc" => queryable.OrderBy(r => r.BookmarkCount).ThenByDescending(r => r.CreatedAt),
+            "hot" or "trending" => queryable.OrderByDescending(r => (r.BookmarkCount * 5) + r.ViewCount).ThenByDescending(r => r.CreatedAt),
             _ => queryable.OrderByDescending(r => r.CreatedAt) // Mặc định newest
         };
 
@@ -115,7 +126,9 @@ public class GetRecipesQueryHandler(
                 r.CreatedAt,
                 r.Images.FirstOrDefault(i => i.IsPrimary) != null 
                     ? r.Images.FirstOrDefault(i => i.IsPrimary)!.ThumbnailUrl ?? r.Images.FirstOrDefault(i => i.IsPrimary)!.OriginalUrl 
-                    : null
+                    : null,
+                r.ViewCount,
+                r.BookmarkCount
             ))
             .ToListAsync(cancellationToken);
 

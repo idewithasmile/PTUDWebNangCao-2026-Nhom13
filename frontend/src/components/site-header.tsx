@@ -7,8 +7,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SESSION_REVOKED_EVENT } from '@/lib/api-client';
 import { authKeys, toErrorMessage, useLogout, useMe } from '@/features/auth/hooks';
 import { hasSession } from '@/features/auth/api';
+import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 import { resolveMediaUrl } from '@/lib/utils';
-import { PlusCircle, Menu, X, ChefHat, Search } from 'lucide-react';
+import { PlusCircle, Menu, X, ChefHat, Bookmark } from 'lucide-react';
 import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function SiteHeader() {
@@ -18,11 +19,22 @@ export default function SiteHeader() {
   const logout = useLogout();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Chỉ fetch /me khi có access token in-memory (tránh 401 thừa sau reload).
   const me = useMe(hasSession());
+  const { count, init } = useBookmarkStore();
 
   useEffect(() => {
-    const onRevoked = () => qc.setQueryData(authKeys.me, null);
+    init();
+  }, [init]);
+
+  const savedCount = count();
+
+  useEffect(() => {
+    const onRevoked = () => {
+      qc.clear();
+      qc.setQueryData(authKeys.me, null);
+      useBookmarkStore.getState().reset();
+      useBookmarkStore.getState().init(true);
+    };
     window.addEventListener(SESSION_REVOKED_EVENT, onRevoked);
     return () => window.removeEventListener(SESSION_REVOKED_EVENT, onRevoked);
   }, [qc]);
@@ -33,12 +45,17 @@ export default function SiteHeader() {
   }, [pathname]);
 
   const user = me.data ?? null;
+  const isStaff = Boolean(user?.roles?.includes('Admin') || user?.roles?.includes('Author'));
+  const savedRecipesHref = isStaff ? '/dashboard?tab=recipes-saved' : '/saved-recipes';
 
   const onLogout = () => {
     logout.mutate(undefined, {
       onSuccess: () => router.push('/login'),
       onError: (e) => {
+        qc.clear();
         qc.setQueryData(authKeys.me, null);
+        useBookmarkStore.getState().reset();
+        useBookmarkStore.getState().init(true);
         if (process.env.NODE_ENV !== 'production') {
           console.warn('[header] logout failed, force local logout:', toErrorMessage(e, 'Đăng xuất thất bại.'));
         }
@@ -53,7 +70,6 @@ export default function SiteHeader() {
     { href: '/categories', label: 'Danh mục', active: pathname?.startsWith('/categories') ?? false },
   ];
 
-  const [headerSearch, setHeaderSearch] = useState('');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   return (
@@ -94,44 +110,24 @@ export default function SiteHeader() {
           </nav>
         </div>
 
-        {/* Right Area: Search, Notification Bell, ThemeToggle, User Auth */}
-        <div className="hidden md:flex md:items-center md:gap-4">
-          {/* Quick Search on Desktop Header */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (headerSearch.trim()) {
-                router.push(`/recipes?searchTerm=${encodeURIComponent(headerSearch.trim())}`);
-              }
-            }}
-            className="relative w-56 xl:w-64"
-          >
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-400" />
-            <input
-              type="text"
-              value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
-              placeholder="Tìm kiếm công thức, nguyên liệu..."
-              className="w-full rounded-full border-none bg-gray-100/80 dark:bg-zinc-800 py-2 pl-9 pr-4 text-xs text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-400 focus:bg-white dark:focus:bg-zinc-800 focus:outline-none focus:ring-1.5 focus:ring-orange-500 transition-all"
-            />
-          </form>
-
+        {/* Right Area: ThemeToggle, Bookmark, User Auth */}
+        <div className="hidden md:flex md:items-center md:gap-3">
           {/* Theme Toggle Button */}
           <ThemeToggle />
 
-          {/* Notification Bell */}
-          <button
-            type="button"
-            className="relative p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition"
-            title="Thông báo"
+          {/* Nút Món ăn đã lưu (Quick Bookmark Icon - Tự động phân luồng theo vai trò) */}
+          <Link
+            href={savedRecipesHref}
+            className="relative p-2 text-gray-500 dark:text-zinc-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800 rounded-full transition"
+            title={isStaff ? 'Sổ tay món ăn đã lưu (Bảng điều khiển)' : 'Món ăn đã lưu'}
           >
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white absolute -top-0.5 -right-0.5">
-              3
-            </span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </button>
+            {savedCount > 0 && (
+              <span className="flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white absolute -top-0.5 -right-0.5 shadow-xs">
+                {savedCount}
+              </span>
+            )}
+            <Bookmark className="w-5 h-5" />
+          </Link>
 
           {/* User Auth Section */}
           {user ? (
@@ -164,6 +160,13 @@ export default function SiteHeader() {
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition"
                   >
                     <span>📊 Bảng điều khiển</span>
+                  </Link>
+                  <Link
+                    href="/dashboard?tab=profile"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition"
+                  >
+                    <span>👤 Hồ sơ cá nhân</span>
                   </Link>
                   <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />
                   <button
@@ -222,27 +225,6 @@ export default function SiteHeader() {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-4 md:hidden">
-          {/* Mobile Search */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (headerSearch.trim()) {
-                setMobileMenuOpen(false);
-                router.push(`/recipes?searchTerm=${encodeURIComponent(headerSearch.trim())}`);
-              }
-            }}
-            className="relative mb-3"
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-400" />
-            <input
-              type="text"
-              value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
-              placeholder="Tìm công thức món ăn..."
-              className="w-full rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 py-2 pl-9 pr-3 text-sm text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-400 focus:border-orange-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-orange-500"
-            />
-          </form>
-
           <nav className="flex flex-col gap-1.5">
             {navLinks.map((link) => (
               <Link
@@ -257,6 +239,22 @@ export default function SiteHeader() {
                 {link.label}
               </Link>
             ))}
+
+            <Link
+              href={savedRecipesHref}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900 transition"
+            >
+              <span className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-orange-500" />
+                <span>{isStaff ? 'Sổ tay món đã lưu' : 'Món ăn đã lưu'}</span>
+              </span>
+              {savedCount > 0 && (
+                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950/60 dark:text-orange-400">
+                  {savedCount}
+                </span>
+              )}
+            </Link>
 
             <div className="my-2 border-t border-gray-100 dark:border-zinc-800 pt-2">
               {user ? (

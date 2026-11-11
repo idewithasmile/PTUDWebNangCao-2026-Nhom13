@@ -412,6 +412,120 @@ public static class CulinaryBlogSeeder
         }
     }
 
+    public static async Task SeedAuthorBookmarksAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+
+        var recipes = await db.Recipes
+            .Where(r => r.Status == RecipeStatus.Published)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
+        if (recipes.Count == 0) return;
+
+        var users = await db.Users.ToListAsync();
+        if (users.Count == 0) return;
+
+        var adminUser = users.FirstOrDefault(u => u.Email == "admin@culinaryblog.com");
+        var authorUser = users.FirstOrDefault(u => u.Email == "author@culinaryblog.com");
+        var readerUser = users.FirstOrDefault(u => u.Email == "user@culinaryblog.com");
+        var otherAuthors = users.Where(u => u.Email != "admin@culinaryblog.com" && u.Email != "author@culinaryblog.com").ToList();
+
+        var existingBookmarks = await db.RecipeBookmarks.ToListAsync();
+        var existingSet = new HashSet<string>(existingBookmarks.Select(b => $"{b.UserId}_{b.RecipeId}"));
+        var newBookmarks = new List<RecipeBookmark>();
+
+        if (existingBookmarks.Count < 10)
+        {
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                var recipe = recipes[i];
+                int targetBookmarkCount;
+
+                if (i < 3) targetBookmarkCount = 12 + (i * 2);
+                else if (i < 8) targetBookmarkCount = 7 + (i % 4);
+                else if (i < 20) targetBookmarkCount = 3 + (i % 3);
+                else if (i < 40) targetBookmarkCount = 1 + (i % 2);
+                else targetBookmarkCount = 0;
+
+                var candidateUsers = new List<ApplicationUser>();
+
+                if (authorUser != null && (i == 1 || i == 2 || i == 4 || i == 6 || i == 9 || i == 13 || i == 17))
+                {
+                    candidateUsers.Add(authorUser);
+                }
+
+                if (adminUser != null && (i == 0 || i == 2 || i == 3 || i == 5 || i == 8 || i == 12 || i == 16 || i == 20))
+                {
+                    candidateUsers.Add(adminUser);
+                }
+
+                if (readerUser != null && (i == 0 || i == 1 || i == 3 || i == 4 || i == 7 || i == 10))
+                {
+                    candidateUsers.Add(readerUser);
+                }
+
+                int userIdx = i;
+                while (candidateUsers.Count < targetBookmarkCount && otherAuthors.Count > 0)
+                {
+                    var candidate = otherAuthors[userIdx % otherAuthors.Count];
+                    if (!candidateUsers.Contains(candidate))
+                    {
+                        candidateUsers.Add(candidate);
+                    }
+                    userIdx++;
+                    if (userIdx - i > otherAuthors.Count * 2) break;
+                }
+
+                foreach (var u in candidateUsers)
+                {
+                    var key = $"{u.Id}_{recipe.Id}";
+                    if (!existingSet.Contains(key))
+                    {
+                        existingSet.Add(key);
+                        var bm = RecipeBookmark.Create(u.Id, recipe.Id);
+                        newBookmarks.Add(bm);
+                    }
+                }
+            }
+
+            if (newBookmarks.Count > 0)
+            {
+                await db.RecipeBookmarks.AddRangeAsync(newBookmarks);
+                await db.SaveChangesAsync();
+            }
+        }
+
+        var bookmarkCounts = await db.RecipeBookmarks
+            .GroupBy(b => b.RecipeId)
+            .Select(g => new { RecipeId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RecipeId, x => x.Count);
+
+        foreach (var r in recipes)
+        {
+            int currentActualCount = bookmarkCounts.GetValueOrDefault(r.Id, 0);
+            int delta = currentActualCount - r.BookmarkCount;
+            if (delta != 0)
+            {
+                r.AdjustBookmarkCount(delta);
+            }
+
+            if (r.ViewCount == 0 || r.ViewCount < currentActualCount * 10)
+            {
+                long baseViews = currentActualCount > 0 ? (currentActualCount * 140) : 45;
+                long seedViews = baseViews + ((Math.Abs(r.Slug.GetHashCode()) % 250) + 15);
+                long viewDelta = seedViews - r.ViewCount;
+                if (viewDelta > 0)
+                {
+                    r.IncrementViews(viewDelta);
+                }
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static bool IsCategoryNameMatch(string? nameInDb, string datasetName)
     {
         if (string.IsNullOrWhiteSpace(nameInDb)) return false;

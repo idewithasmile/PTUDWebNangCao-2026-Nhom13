@@ -56,7 +56,7 @@ public static class UsersEndpoints
                 message = body.IsActive ? "Đã kích hoạt lại tài khoản thành công." : "Đã tạm khóa tài khoản thành công."
             });
         })
-        .RequireAuthorization()
+        .RequireAuthorization("AdminPolicy")
         .WithName("ToggleUserStatus")
         .WithSummary("Khóa hoặc mở khóa tài khoản người dùng (Yêu cầu quyền Quản trị viên)")
         .Produces(StatusCodes.Status200OK)

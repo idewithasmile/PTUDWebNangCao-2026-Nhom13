@@ -125,4 +125,65 @@ public class GetRecipesQueryHandlerTests
         result.TotalPages.Should().Be(2);
         result.Items.Should().HaveCount(5); // 15 - 10 = 5 items on page 2
     }
+
+    [Fact]
+    public async Task Handle_SortByHot_OrdersByWeightedFormula_Bookmark5xPlusView1x()
+    {
+        // Arrange
+        // r1: 1 bookmark, 10 views => Hot = 1*5 + 10 = 15
+        var r1 = Recipe.Create("Low Hot Recipe", "slug-low", "desc", "inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "a-1", null);
+        r1.AddStep("s", "s"); r1.Publish();
+        r1.AdjustBookmarkCount(1);
+        r1.IncrementViews(10);
+
+        // r2: 5 bookmarks, 2 views => Hot = 5*5 + 2 = 27
+        var r2 = Recipe.Create("High Hot Recipe", "slug-high", "desc", "inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "a-1", null);
+        r2.AddStep("s", "s"); r2.Publish();
+        r2.AdjustBookmarkCount(5);
+        r2.IncrementViews(2);
+
+        var recipes = new List<Recipe> { r1, r2 }.AsQueryable();
+        var mockDbSet = recipes.BuildMock();
+
+        _mockRecipeRepo.Setup(r => r.GetQueryable()).Returns(mockDbSet);
+        _mockCurrentUser.Setup(c => c.UserId).Returns((string)null);
+
+        var query = new GetRecipesQuery(SortBy: "hot");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.TotalCount.Should().Be(2);
+        result.Items.First().Title.Should().Be("High Hot Recipe");
+        result.Items.Last().Title.Should().Be("Low Hot Recipe");
+    }
+
+    [Fact]
+    public async Task Handle_DaysFilter_FiltersByCreatedAtCutoff()
+    {
+        // Arrange
+        var rRecent = Recipe.Create("Recent Recipe", "slug-recent", "desc", "inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "a-1", null);
+        rRecent.AddStep("s", "s"); rRecent.Publish();
+        rRecent.CreatedAt = DateTime.UtcNow.AddDays(-2);
+
+        var rOld = Recipe.Create("Old Recipe", "slug-old", "desc", "inst", 10, 10, 2, RecipeDifficulty.Easy, Guid.NewGuid(), "a-1", null);
+        rOld.AddStep("s", "s"); rOld.Publish();
+        rOld.CreatedAt = DateTime.UtcNow.AddDays(-20);
+
+        var recipes = new List<Recipe> { rRecent, rOld }.AsQueryable();
+        var mockDbSet = recipes.BuildMock();
+
+        _mockRecipeRepo.Setup(r => r.GetQueryable()).Returns(mockDbSet);
+        _mockCurrentUser.Setup(c => c.UserId).Returns((string)null);
+
+        var query = new GetRecipesQuery(Days: 7);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.TotalCount.Should().Be(1);
+        result.Items.First().Title.Should().Be("Recent Recipe");
+    }
 }

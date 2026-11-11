@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,16 +11,18 @@ import {
   Users,
   ChefHat,
   ChevronDown,
+  ChevronRight,
   Plus,
-  ExternalLink,
   LogOut,
   CheckCircle2,
   BookOpen,
+  Bookmark,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardStatsDto } from '@/lib/types/dashboard';
 import { useLogout } from '@/features/auth/hooks';
 import { resolveMediaUrl } from '@/lib/utils';
+import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 
 export type DashboardTab =
   | 'overview'
@@ -29,6 +31,7 @@ export type DashboardTab =
   | 'recipes-published'
   | 'recipes-draft'
   | 'recipes-archived'
+  | 'recipes-saved'
   | 'recipes-create'
   | 'recipes-edit'
   | 'categories'
@@ -53,8 +56,22 @@ export default function DashboardSidebar({
   const logout = useLogout();
   const isAdmin = user.roles?.includes('Admin');
 
+  const { count, init } = useBookmarkStore();
+  useEffect(() => {
+    init();
+  }, [init]);
+  const savedCount = count();
+
   const [isRecipesExpanded, setIsRecipesExpanded] = useState(
-    activeTab.startsWith('recipes')
+    (activeTab.startsWith('recipes') &&
+      activeTab !== 'recipes-saved' &&
+      activeTab !== 'recipes-create' &&
+      activeTab !== 'recipes-edit') ||
+      activeTab === 'recipes' ||
+      activeTab === 'recipes-mine' ||
+      activeTab === 'recipes-published' ||
+      activeTab === 'recipes-draft' ||
+      activeTab === 'recipes-archived'
   );
 
   const isRecipesActive =
@@ -91,16 +108,14 @@ export default function DashboardSidebar({
         <div className="mt-4">
           <Link
             href="/"
-            target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700/40 transition group"
-            title="Mở giao diện đọc công thức công khai"
+            title="Quay về trang chủ website"
           >
             <div className="flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform" />
               <span>Xem trang Blog</span>
             </div>
-            <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-white transition" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition" />
           </Link>
         </div>
 
@@ -242,6 +257,31 @@ export default function DashboardSidebar({
               </div>
             )}
           </div>
+
+          {/* Sổ tay cá nhân: Món ăn đã lưu (Bookmarks - Độc lập cho cả Admin & Tác giả) */}
+          <button
+            type="button"
+            onClick={() => onSelectTab('recipes-saved')}
+            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
+              activeTab === 'recipes-saved'
+                ? 'bg-[#2563eb] text-white font-bold shadow-xs'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Bookmark className={`w-4 h-4 shrink-0 ${activeTab === 'recipes-saved' ? 'text-white fill-current' : 'text-orange-400'}`} />
+              <span>Món ăn đã lưu</span>
+            </div>
+            {savedCount > 0 && (
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'recipes-saved'
+                  ? 'bg-blue-700 text-white'
+                  : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              }`}>
+                {savedCount}
+              </span>
+            )}
+          </button>
 
           {/* 3. Danh mục - Chỉ hiển thị cho Quản Trị Viên (Admin) theo SRS FR-CAT */}
           {isAdmin && (

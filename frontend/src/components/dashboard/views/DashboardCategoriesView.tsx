@@ -67,6 +67,7 @@ export default function DashboardCategoriesView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
       addToast('success', 'Xóa thành công!', 'Danh mục đã được xóa mềm khỏi hệ thống.');
     },
     onError: (err: unknown) => {
@@ -82,6 +83,7 @@ export default function DashboardCategoriesView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
       addToast('success', 'Tạo thành công!', 'Danh mục mới đã được tạo.');
     },
     onError: (err: unknown) => {
@@ -98,6 +100,7 @@ export default function DashboardCategoriesView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
       addToast('success', 'Cập nhật thành công!', 'Danh mục đã được cập nhật.');
     },
     onError: (err: unknown) => {

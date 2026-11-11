@@ -564,14 +564,14 @@ public class CulinaryBlogSeederTests
             await db.SaveChangesAsync();
         }
 
-        // Act: Chạy Seeder (Clean Slate reset dọn dẹp dummy và nạp 104 công thức chuẩn)
+        // Act: Chạy Seeder (Bảo toàn công thức hiện có, không ghi đè khi database đã có recipes)
         await CulinaryBlogSeeder.SeedAsync(sp);
 
-        // Assert: Tổng số recipes sau khi nạp phải đạt chính xác 104 công thức thực tế
+        // Assert: Tổng số recipes sau khi nạp bảo toàn đúng số lượng công thức ban đầu để bảo vệ dữ liệu người dùng
         using var verifyScope = sp.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
         var totalRecipes = await verifyDb.Recipes.CountAsync();
-        totalRecipes.Should().Be(104);
+        totalRecipes.Should().Be(preExistingCount);
     }
 
     #endregion
