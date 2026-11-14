@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { RecipeSummaryDto } from '@/lib/types/category';
+import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 import { resolveMediaUrl } from '@/lib/utils';
 import {
   cleanRecipeTitle,
@@ -24,6 +25,7 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 
 interface HomeLatestRecipesProps {
@@ -80,19 +82,16 @@ export default function HomeLatestRecipes({
   totalCount,
   onPageChange,
 }: HomeLatestRecipesProps) {
-  const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
-  const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({});
+  const { isBookmarked, toggleBookmark, init } = useBookmarkStore();
 
-  const toggleLike = (e: React.MouseEvent, id: string) => {
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  const handleToggleBookmark = (e: React.MouseEvent, id: string, title?: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setLikedIds((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const toggleBookmark = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setBookmarkedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    toggleBookmark(id, title);
   };
 
   // Phân chia món hot bên trái (thẻ lớn) và 4 món tiêu biểu bên phải (lưới 2x2)
@@ -197,12 +196,11 @@ export default function HomeLatestRecipes({
       {!isLoading && !isError && hotRecipe && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
           {/* -------------------------------------------------------
-              A. THẺ LỚN BÊN TRÁI: "MÓN HOT TUẦN NÀY" (lg:col-span-5)
+              A. THẺ LỚN BÊN TRÁI: "MỚI RA LÒ GẦN ĐÂY" (lg:col-span-5)
               ------------------------------------------------------- */}
           <div className="lg:col-span-5 flex flex-col">
             {(() => {
-              const isLiked = likedIds[hotRecipe.id];
-              const isBookmarked = bookmarkedIds[hotRecipe.id];
+              const isSaved = isBookmarked(hotRecipe.id);
               const diffText = difficultyLabels[hotRecipe.difficulty] || 'Trung bình';
               const cookTime = hotRecipe.totalTimeMinutes || 35;
               const servingsText = hotRecipe.servings ? `${hotRecipe.servings} người` : '2-3 người';
@@ -225,11 +223,11 @@ export default function HomeLatestRecipes({
                     {/* Gradient chuyển mượt từ ảnh sang thân tối */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#171311] via-transparent to-black/30 pointer-events-none" />
 
-                    {/* Badge 1: MÓN HOT TUẦN NÀY */}
+                    {/* Badge 1: CÔNG THỨC MỚI RA LÒ GẦN ĐÂY */}
                     <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-2">
-                      <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-600 text-white shadow-md flex items-center gap-1">
-                        <Flame className="w-3.5 h-3.5 fill-white" />
-                        <span>MÓN HOT TUẦN NÀY</span>
+                      <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 fill-white" />
+                        <span>MỚI RA LÒ GẦN ĐÂY</span>
                       </span>
 
                       {/* Badge 2: Tên danh mục */}
@@ -239,16 +237,16 @@ export default function HomeLatestRecipes({
                       </span>
                     </div>
 
-                    {/* Nút Tim Yêu thích */}
+                    {/* Nút Bookmark Lưu lại trên ảnh */}
                     <button
                       type="button"
-                      onClick={(e) => toggleLike(e, hotRecipe.id)}
+                      onClick={(e) => handleToggleBookmark(e, hotRecipe.id, title)}
                       className="absolute top-3.5 right-3.5 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur transition-all active:scale-90"
-                      title="Yêu thích món ăn"
+                      title={isSaved ? 'Bỏ lưu món ăn' : 'Lưu món ăn'}
                     >
-                      <Heart
+                      <Bookmark
                         className={`w-4 h-4 transition-colors ${
-                          isLiked ? 'fill-red-500 text-red-500' : 'text-white'
+                          isSaved ? 'fill-orange-400 text-orange-400' : 'text-white'
                         }`}
                       />
                     </button>
@@ -269,7 +267,7 @@ export default function HomeLatestRecipes({
                       </p>
                     </div>
 
-                    {/* Hàng thông số: Thời gian | Độ khó | Khẩu phần */}
+                    {/* Hàng thông số: Thời gian | Độ khó | Khẩu phần | Lượt xem */}
                     <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-300 pt-1">
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4 text-orange-500" />
@@ -282,6 +280,10 @@ export default function HomeLatestRecipes({
                       <div className="flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-gray-300" />
                         <span>{servingsText}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-orange-400 font-bold">
+                        <Eye className="w-4 h-4" />
+                        <span>{hotRecipe.viewCount ?? 0}</span>
                       </div>
                     </div>
 
@@ -306,15 +308,15 @@ export default function HomeLatestRecipes({
 
                       <button
                         type="button"
-                        onClick={(e) => toggleBookmark(e, hotRecipe.id)}
+                        onClick={(e) => handleToggleBookmark(e, hotRecipe.id, title)}
                         className={`inline-flex items-center gap-1 text-xs font-bold transition ${
-                          isBookmarked ? 'text-orange-400' : 'text-gray-300 hover:text-white'
+                          isSaved ? 'text-orange-400' : 'text-gray-300 hover:text-white'
                         }`}
                       >
                         <Bookmark
-                          className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-orange-400' : ''}`}
+                          className={`w-3.5 h-3.5 ${isSaved ? 'fill-orange-400' : ''}`}
                         />
-                        <span>{isBookmarked ? 'Đã lưu' : 'Lưu lại'}</span>
+                        <span>{isSaved ? 'Đã lưu' : 'Lưu lại'}</span>
                       </button>
                     </div>
 
@@ -338,7 +340,7 @@ export default function HomeLatestRecipes({
               ------------------------------------------------------- */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             {gridRecipes.map((recipe, index) => {
-              const isLiked = likedIds[recipe.id];
+              const isSaved = isBookmarked(recipe.id);
               const diffText = difficultyLabels[recipe.difficulty] || 'Trung bình';
               const cookTime = recipe.totalTimeMinutes || 35;
               const servingsText = recipe.servings
@@ -354,7 +356,7 @@ export default function HomeLatestRecipes({
                   key={recipe.id}
                   className="group rounded-3xl bg-white border border-stone-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between"
                 >
-                  {/* Ảnh món ăn kèm Category Pill & Nút Tim */}
+                  {/* Ảnh món ăn kèm Category Pill & Nút Lưu Bookmark */}
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -377,16 +379,16 @@ export default function HomeLatestRecipes({
                       </span>
                     </div>
 
-                    {/* Nút Tim Yêu thích */}
+                    {/* Nút Lưu Bookmark trên ảnh */}
                     <button
                       type="button"
-                      onClick={(e) => toggleLike(e, recipe.id)}
+                      onClick={(e) => handleToggleBookmark(e, recipe.id, title)}
                       className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/35 hover:bg-black/55 text-white backdrop-blur transition active:scale-90"
-                      title="Yêu thích món ăn"
+                      title={isSaved ? 'Bỏ lưu món ăn' : 'Lưu món ăn'}
                     >
-                      <Heart
+                      <Bookmark
                         className={`w-3.5 h-3.5 transition-colors ${
-                          isLiked ? 'fill-red-500 text-red-500' : 'text-white'
+                          isSaved ? 'fill-orange-400 text-orange-400' : 'text-white'
                         }`}
                       />
                     </button>
@@ -402,7 +404,7 @@ export default function HomeLatestRecipes({
                         </h4>
                       </Link>
 
-                      {/* Hàng meta thông số: Thời gian | Độ khó | Khẩu phần */}
+                      {/* Hàng meta thông số: Thời gian | Độ khó | Khẩu phần | Lượt xem */}
                       <div className="flex items-center gap-3 text-[11px] font-semibold text-gray-500 pt-1.5">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-orange-500" />
@@ -415,6 +417,10 @@ export default function HomeLatestRecipes({
                         <div className="flex items-center gap-1">
                           <Users className="w-3.5 h-3.5 text-gray-400" />
                           <span>{servingsText}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-stone-500 font-medium">
+                          <Eye className="w-3.5 h-3.5 text-stone-400" />
+                          <span>{recipe.viewCount ?? 0}</span>
                         </div>
                       </div>
 
@@ -437,22 +443,14 @@ export default function HomeLatestRecipes({
                       </div>
                     </div>
 
-                    {/* Hai nút hành động: Nấu ngay + Xem chi tiết */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                    {/* Nút hành động duy nhất: Nấu ngay (loại bỏ nút trùng lặp) */}
+                    <div className="pt-2 border-t border-gray-100">
                       <Link
                         href={`/recipes/${encodeURIComponent(recipe.slug)}`}
-                        className="py-2 px-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95"
+                        className="w-full py-2 px-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
                       >
                         <ChefHat className="w-3.5 h-3.5 fill-white" />
                         <span>Nấu ngay</span>
-                      </Link>
-
-                      <Link
-                        href={`/recipes/${encodeURIComponent(recipe.slug)}`}
-                        className="py-2 px-2.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-all active:scale-95"
-                      >
-                        <Bookmark className="w-3.5 h-3.5 text-gray-500" />
-                        <span>Xem chi tiết</span>
                       </Link>
                     </div>
                   </div>

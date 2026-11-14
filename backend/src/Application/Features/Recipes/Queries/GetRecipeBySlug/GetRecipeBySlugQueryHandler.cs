@@ -19,11 +19,12 @@ public class GetRecipeBySlugQueryHandler(
             throw new NotFoundException("RECIPE_NOT_FOUND", $"Không tìm thấy công thức với Slug '{request.Slug}'.");
         }
 
-        // Authorization Check
-        if (recipe.Status != RecipeStatus.Published)
+        // Authorization Check:
+        // Published recipes are accessible by all users and guests.
+        // Draft and Archived recipes are only accessible by their author or an Admin (FR-RCP-002).
+        if (recipe.Status != RecipeStatus.Published && !currentUser.IsAdmin)
         {
             var userId = currentUser.UserId;
-            // TODO: Mở rộng kiểm tra Role Admin nếu cần (vd: currentUser.IsAdmin)
             if (string.IsNullOrEmpty(userId) || recipe.AuthorId != userId)
             {
                 throw new ForbiddenException("FORBIDDEN", "Bạn không có quyền xem công thức này.");
@@ -57,7 +58,9 @@ public class GetRecipeBySlugQueryHandler(
             recipe.Steps.Select(s => new RecipeStepDto(s.Id, s.StepNumber, s.Title, s.Description, s.TimerMinutes, s.ImageUrl)).ToList(),
             recipe.Ingredients.Select(i => new RecipeIngredientDto(i.Id, i.Name, i.Quantity, i.Unit, i.Notes, i.OrderIndex)).ToList(),
             recipe.Images.Select(i => new RecipeImageDto(i.Id, i.OriginalUrl, i.MediumUrl, i.ThumbnailUrl, i.AltText, i.IsPrimary, i.OrderIndex)).ToList(),
-            recipe.RowVersion != null ? Convert.ToBase64String(recipe.RowVersion) : null
+            recipe.RowVersion != null ? Convert.ToBase64String(recipe.RowVersion) : null,
+            recipe.ViewCount,
+            recipe.BookmarkCount
         );
     }
 }

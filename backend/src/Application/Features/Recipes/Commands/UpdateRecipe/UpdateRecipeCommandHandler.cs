@@ -56,6 +56,11 @@ public class UpdateRecipeCommandHandler(
 
         recipe.SetNutrition(nutrition);
 
+        if (!string.IsNullOrWhiteSpace(request.PrimaryImageUrl))
+        {
+            recipe.SetPrimaryImageUrl(request.PrimaryImageUrl);
+        }
+
         byte[] rowVersion;
         try
         {

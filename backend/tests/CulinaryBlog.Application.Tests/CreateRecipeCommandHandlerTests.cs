@@ -46,22 +46,25 @@ public class CreateRecipeCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_SlugExists_ThrowsConflictException()
+    public async Task Handle_SlugExists_AutoResolvesToUniqueSlug()
     {
         // Arrange
         var categoryId = Guid.NewGuid();
         _mockCurrentUser.Setup(c => c.UserId).Returns("user-id");
         _mockCategoryRepo.Setup(c => c.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Category { Id = categoryId, Name = "Mon Chinh", Slug = "mon-chinh" });
-        _mockRecipeRepo.Setup(r => r.IsSlugUniqueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        _mockRecipeRepo.Setup(r => r.GenerateUniqueSlugAsync("title", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("title-2");
         var command = new CreateRecipeCommand("Title", "Desc", "Instructions", 10, 10, 2, CulinaryBlog.Domain.Enums.RecipeDifficulty.Easy, categoryId, 100m, 10m, 10m, 10m);
 
         // Act
-        var act = async () => await _handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<ConflictException>();
+        result.Should().NotBeNull();
+        result.Slug.Should().Be("title-2");
+        _mockRecipeRepo.Verify(r => r.AddAsync(It.IsAny<Recipe>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -72,8 +75,8 @@ public class CreateRecipeCommandHandlerTests
         _mockCurrentUser.Setup(c => c.UserId).Returns("user-id");
         _mockCategoryRepo.Setup(c => c.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Category { Id = categoryId, Name = "Mon Chinh", Slug = "mon-chinh" });
-        _mockRecipeRepo.Setup(r => r.IsSlugUniqueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        _mockRecipeRepo.Setup(r => r.GenerateUniqueSlugAsync("my-recipe", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("my-recipe");
         var command = new CreateRecipeCommand("My Recipe", "Desc", "Instructions", 10, 10, 2, CulinaryBlog.Domain.Enums.RecipeDifficulty.Easy, categoryId, 100m, 10m, 10m, 10m);
 
         // Act

@@ -44,6 +44,9 @@ public class StorageQuotaService : IStorageQuotaService
         if (string.IsNullOrWhiteSpace(userId)) return;
 
         var maxStorageMb = _options.Value.MaxTotalStorageMbPerUser;
+        // Giá trị <= 0 nghĩa là không giới hạn dung lượng tài khoản người dùng (Chuẩn SRS không yêu cầu hạn mức tài khoản)
+        if (maxStorageMb <= 0) return;
+
         var maxAllowedBytes = (long)maxStorageMb * 1024 * 1024;
 
         // Tính số lượng ảnh do user này sở hữu từ các Recipe và Avatar

@@ -25,6 +25,9 @@ public class Recipe : BaseEntity
 
     public DateTime? PublishedAt { get; private set; }
 
+    public long ViewCount { get; private set; } = 0;
+    public int BookmarkCount { get; private set; } = 0;
+
     public RecipeNutrition Nutrition { get; private set; } = new();
 
     private readonly List<RecipeStep> _steps = [];
@@ -254,5 +257,45 @@ public class Recipe : BaseEntity
             }
             UpdatedAt = DateTime.UtcNow;
         }
+    }
+
+    public void SetPrimaryImageUrl(string originalUrl)
+    {
+        if (string.IsNullOrWhiteSpace(originalUrl)) return;
+        var trimmed = originalUrl.Trim();
+
+        var existingPrimary = _images.FirstOrDefault(i => i.IsPrimary);
+        if (existingPrimary != null)
+        {
+            if (existingPrimary.OriginalUrl == trimmed) return;
+
+            var existingSameUrl = _images.FirstOrDefault(i => i.OriginalUrl == trimmed);
+            if (existingSameUrl != null)
+            {
+                SetPrimaryImage(existingSameUrl.Id);
+            }
+            else
+            {
+                existingPrimary.UpdateUrls(trimmed);
+                UpdatedAt = DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            AddImage(trimmed, isPrimary: true);
+        }
+    }
+
+    public void IncrementViews(long count = 1)
+    {
+        if (count > 0)
+        {
+            ViewCount += count;
+        }
+    }
+
+    public void AdjustBookmarkCount(int delta)
+    {
+        BookmarkCount = Math.Max(0, BookmarkCount + delta);
     }
 }

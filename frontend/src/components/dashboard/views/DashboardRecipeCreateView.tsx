@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import RecipeForm from '@/components/recipes/RecipeForm';
 import { useCreateRecipe } from '@/features/recipes/hooks';
-import { toErrorMessage } from '@/features/auth/hooks';
 import { recipeService } from '@/lib/services/recipe-service';
 import type { RecipeFormData } from '@/features/recipes/schemas';
 import type { RecipeDifficulty } from '@/lib/types/recipe';
+import RecipeForm from '@/components/recipes/RecipeForm';
+import { toErrorMessage } from '@/features/auth/hooks';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardTab } from '../DashboardSidebar';
-import { ArrowLeft, ChefHat, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import DashboardHeroBanner from '../common/DashboardHeroBanner';
+import RecipeAuthorGuideModal from '@/components/recipes/RecipeAuthorGuideModal';
+import { ArrowLeft, AlertCircle, CheckCircle2, Loader2, ChefHat, BookOpen } from 'lucide-react';
 
 interface DashboardRecipeCreateViewProps {
   user: UserProfile;
@@ -23,12 +25,13 @@ export default function DashboardRecipeCreateView({
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const createMutation = useCreateRecipe();
 
   const handleSubmit = async (
     formData: RecipeFormData,
     secondaryFiles: File[] = [],
-    targetStatus: 'draft' | 'publish' = 'draft'
+    targetStatus: 'draft' | 'publish' | 'archive' = 'draft'
   ) => {
     setServerError(null);
     setSuccessMessage(null);
@@ -73,7 +76,7 @@ export default function DashboardRecipeCreateView({
 
       setUploadProgress(null);
 
-      // 3. Xử lý xuất bản hoặc lưu nháp theo quyết định của tác giả tại Bước 5
+      // 3. Xử lý xuất bản hoặc lưu nháp hoặc lưu trữ theo quyết định của tác giả
       if (targetStatus === 'publish' && newRecipe?.id) {
         setUploadProgress('Đang kích hoạt xuất bản bài viết công khai (FR-RCP-005)...');
         try {
@@ -99,6 +102,22 @@ export default function DashboardRecipeCreateView({
         }
       }
 
+      if (targetStatus === 'archive' && newRecipe?.id) {
+        setUploadProgress('Đang chuyển công thức vào kho lưu trữ (FR-RCP-007)...');
+        try {
+          await recipeService.archiveRecipe(newRecipe.id);
+          setUploadProgress(null);
+          setSuccessMessage('Công thức đã được tạo và chuyển vào kho lưu trữ thành công!');
+          setTimeout(() => {
+            onSelectTab('recipes-archived');
+          }, 1200);
+          return;
+        } catch (archiveErr) {
+          console.error('Lỗi khi lưu trữ ngay:', archiveErr);
+          setUploadProgress(null);
+        }
+      }
+
       setSuccessMessage('Công thức đã được lưu bản nháp thành công! Đang chuyển vào Recipe Studio...');
 
       setTimeout(() => {
@@ -118,59 +137,42 @@ export default function DashboardRecipeCreateView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 1. Header Bar: Breadcrumb + Nút quay lại */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-2xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+      {/* 1. HERO BANNER: Thêm mới công thức sử dụng Reusable Component */}
+      <DashboardHeroBanner
+        backgroundImage="/images/dashboard/banner-recipes.jpg"
+        icon={<ChefHat className="w-7 h-7" />}
+        title="Thêm công thức mới"
+        description="Chia sẻ công thức nấu ăn của bạn với cộng đồng Culinary Blog"
+        breadcrumbs={[
+          { label: 'Trang chủ', onClick: () => onSelectTab('overview') },
+          { label: 'Công thức', onClick: () => onSelectTab('recipes') },
+          { label: 'Thêm công thức', active: true },
+        ]}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsGuideModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm text-xs font-bold text-white border border-white/25 transition active:scale-95 shadow-xs"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-orange-300" />
+              <span>Sổ tay hướng dẫn</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold text-orange-200">
+                2026
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => onSelectTab('recipes')}
-              className="hover:text-blue-600 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 backdrop-blur-sm text-xs font-bold text-stone-200 border border-stone-700 transition active:scale-95"
             >
-              Bảng điều khiển
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại</span>
             </button>
-            <span>/</span>
-            <button
-              type="button"
-              onClick={() => onSelectTab('recipes')}
-              className="hover:text-blue-600 transition"
-            >
-              Bài viết
-            </button>
-            <span>/</span>
-            <span className="text-gray-700 font-semibold">Tạo công thức mới</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                  Đăng công thức ẩm thực mới
-                </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Bản nháp mới</span>
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Quy trình 5 bước tạo công thức chuẩn: Thông tin & dinh dưỡng, hình ảnh, nguyên liệu, các bước làm và xem trước bài viết
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onSelectTab('recipes')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition shrink-0"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Về danh sách bài viết</span>
-        </button>
-      </div>
+          </>
+        }
+      />
 
       {/* Thông báo Tiến trình tải ảnh phụ */}
       {uploadProgress && (
@@ -196,8 +198,8 @@ export default function DashboardRecipeCreateView({
         </div>
       )}
 
-      {/* 2. Form Nhập Liệu Chi Tiết Với Tab Bar & Phương Án 1 */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-2xs">
+      {/* 2. Form Nhập Liệu Bố Cục 2 Cột Cân Bằng (Xóa triệt để khoảng trắng bên phải) */}
+      <div>
         <RecipeForm
           isEdit={false}
           isSubmitting={createMutation.isPending || Boolean(uploadProgress)}
@@ -205,6 +207,12 @@ export default function DashboardRecipeCreateView({
           onSubmit={handleSubmit}
         />
       </div>
+
+      {/* Modal Sổ tay quy chuẩn biên soạn công thức ẩm thực */}
+      <RecipeAuthorGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+      />
     </div>
   );
 }

@@ -24,7 +24,9 @@ public record RecipeDetailDto(
     List<RecipeStepDto> Steps,
     List<RecipeIngredientDto> Ingredients,
     List<RecipeImageDto> Images,
-    string? RowVersionBase64 = null
+    string? RowVersionBase64 = null,
+    long ViewCount = 0,
+    int BookmarkCount = 0
 );
 
 public record RecipeNutritionDto(

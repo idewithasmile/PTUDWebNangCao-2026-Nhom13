@@ -158,9 +158,12 @@ export default function RecipesFilterBar({
             className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 outline-none focus:border-orange-500"
           >
             <option value="newest">Mới nhất</option>
-            <option value="oldest">Cũ nhất</option>
+            <option value="hot">🔥 Thịnh hành (Hot nhất)</option>
+            <option value="bookmarks_desc">🔖 Được lưu nhiều nhất</option>
+            <option value="views_desc">👁️ Xem nhiều nhất</option>
             <option value="time_asc">Thời gian: Nhanh nhất</option>
             <option value="time_desc">Thời gian: Chậm nhất</option>
+            <option value="oldest">Cũ nhất</option>
           </select>
 
           {/* Nút Đặt lại lọc */}

@@ -98,4 +98,90 @@ public class GetRecipeBySlugQueryHandlerTests
         result.Title.Should().Be("Pub Recipe");
         result.Steps.Should().HaveCount(1);
     }
+
+    [Fact]
+    public async Task Handle_RecipeIsDraftAndUserIsAdmin_ReturnsDto()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Draft Recipe", "draft", "desc", "inst", 10, 10, 2, Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), "author-1", null);
+        
+        _mockRecipeRepo.Setup(r => r.GetBySlugAsync("draft", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipe);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-id");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+
+        var query = new GetRecipeBySlugQuery("draft");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Title.Should().Be("Draft Recipe");
+    }
+
+    [Fact]
+    public async Task Handle_RecipeIsArchivedAndUserIsAdmin_ReturnsDto()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Archived Recipe", "archived", "desc", "inst", 10, 10, 2, Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), "author-1", null);
+        recipe.Archive();
+        
+        _mockRecipeRepo.Setup(r => r.GetBySlugAsync("archived", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipe);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-id");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+
+        var query = new GetRecipeBySlugQuery("archived");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Title.Should().Be("Archived Recipe");
+    }
+
+    [Fact]
+    public async Task Handle_RecipeIsArchivedAndUserIsAuthor_ReturnsDto()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Archived Recipe", "archived", "desc", "inst", 10, 10, 2, Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), "author-1", null);
+        recipe.Archive();
+        
+        _mockRecipeRepo.Setup(r => r.GetBySlugAsync("archived", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipe);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("author-1");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(false);
+
+        var query = new GetRecipeBySlugQuery("archived");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Title.Should().Be("Archived Recipe");
+    }
+
+    [Fact]
+    public async Task Handle_RecipeIsArchivedAndUserIsNotAuthorOrAdmin_ThrowsForbiddenException()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Archived Recipe", "archived", "desc", "inst", 10, 10, 2, Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), "author-1", null);
+        recipe.Archive();
+        
+        _mockRecipeRepo.Setup(r => r.GetBySlugAsync("archived", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipe);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("other-author");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(false);
+
+        var query = new GetRecipeBySlugQuery("archived");
+
+        // Act
+        var act = async () => await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
 }

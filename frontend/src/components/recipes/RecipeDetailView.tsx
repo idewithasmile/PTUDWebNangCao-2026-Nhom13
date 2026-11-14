@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRecipeDetail } from '@/features/recipes/hooks';
 import { toErrorMessage } from '@/features/auth/hooks';
@@ -9,6 +9,8 @@ import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeActionButtons from '@/components/recipes/RecipeActionButtons';
 import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
+import { useRecipeViewTracker } from '@/features/recipes/useRecipeViewTracker';
+import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 import { resolveMediaUrl } from '@/lib/utils';
 import {
   Clock,
@@ -20,10 +22,14 @@ import {
   AlertCircle,
   Loader2,
   ChevronLeft,
+  Eye,
+  Bookmark,
 } from 'lucide-react';
 
 interface RecipeDetailViewProps {
   slug: string;
+  hideBackLink?: boolean;
+  onBack?: () => void;
 }
 
 const difficultyLabels: Record<number, { label: string; color: string }> = {
@@ -33,8 +39,20 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
   4: { label: 'Chuyên gia', color: 'bg-rose-50 text-rose-700 border-rose-200' },
 };
 
-export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
+export default function RecipeDetailView({
+  slug,
+  hideBackLink = false,
+  onBack,
+}: RecipeDetailViewProps) {
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
+  const { isBookmarked, toggleBookmark, init } = useBookmarkStore();
+  const [localBookmarkCount, setLocalBookmarkCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  useRecipeViewTracker(recipe?.id);
 
   if (isLoading) {
     return (
@@ -91,6 +109,22 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
   const diff = difficultyLabels[recipe.difficulty] || difficultyLabels[1];
   const totalTime = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
 
+  const isSaved = isBookmarked(recipe.id);
+  const bookmarkCount = localBookmarkCount ?? recipe.bookmarkCount ?? 0;
+
+  const handleToggleBookmark = async () => {
+    try {
+      const res = await toggleBookmark(recipe.id, recipe.title);
+      if (res.bookmarkCount !== undefined) {
+        setLocalBookmarkCount(res.bookmarkCount);
+      } else {
+        setLocalBookmarkCount((prev) => (prev ?? recipe.bookmarkCount ?? 0) + (res.isBookmarked ? 1 : -1));
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
   const formattedDate = recipe.publishedAt
     ? new Date(recipe.publishedAt).toLocaleDateString('vi-VN', {
         day: '2-digit',
@@ -106,35 +140,67 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Nút Quay lại danh sách */}
-      <div>
-        <Link
-          href="/recipes"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Danh sách công thức</span>
-        </Link>
-      </div>
+      {!hideBackLink && (
+        <div>
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Quay lại</span>
+            </button>
+          ) : (
+            <Link
+              href="/recipes"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-orange-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Danh sách công thức</span>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Header thông tin chính */}
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">
-            <Tag className="h-3.5 w-3.5" />
-            {recipe.categoryName}
-          </span>
-          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${diff.color}`}>
-            Độ khó: {diff.label}
-          </span>
-        </div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">
+                <Tag className="h-3.5 w-3.5" />
+                {recipe.categoryName}
+              </span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${diff.color}`}>
+                Độ khó: {diff.label}
+              </span>
+            </div>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-          {recipe.title}
-        </h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+              {recipe.title}
+            </h1>
+          </div>
+
+          {/* Nút Lưu trữ công thức */}
+          <button
+            type="button"
+            onClick={handleToggleBookmark}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0 ${
+              isSaved
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-white hover:bg-orange-50 text-gray-700 border border-gray-200 hover:border-orange-200 hover:text-orange-600'
+            }`}
+            title={isSaved ? 'Bỏ lưu công thức' : 'Lưu công thức vào danh sách'}
+          >
+            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
+            <span>{isSaved ? 'Đã lưu công thức' : 'Lưu công thức'}</span>
+          </button>
+        </div>
 
         <p className="text-base leading-relaxed text-gray-600">{recipe.description}</p>
 
-        {/* Tác giả & Ngày đăng */}
+        {/* Tác giả, Ngày đăng, Lượt xem & Lượt lưu */}
         <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-100">
           <div className="flex items-center gap-1.5 font-medium text-gray-700">
             <User className="h-4 w-4 text-orange-500" />
@@ -143,6 +209,16 @@ export default function RecipeDetailView({ slug }: RecipeDetailViewProps) {
           <div className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4 text-gray-400" />
             <span>Ngày đăng: {formattedDate}</span>
+          </div>
+          <div className="flex items-center gap-1.5 font-medium text-stone-600">
+            <Eye className="h-4 w-4 text-orange-500" />
+            <span className="font-bold text-stone-800">{recipe.viewCount ?? 0}</span>
+            <span>lượt xem</span>
+          </div>
+          <div className="flex items-center gap-1.5 font-medium text-stone-600">
+            <Bookmark className="h-3.5 w-3.5 text-orange-500" />
+            <span className="font-bold text-stone-800">{bookmarkCount}</span>
+            <span>lượt lưu</span>
           </div>
         </div>
       </div>

@@ -1,9 +1,20 @@
 'use client';
 
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
-import { UtensilsCrossed, AlertCircle, Loader2, Plus, ChefHat, BookOpen, Search, X } from 'lucide-react';
+import {
+  UtensilsCrossed,
+  AlertCircle,
+  Loader2,
+  Plus,
+  ChefHat,
+  BookOpen,
+  Search,
+  X,
+  Sparkles,
+  FolderOpen,
+} from 'lucide-react';
 import { useRecipes } from '@/features/recipes/hooks';
 import { hasSession } from '@/features/auth/api';
 import type { GetRecipesParams, RecipeDifficulty } from '@/lib/types/recipe';
@@ -16,7 +27,11 @@ export default function RecipesClientView() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isLoggedIn = hasSession();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(hasSession());
+  }, []);
 
   // Đọc params từ URL searchParams
   const filters = useMemo<GetRecipesParams>(() => {
@@ -78,54 +93,154 @@ export default function RecipesClientView() {
 
   return (
     <div className="space-y-6">
-      {/* Header tiêu đề & Nút tạo mới */}
-      <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            {filters.onlyMine ? 'Công thức Của tôi' : 'Công thức Nấu ăn'}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {filters.onlyMine
-              ? 'Quản lý, chỉnh sửa và xuất bản các công thức nấu ăn do chính bạn sáng tạo.'
-              : 'Khám phá hàng ngàn công thức nấu ăn phong phú, dễ làm và hấp dẫn từ cộng đồng.'}
-          </p>
-        </div>
-        <Link
-          href="/recipes/create"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-600 active:scale-95 whitespace-nowrap"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Viết công thức mới</span>
+      {/* 1. Breadcrumbs */}
+      <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
+        <Link href="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+          Trang chủ
         </Link>
+        <span>/</span>
+        <span className="font-semibold text-gray-900 dark:text-zinc-100">
+          {filters.onlyMine ? 'Công thức của tôi' : 'Công thức nấu ăn'}
+        </span>
+      </nav>
+
+      {/* 2. Hero Banner Ẩm Thực Cao Cấp (Option 1) */}
+      <div className="relative overflow-hidden rounded-3xl shadow-xl min-h-[290px] sm:min-h-[330px] flex items-center p-6 sm:p-10 lg:p-12">
+        {/* Nền ảnh ẩm thực chất lượng cao */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1920&q=85')`,
+          }}
+        />
+
+        {/* Lớp phủ Dark Warm Gradient mờ ảo sang trọng */}
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/85 to-black/40 backdrop-blur-[0.5px]" />
+
+        {/* Badge nghệ thuật góc trên bên phải */}
+        <div className="absolute top-6 right-6 lg:top-8 lg:right-10 hidden sm:block rotate-2 z-10 pointer-events-none">
+          <div className="text-right">
+            <span className="font-sans italic text-xl lg:text-2xl text-amber-300 font-black drop-shadow-md tracking-tight block">
+              Hương Vị Việt
+            </span>
+            <span className="text-[11px] uppercase tracking-widest text-white/80 font-semibold">
+              Chuẩn vị • Đậm đà ♡
+            </span>
+          </div>
+        </div>
+
+        {/* Nội dung Banner */}
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-semibold backdrop-blur-md">
+            {filters.onlyMine ? (
+              <>
+                <ChefHat className="w-3.5 h-3.5 text-amber-300" />
+                <span>Gian bếp sáng tạo của bạn</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Kho tàng ẩm thực tuyển chọn</span>
+              </>
+            )}
+          </div>
+
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+            {filters.onlyMine ? (
+              <>
+                Công Thức <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-amber-400 bg-clip-text text-transparent">Của Tôi</span>
+              </>
+            ) : (
+              <>
+                Kho Tàng <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-amber-400 bg-clip-text text-transparent">Công Thức Nấu Ăn</span>
+              </>
+            )}
+          </h1>
+
+          <p className="text-sm sm:text-base text-stone-200 leading-relaxed drop-shadow-xs max-w-xl">
+            {filters.onlyMine
+              ? 'Quản lý, tinh chỉnh và chia sẻ những công thức tâm huyết do chính bạn sáng tạo đến cộng đồng yêu ẩm thực.'
+              : `Khám phá hơn ${pagedResult?.totalCount || 100}+ công thức món ngon chuẩn vị từ mâm cơm gia đình ấm cúng đến ẩm thực tiệc hiện đại, hướng dẫn chi tiết từng bước dễ làm.`}
+          </p>
+
+          {/* Quick Stats Badges */}
+          {!filters.onlyMine && (
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap pt-1 text-xs text-stone-300 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15">
+                🍲 <strong>{pagedResult?.totalCount || 100}+</strong> Món ngon
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15">
+                🥗 <strong>20+</strong> Danh mục
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15">
+                👨‍🍳 <strong>100%</strong> Có bí quyết đầu bếp
+              </span>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-2 flex-wrap">
+            <Link
+              href="/recipes/create"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-95 whitespace-nowrap cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Viết công thức mới</span>
+            </Link>
+
+            <Link
+              href="/categories"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-xs px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+            >
+              <FolderOpen className="h-4 w-4" />
+              <span>Duyệt theo danh mục</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Họa tiết chìm nghệ thuật góc phải dưới */}
+        <div className="absolute -right-6 -bottom-10 opacity-10 pointer-events-none text-white">
+          <UtensilsCrossed className="w-64 h-64" />
+        </div>
       </div>
 
       {/* Tabs chuyển đổi giữa Tất cả và Công thức của tôi (khi đã login) */}
       {isLoggedIn && (
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 dark:border-zinc-800">
           <button
             type="button"
             onClick={() => updateUrlParams({ onlyMine: undefined, page: 1 })}
-            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors ${
+            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors cursor-pointer ${
               !filters.onlyMine
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'
             }`}
           >
             <BookOpen className="h-4 w-4" />
             <span>Khám phá cộng đồng</span>
+            {pagedResult?.totalCount !== undefined && !filters.onlyMine && (
+              <span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 text-[11px] font-bold px-2 py-0.5">
+                {pagedResult.totalCount}
+              </span>
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => updateUrlParams({ onlyMine: true, page: 1 })}
-            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors ${
+            className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors cursor-pointer ${
               filters.onlyMine
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'
             }`}
           >
             <ChefHat className="h-4 w-4" />
             <span>Công thức của tôi (Quản lý)</span>
+            {pagedResult?.totalCount !== undefined && filters.onlyMine && (
+              <span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 text-[11px] font-bold px-2 py-0.5">
+                {pagedResult.totalCount}
+              </span>
+            )}
           </button>
         </div>
       )}

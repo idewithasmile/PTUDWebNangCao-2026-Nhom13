@@ -130,7 +130,6 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("Slug")
@@ -154,6 +153,11 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<string>("AuthorId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("BookmarkCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
@@ -189,7 +193,6 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<int>("Servings")
@@ -213,6 +216,11 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("ViewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
@@ -223,6 +231,43 @@ namespace CulinaryBlog.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Recipes", (string)null);
+                });
+
+            modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeBookmark", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("RecipeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipeId");
+
+                    b.HasIndex("UserId", "RecipeId")
+                        .IsUnique();
+
+                    b.ToTable("RecipeBookmarks", (string)null);
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeImage", b =>
@@ -262,7 +307,6 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("ThumbnailUrl")
@@ -313,7 +357,6 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<string>("Unit")
@@ -357,7 +400,6 @@ namespace CulinaryBlog.Infrastructure.Migrations
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<int>("StepNumber")
@@ -612,6 +654,25 @@ namespace CulinaryBlog.Infrastructure.Migrations
 
                     b.Navigation("Nutrition")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeBookmark", b =>
+                {
+                    b.HasOne("CulinaryBlog.Domain.Entities.Recipe", "Recipe")
+                        .WithMany()
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CulinaryBlog.Domain.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.RecipeImage", b =>

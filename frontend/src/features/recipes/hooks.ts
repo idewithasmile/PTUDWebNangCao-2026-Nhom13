@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { recipeService } from '@/lib/services/recipe-service';
+import { useMe } from '@/features/auth/hooks';
 import type {
   GetRecipesParams,
   SearchRecipesParams,
@@ -26,11 +27,13 @@ export const recipeKeys = {
  * Hook fetch danh sách công thức (có phân trang, lọc, sắp xếp)
  */
 export function useRecipes(params: GetRecipesParams = {}, enabled = true) {
+  const { data: user } = useMe(false);
+  const effectiveParams = params.onlyMine ? { ...params, _userId: user?.id ?? 'me' } : params;
   return useQuery({
-    queryKey: recipeKeys.list(params),
+    queryKey: recipeKeys.list(effectiveParams),
     queryFn: () => recipeService.getRecipes(params),
     enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: params.onlyMine ? 0 : 30 * 1000,
   });
 }
 
@@ -54,7 +57,7 @@ export function useRecipeDetail(slug: string, enabled = true) {
     queryKey: recipeKeys.detail(slug),
     queryFn: () => recipeService.getRecipeBySlug(slug),
     enabled: enabled && !!slug,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -66,7 +69,8 @@ export function useCreateRecipe() {
   return useMutation({
     mutationFn: (data: CreateRecipeRequest) => recipeService.createRecipe(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: recipeKeys.lists() });
+      qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -80,6 +84,7 @@ export function useUpdateRecipe(id: string) {
     mutationFn: (data: UpdateRecipeRequest) => recipeService.updateRecipe(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -93,6 +98,7 @@ export function usePublishRecipe() {
     mutationFn: (id: string) => recipeService.publishRecipe(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -106,6 +112,7 @@ export function useUnpublishRecipe() {
     mutationFn: (id: string) => recipeService.unpublishRecipe(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -119,6 +126,7 @@ export function useArchiveRecipe() {
     mutationFn: (id: string) => recipeService.archiveRecipe(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -132,6 +140,7 @@ export function useDeleteRecipe() {
     mutationFn: (id: string) => recipeService.deleteRecipe(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: recipeKeys.all });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

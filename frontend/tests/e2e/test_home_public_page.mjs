@@ -55,10 +55,10 @@ async function testHomeMockupPage() {
     // 5. Kiểm tra Khu vực Công thức mới nhất (1 Thẻ lớn Món Hot + Lưới 2x2 4 thẻ)
     console.log('🔍 5. Kiểm tra Khu vực Công thức mới nhất (1 Thẻ lớn Món Hot + Lưới 2x2)...');
     await page.waitForSelector('text=CÔNG THỨC MỚI NHẤT');
-    await page.waitForSelector('text=MÓN HOT TUẦN NÀY');
+    await page.waitForSelector('text=MỚI RA LÒ GẦN ĐÂY');
     await page.waitForSelector('text=Xem công thức');
     await page.waitForSelector('text=Nấu ngay');
-    await page.waitForSelector('text=Xem chi tiết');
+    await page.waitForSelector('text=Khám phá thêm công thức khác');
     const recipeLinks = await page.locator('a[href^="/recipes/"]').count();
     console.log(`✅ Công thức mới nhất: 1 Thẻ lớn Món Hot + Lưới 4 thẻ với ${recipeLinks} liên kết hợp lệ.`);
 

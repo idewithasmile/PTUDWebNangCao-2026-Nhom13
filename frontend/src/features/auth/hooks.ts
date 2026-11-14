@@ -11,6 +11,7 @@ import {
   updateMeApi,
 } from './api';
 import { AUTH_ERROR_MESSAGES, problemMessage, type ProblemDetails } from './types';
+import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 
 // Fallback khi fetch không tới được Backend (dự phòng khi lỗi không phải RFC 7807).
 const AUTH_NETWORK_FALLBACK =
@@ -106,7 +107,12 @@ export function useLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: loginApi,
-    onSuccess: (res) => qc.setQueryData(authKeys.me, res.user),
+    onSuccess: (res) => {
+      qc.clear();
+      qc.setQueryData(authKeys.me, res.user);
+      useBookmarkStore.getState().reset();
+      useBookmarkStore.getState().init(true);
+    },
   });
 }
 
@@ -124,7 +130,12 @@ export function useGoogleLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: googleLoginApi,
-    onSuccess: (res) => qc.setQueryData(authKeys.me, res.user),
+    onSuccess: (res) => {
+      qc.clear();
+      qc.setQueryData(authKeys.me, res.user);
+      useBookmarkStore.getState().reset();
+      useBookmarkStore.getState().init(true);
+    },
   });
 }
 
@@ -133,7 +144,12 @@ export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: logoutApi,
-    onSuccess: () => qc.setQueryData(authKeys.me, null),
+    onSuccess: () => {
+      qc.clear();
+      qc.setQueryData(authKeys.me, null);
+      useBookmarkStore.getState().reset();
+      useBookmarkStore.getState().init(true);
+    },
   });
 }
 

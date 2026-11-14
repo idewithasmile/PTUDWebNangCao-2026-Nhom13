@@ -29,12 +29,8 @@ public class CreateRecipeCommandHandler(
             throw new BusinessRuleValidationException("CATEGORY_NOT_FOUND", $"Danh mục với ID '{request.CategoryId}' không tồn tại.");
         }
 
-        var slug = SlugHelper.Generate(request.Title);
-        var isUnique = await recipeRepository.IsSlugUniqueAsync(slug, cancellationToken);
-        if (!isUnique)
-        {
-            throw new ConflictException("RECIPE_CONFLICT", $"Slug '{slug}' đã tồn tại.");
-        }
+        var baseSlug = SlugHelper.Generate(request.Title);
+        var slug = await recipeRepository.GenerateUniqueSlugAsync(baseSlug, cancellationToken);
 
         // Lưu ý: Validate CategoryId tồn tại có thể làm bằng FluentValidation gọi Repository, 
         // hoặc ở đây. Nếu category không tồn tại, trả về 422. (Hiện tại mock)

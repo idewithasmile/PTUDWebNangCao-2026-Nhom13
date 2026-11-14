@@ -1,18 +1,18 @@
-using Bogus;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Enums;
 using CulinaryBlog.Domain.Interfaces;
+using CulinaryBlog.Domain.ValueObjects;
 using CulinaryBlog.Infrastructure.Data;
 
 namespace CulinaryBlog.Infrastructure.Persistence.Seeders;
 
 public static class CulinaryBlogSeeder
 {
-    private const int SEED = 42;
-
     public record CategorySeedItem(
         string Name,
         string Slug,
@@ -25,92 +25,69 @@ public static class CulinaryBlogSeeder
         string Alt
     );
 
+    public record AuthorSeedItem(
+        string Email,
+        string UserName,
+        string DisplayName,
+        string Password,
+        string[] Roles,
+        string Avatar
+    );
+
+    public static readonly AuthorSeedItem[] PredefinedAuthors =
+    [
+        new("admin@culinaryblog.com", "admin", "Quản trị viên Hệ thống", "Admin@123456", ["Admin", "Author"], "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"),
+        new("author@culinaryblog.com", "author", "Đầu bếp Chuẩn Vị", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80"),
+        new("user@culinaryblog.com", "user", "Thành viên Khám Phá", "User@123456", ["Reader"], "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"),
+        new("nguyenanh@culinaryblog.com", "nguyenanh", "Bếp trưởng Nguyễn Anh", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1583394293214-28ded15ee548?auto=format&fit=crop&w=400&q=80"),
+        new("tranbinh@culinaryblog.com", "tranbinh", "Nghệ nhân Trần Bình", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1581299894007-aaa50297cf16?auto=format&fit=crop&w=400&q=80"),
+        new("lechi@culinaryblog.com", "lechi", "Chuyên gia Lê Chi", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"),
+        new("phamdung@culinaryblog.com", "phamdung", "Bếp trưởng Phạm Dũng", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"),
+        new("hoangyen@culinaryblog.com", "hoangyen", "Đầu bếp Hoàng Yến", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
+        new("voha@culinaryblog.com", "voha", "Chuyên gia Võ Hà", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"),
+        new("dangkhoa@culinaryblog.com", "dangkhoa", "Đầu bếp Đặng Khoa", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80"),
+        new("buimai@culinaryblog.com", "buimai", "Nghệ nhân Bùi Mai", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"),
+        new("donam@culinaryblog.com", "donam", "Bếp trưởng Đỗ Nam", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80"),
+        new("ngophuong@culinaryblog.com", "ngophuong", "Chuyên gia Ngô Phương", "Author@123456", ["Author"], "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80")
+    ];
+
     public static readonly CategorySeedItem[] PredefinedCategories =
     [
-        new("Món khai vị", "mon-khai-vi", "Các món ăn thuộc danh mục Món khai vị nhẹ nhàng, tinh tế đánh thức vị giác đầu bữa tiệc như gỏi cuốn tôm thịt, nem rán, súp cua măng tây và các món nộm thanh mát.", "https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=800&q=80"),
-        new("Món chính", "mon-chinh", "Các món ăn thuộc danh mục Món chính giàu đạm và dinh dưỡng, đậm đà phong vị Việt, là tâm điểm ấm cúng trong mỗi mâm cơm sum họp gia đình.", "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80"),
-        new("Món canh", "mon-canh", "Các món ăn thuộc danh mục Món canh thanh mát, ngọt nước từ xương hầm và rau củ nhiệt đới tươi non, xua tan cái nóng oi bức và bồi bổ sức khỏe.", "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80"),
-        new("Món kho", "mon-kho", "Các món ăn thuộc danh mục Món kho đậm đà màu cánh gián, vị mặn ngọt hài hòa đặc trưng của thịt kho tàu nước dừa, cá lóc kho tộ ăn kèm cơm trắng nóng hổi.", "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80"),
-        new("Món xào", "mon-xao", "Các món ăn thuộc danh mục Món xào giòn ngọt trên lửa lớn, giữ trọn vẹn vitamin và sắc màu tươi sáng tự nhiên của rau củ tươi cùng hải sản, thịt bò.", "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80"),
-        new("Món nướng", "mon-nuong", "Các món ăn thuộc danh mục Món nướng thơm nức mũi trên than hoa rực hồng, tẩm ướp gia vị sả ớt, mật ong và thảo mộc đậm đà khó cưỡng.", "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80"),
-        new("Món chiên rán", "mon-chien-ran", "Các món ăn thuộc danh mục Món chiên rán lớp vỏ ngoài giòn rụm màu vàng ruộm, bên trong giữ nguyên độ mềm ẩm, ăn kèm rau sống và nước chấm chua ngọt.", "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=800&q=80"),
-        new("Món hấp", "mon-hap", "Các món ăn thuộc danh mục Món hấp thanh tao và bổ dưỡng, lưu giữ nguyên vẹn độ ngọt tự nhiên, độ tươi ngon và dưỡng chất quý giá của món ăn.", "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80"),
-        new("Món luộc", "mon-luoc", "Các món ăn thuộc danh mục Món luộc mộc mạc, thuần túy, đề cao độ tươi ngọt tự nhiên của thịt và rau xanh, chấm cùng nước mắm tỏi ớt hoặc kho quẹt.", "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"),
-        new("Món gỏi - nộm", "mon-goi-nom", "Các món ăn thuộc danh mục Món gỏi - nộm giòn sần sật, hòa quyện bốn vị chua, cay, mặn, ngọt hài hòa kích thích vị giác và chống ngấy hiệu quả.", "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80"),
-        new("Món lẩu", "mon-lau", "Các món ăn thuộc danh mục Món lẩu ấm nồng cho những dịp sum họp, nước lẩu chua cay hoặc ngọt thanh từ xương, phong phú các loại hải sản, thịt và rau nhúng.", "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80"),
-        new("Món chay", "mon-chay", "Các món ăn thuộc danh mục Món chay thanh tịnh, chế biến sáng tạo từ nấm tươi, đậu hũ và rau củ quả thuần khiết mang lại sự an lành và dồi dào sức khỏe.", "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=800&q=80"),
-        new("Món ăn vặt", "mon-an-vat", "Các món ăn thuộc danh mục Món ăn vặt đường phố hấp dẫn, vui miệng như bánh tráng nướng, nem chua rán, cút lộn xào me gắn liền với tuổi trẻ.", "https://images.unsplash.com/photo-1505253758473-96b3015f21c9?auto=format&fit=crop&w=800&q=80"),
-        new("Đồ uống", "do-uong", "Các món ăn thuộc danh mục Đồ uống mát lạnh, sảng khoái từ các loại trà hoa quả nhiệt đới, cà phê sữa đá đậm đà và sinh tố tươi giàu dưỡng chất.", "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80"),
-        new("Tráng miệng", "trang-mieng", "Các món ăn thuộc danh mục Tráng miệng ngọt dịu và tươi mát với các món chè ba miền, sữa chua dẻo, rau câu và hoa quả tươi khép lại bữa ăn hoàn mỹ.", "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80"),
-        new("Bánh ngọt", "banh-ngot", "Các món ăn thuộc danh mục Bánh ngọt nướng thơm lừng mùi bơ Pháp, vani và socola với kết cấu bông mềm xốp mịn làm say đắm lòng người.", "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80"),
-        new("Mì - Bún - Phở", "mi-bun-pho", "Các món ăn thuộc danh mục Mì - Bún - Phở chứa đựng linh hồn ẩm thực Việt với nước dùng ninh từ xương ống hồi quế thơm ngát, sợi bánh mềm dai truyền thống.", "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=800&q=80"),
-        new("Cơm & Cháo", "com-chao", "Các món ăn thuộc danh mục Cơm & Cháo bình dị, chắc bụng từ cơm tấm sườn nướng, cơm chiên ngọc bích đến các bát cháo sườn, cháo hải sản ấm lòng.", "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=800&q=80"),
-        new("Hải sản", "hai-san", "Các món ăn thuộc danh mục Hải sản tươi rói mang hương vị mặn mòi của biển khơi từ tôm sú, cua biển, cá mú, mực trứng chế biến hấp, nướng, xào.", "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"),
-        new("Gia cầm", "gia-cam", "Các món ăn thuộc danh mục Gia cầm thịt ngọt da giòn từ gà thả vườn, vịt cỏ, bồ câu nấu chao, nướng muối ớt hay luộc lá chanh truyền thống.", "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=800&q=80"),
-        new("Thịt bò", "thit-bo", "Các món ăn thuộc danh mục Thịt bò mềm ngọt giàu sắt, biến hóa đa dạng từ bò lúc lắc, bít tết sốt tiêu, bò sốt vang đến phở bò tái lăn.", "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80"),
-        new("Thịt heo", "thit-heo", "Các món ăn thuộc danh mục Thịt heo nguyên liệu quen thuộc hàng đầu mâm cơm Việt với thịt kho tàu, sườn nướng, chả giò và ba chỉ luộc giòn sần sật.", "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80"),
-        new("Ẩm thực miền Bắc", "am-thuc-mien-bac", "Các món ăn thuộc danh mục Ẩm thực miền Bắc nổi tiếng với nét tinh tế, vị thanh nhẹ vừa vặn không quá cay nồng, lưu giữ hồn cốt đất kinh kỳ ngàn năm.", "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=800&q=80"),
-        new("Ẩm thực miền Trung", "am-thuc-mien-trung", "Các món ăn thuộc danh mục Ẩm thực miền Trung đậm đà, màu sắc rực rỡ và cay nồng đặc sắc với bún bò Huế, mì Quảng, nem nướng và các món mắm trứ danh.", "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80"),
-        new("Ẩm thực miền Nam", "am-thuc-mien-nam", "Các món ăn thuộc danh mục Ẩm thực miền Nam hào sảng, phóng khoáng kết hợp vị ngọt tự nhiên của nước dừa, đường thốt nốt và rau đồng trù phú phù sa.", "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80")
+        new("Món khai vị", "mon-khai-vi", "Các món khai vị nhẹ nhàng, tinh tế đánh thức vị giác đầu bữa tiệc như gỏi cuốn tôm thịt, nem rán, súp cua và các món nộm thanh mát.", "/culinary-blog/categories/mon-khai-vi.jpg"),
+        new("Món chính", "mon-chinh", "Các món ăn chính đậm đà phong vị Việt, giàu dinh dưỡng, là linh hồn của mỗi bữa cơm gia đình sum vầy.", "/culinary-blog/categories/mon-chinh.jpg"),
+        new("Canh & Súp", "canh-sup", "Các món canh thanh mát và súp bổ dưỡng từ xương hầm rau củ nhiệt đới tươi ngon, cân bằng dinh dưỡng và xua tan mệt mỏi.", "/culinary-blog/categories/canh-sup.jpg"),
+        new("Món chay", "mon-chay", "Các món chay thanh tịnh, chế biến tinh tế từ đậu hũ, nấm tươi và các loại củ quả thanh khiết cho sức khỏe an lành.", "/culinary-blog/categories/mon-chay.jpg"),
+        new("Tráng miệng", "trang-mieng", "Các món chè ba miền, bánh ngọt, sữa chua và hoa quả tươi thanh mát khép lại trọn vẹn bữa tiệc gia đình.", "/culinary-blog/categories/trang-mieng.jpg"),
+        new("Đồ uống", "do-uong", "Các loại đồ uống mát lạnh sảng khoái từ trà hoa quả nhiệt đới, cà phê truyền thống và nước ép thanh lọc cơ thể.", "/culinary-blog/categories/do-uong.jpg"),
+        new("Món kho", "mon-kho", "Các món kho đậm đà màu cánh gián đặc trưng như thịt kho tàu, cá lóc kho tộ sánh quyện ăn kèm cơm trắng nóng hổi.", "/culinary-blog/categories/mon-kho.jpg"),
+        new("Món xào", "mon-xao", "Các món xào giòn ngọt trên lửa lớn, lưu giữ trọn vẹn độ tươi ngon và sắc màu tự nhiên của rau củ, hải sản và thịt bò.", "/culinary-blog/categories/mon-xao.jpg"),
+        new("Món nướng", "mon-nuong", "Các món nướng thơm lừng trên than hoa rực hồng, tẩm ướp gia vị sả ớt, mật ong và thảo mộc đậm đà cuốn hút.", "/culinary-blog/categories/mon-nuong.jpg"),
+        new("Món chiên & rán", "mon-chien-ran", "Các món chiên rán vỏ ngoài vàng ươm giòn rụm, bên trong mềm ẩm mọng nước, chấm cùng nước chấm chua ngọt.", "/culinary-blog/categories/mon-chien-ran.jpg"),
+        new("Món hấp", "mon-hap", "Các món hấp thanh tao giữ nguyên vẹn độ tươi ngọt, vitamin và dưỡng chất quý giá của tôm cá và thịt tươi non.", "/culinary-blog/categories/mon-hap.jpg"),
+        new("Món luộc", "mon-luoc", "Các món luộc mộc mạc, ngọt tự nhiên từ thịt và rau xanh tươi, chấm kèm mắm gừng, mắm tôm hoặc kho quẹt đậm đà.", "/culinary-blog/categories/mon-luoc.jpg"),
+        new("Món gỏi & nộm", "mon-goi-nom", "Các món gỏi nộm giòn sần sật hòa quyện vị chua cay mặn ngọt thanh mát kích thích vị giác và chống ngấy tuyệt hảo.", "/culinary-blog/categories/mon-goi-nom.jpg"),
+        new("Món lẩu", "mon-lau", "Các món lẩu nghi ngút khói cho những buổi tụ họp ấm áp, nước lẩu ngọt thơm từ xương hòa cùng hải sản tươi rói.", "/culinary-blog/categories/mon-lau.jpg"),
+        new("Bún - Phở - Mì", "bun-pho-mi", "Linh hồn ẩm thực sợi Việt Nam với nước dùng ninh xương ống hồi quế thơm lừng và sợi bánh tươi dẻo mềm.", "/culinary-blog/categories/bun-pho-mi.jpg"),
+        new("Cơm & Cháo", "com-chao", "Các món cơm tấm sườn bì chả, cơm chiên ngọc bích và cháo sánh mịn ấm lòng, nền tảng thân thương của ẩm thực Á Đông.", "/culinary-blog/categories/com-chao.jpg"),
+        new("Hải sản", "hai-san", "Hải sản tươi sống đậm vị mặn mòi của biển khơi từ tôm sú, cua biển, mực trứng, cá mú nướng hấp xào phong phú.", "/culinary-blog/categories/hai-san.jpg"),
+        new("Món ăn vặt", "mon-an-vat", "Ẩm thực đường phố cuốn hút như bánh tráng nướng, nem chua rán, cút lộn xào me gắn liền với ký ức tuổi trẻ.", "/culinary-blog/categories/mon-an-vat.jpg"),
+        new("Bánh ngọt & mặn", "banh-ngot", "Các loại bánh truyền thống và bánh nướng thơm lừng mùi bơ, cốt dừa, bột gạo với kết cấu mềm xốp khó quên.", "/culinary-blog/categories/banh-ngot.jpg"),
+        new("Ẩm thực Miền Bắc", "am-thuc-mien-bac", "Nét tinh hoa kinh kỳ ngàn năm thanh tao, chuẩn mực, vị thanh nhẹ vừa vặn không quá cay nồng.", "/culinary-blog/categories/am-thuc-mien-bac.jpg"),
+        new("Ẩm thực Miền Trung", "am-thuc-mien-trung", "Hương vị cung đình và dân gian miền Trung đậm đà sắc đỏ ớt cay nồng, mắm thơm và đậm đà khó phai.", "/culinary-blog/categories/am-thuc-mien-trung.jpg"),
+        new("Ẩm thực Miền Nam", "am-thuc-mien-nam", "Hào sảng, phóng khoáng mang vị ngọt tự nhiên của nước dừa, đường thốt nốt và rau đồng trù phú phù sa.", "/culinary-blog/categories/am-thuc-mien-nam.jpg"),
+        new("Gia cầm", "gia-cam", "Thịt gà ta thả vườn, vịt cỏ thơm ngon, da giòn thịt ngọt chế biến nướng muối ớt, luộc lá chanh hoặc xáo măng.", "/culinary-blog/categories/gia-cam.jpg"),
+        new("Thịt bò", "thit-bo", "Thịt bò mềm mọng giàu sắt, biến hóa đa dạng từ bò lúc lắc, sốt tiêu, bò kho gừng đến phở bò tái lăn chuẩn vị.", "/culinary-blog/categories/thit-bo.jpg"),
+        new("Thịt heo", "thit-heo", "Nguyên liệu gần gũi nhất trong mâm cơm Việt với thịt kho tàu, sườn nướng mật ong, ba chỉ cuộn rau rừng.", "/culinary-blog/categories/thit-heo.jpg")
     ];
 
-    public static readonly ImageSeedItem[] RecipeImages =
-    [
-        new("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1200&q=80", "Bát phở bò truyền thống bốc khói nghi ngút"),
-        new("https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80", "Món sườn nướng mật ong óng ả thơm lừng"),
-        new("https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=1200&q=80", "Gỏi cuốn tôm thịt thanh mát kèm nước chấm tương đen"),
-        new("https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80", "Nồi lẩu hải sản chua cay thơm nồng đậm đà"),
-        new("https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=80", "Cơm rang ngọc bích đỗ xanh giòn thơm"),
-        new("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80", "Thịt xiên nướng than hoa sốt mè thơm phức"),
-        new("https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=1200&q=80", "Dimsum hấp trong xửng tre nóng hổi"),
-        new("https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80", "Đĩa salad rau củ mùa hè thanh mát sốt giấm"),
-        new("https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80", "Món rau củ xào dầu hào giữ trọn độ giòn ngọt"),
-        new("https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=1200&q=80", "Gà rán giòn rụm màu vàng óng hấp dẫn"),
-        new("https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1200&q=80", "Bít tết bò sốt tiêu đen thảo mộc"),
-        new("https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=1200&q=80", "Tôm càng nướng bơ tỏi thơm lừng"),
-        new("https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=1200&q=80", "Đậu hũ sốt nấm hương tươi thanh đạm"),
-        new("https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80", "Canh sườn hầm rau củ nhiệt đới thanh mát"),
-        new("https://images.unsplash.com/photo-1505253758473-96b3015f21c9?auto=format&fit=crop&w=1200&q=80", "Bánh mì giòn rụm kẹp thịt và pate thơm béo")
-    ];
-
-    private static readonly string[] RecipeTitles =
-    [
-        "Phở bò truyền thống Hà Nội", "Bánh mì kẹp thịt nướng", "Bún bò Huế đặc biệt",
-        "Cơm tấm sườn bì chả", "Gỏi cuốn tôm thịt", "Bánh xèo miền Nam",
-        "Canh chua cá lóc", "Thịt kho tàu nước dừa", "Cà ri gà nước cốt dừa",
-        "Chả giò chiên giòn rụm", "Bún chả Hà Nội", "Cá basa kho tộ",
-        "Bò lúc lắc hạt tiêu", "Gà hấp lá chanh", "Mực xào chua ngọt",
-        "Súp cua măng tây", "Lẩu Thái hải sản chua cay", "Chè hạt sen long nhãn",
-        "Nem nướng Nha Trang", "Bún riêu cua đồng", "Cơm chiên ngọc bích",
-        "Vịt nấu chao Cần Thơ", "Sườn xào chua ngọt", "Miến xào cua bể"
-    ];
-
-    private static readonly string[] IngredientPool =
-    [
-        "Thịt bò thăn", "Thịt ba chỉ", "Tôm sú tươi", "Cá lóc đồng", "Thịt đùi gà",
-        "Trứng gà ta", "Xương ống hầm", "Rau muống non", "Hành hoa", "Hành khô",
-        "Tỏi cô đơn", "Gừng già", "Sả cây", "Ớt hiểm đỏ", "Rau mùi (ngò rí)",
-        "Húng quế", "Giá đỗ", "Nước mắm cá cơm", "Dầu hào cao cấp", "Muối hạt",
-        "Đường cát", "Tiêu đen xay", "Bột ngọt", "Dầu ăn thực vật", "Nước cốt dừa",
-        "Rượu mai quế lộ", "Hồi hoa", "Quế thanh", "Thảo quả", "Hạt tiêu sọ",
-        "Bột năng", "Nấm đông cô", "Mộc nhĩ", "Cà chua chín", "Dứa chua", "Me chín"
-    ];
-
-    private static readonly string[] StepDescriptions =
-    [
-        "Sơ chế, làm sạch và khử mùi hôi của nguyên liệu tươi sống bằng nước muối loãng cùng gừng đập dập.",
-        "Ướp thịt và gia vị đã chuẩn bị theo định lượng, để ngấm đều trong khoảng 20 đến 30 phút.",
-        "Chuẩn bị nồi nước dùng, cho xương và thảo quả vào ninh liu riu trên lửa nhỏ, vớt sạch bọt nổi.",
-        "Phi thơm tỏi, hành băm nhuyễn cùng dầu ăn cho đến khi dậy mùi thơm và ngả sang màu vàng óng.",
-        "Cho phần nguyên liệu chính vào xào săn trên lửa lớn, đảo đều tay để gia vị thấm đều.",
-        "Hạ lửa nhỏ, đậy nắp vung và om nguyên liệu đến khi chín mềm và nước sốt sánh lại.",
-        "Nêm nếm lại gia vị cho vừa miệng, rắc thêm tiêu xay, ớt tươi và hành lá cắt nhỏ.",
-        "Bày món ăn ra đĩa hoặc tô sâu lòng, trang trí thêm ngò rí và thưởng thức ngay khi còn nóng."
-    ];
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
     {
-        Randomizer.Seed = new Random(SEED);
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -140,415 +117,569 @@ public static class CulinaryBlogSeeder
             }
         }
 
-        // Bỏ qua nếu đã đủ 100 recipes (bảo đảm tính cô lập kiểm thử theo chuẩn)
-        if (await db.Recipes.CountAsync() >= 100) return;
-
-        // 2. Tạo 10 Authors mẫu qua Faker chuẩn xác định (Deterministic Seed 42)
-        var authorFaker = new Faker<ApplicationUser>("vi")
-            .RuleFor(u => u.Id, f => Guid.NewGuid().ToString())
-            .RuleFor(u => u.DisplayName, f => f.Name.FullName())
-            .RuleFor(u => u.UserName, f => f.Internet.UserName())
-            .RuleFor(u => u.Email, f => f.Internet.Email())
-            .RuleFor(u => u.EmailConfirmed, f => true)
-            .RuleFor(u => u.AvatarUrl, f => f.Internet.Avatar());
-
-        var authors = authorFaker.UseSeed(SEED).Generate(10);
-        for (int idx = 0; idx < authors.Count; idx++)
+        // 2. Tạo Demo Accounts & Culinary Author Accounts
+        var authorList = new List<ApplicationUser>();
+        foreach (var def in PredefinedAuthors)
         {
-            var author = authors[idx];
-            var existingUser = await userManager.FindByEmailAsync(author.Email!);
+            var existingUser = await userManager.FindByEmailAsync(def.Email);
             if (existingUser == null)
             {
-                var result = await userManager.CreateAsync(author, "Author@123456");
-                if (result.Succeeded)
+                var newUser = new ApplicationUser
                 {
-                    await userManager.AddToRoleAsync(author, "Author");
-                    if (idx == 0)
+                    Id = Guid.NewGuid().ToString(),
+                    Email = def.Email,
+                    UserName = def.UserName,
+                    DisplayName = def.DisplayName,
+                    EmailConfirmed = true,
+                    AvatarUrl = def.Avatar,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var createRes = await userManager.CreateAsync(newUser, def.Password);
+                if (createRes.Succeeded)
+                {
+                    foreach (var role in def.Roles)
                     {
-                        // Gán thêm quyền Admin cho tác giả đầu tiên để hỗ trợ quản trị
-                        await userManager.AddToRoleAsync(author, "Admin");
+                        try
+                        {
+                            await userManager.AddToRoleAsync(newUser, role);
+                        }
+                        catch
+                        {
+                            // Best-effort trong môi trường mock testing
+                        }
+                    }
+                    if (def.Roles.Contains("Author"))
+                    {
+                        authorList.Add(newUser);
                     }
                 }
             }
             else
             {
-                author.Id = existingUser.Id;
-            }
-        }
-
-        // 3. Tạo Categories (đảm bảo đúng 20 categories chuẩn với slug tiếng Việt)
-        var currentCategories = await db.Categories.ToListAsync();
-        if (currentCategories.Count < 20)
-        {
-            int order = currentCategories.Count;
-
-            foreach (var item in PredefinedCategories)
-            {
-                if (currentCategories.Count >= 20) break;
-                if (!currentCategories.Any(c => c.Name == item.Name))
+                foreach (var role in def.Roles)
                 {
-                    var slug = item.Slug;
-                    if (currentCategories.Any(c => c.Slug == slug))
+                    try
                     {
-                        slug = $"{item.Slug}-{order + 1}";
+                        if (!await userManager.IsInRoleAsync(existingUser, role))
+                        {
+                            await userManager.AddToRoleAsync(existingUser, role);
+                        }
                     }
-
-                    var cat = new Category
+                    catch
                     {
-                        Name = item.Name,
-                        Slug = slug,
-                        Description = item.Description,
-                        ImageUrl = item.ImageUrl,
-                        OrderIndex = ++order,
-                        RowVersion = new byte[8]
-                    };
-                    db.Categories.Add(cat);
-                    currentCategories.Add(cat);
-                }
-            }
-            await db.SaveChangesAsync();
-        }
-        else
-        {
-            // Bổ sung ImageUrl & Description thật cho các categories đã tồn tại nếu đang thiếu
-            bool hasUpdates = false;
-            foreach (var cat in currentCategories)
-            {
-                var meta = PredefinedCategories.FirstOrDefault(p => p.Name == cat.Name);
-                if (meta != null)
-                {
-                    if (string.IsNullOrWhiteSpace(cat.ImageUrl))
-                    {
-                        cat.ImageUrl = meta.ImageUrl;
-                        hasUpdates = true;
-                    }
-                    if (string.IsNullOrWhiteSpace(cat.Description) || cat.Description == $"Các món ăn thuộc danh mục {cat.Name}")
-                    {
-                        cat.Description = meta.Description;
-                        hasUpdates = true;
+                        // Best-effort trong môi trường mock testing
                     }
                 }
-            }
-            if (hasUpdates)
-            {
-                await db.SaveChangesAsync();
+                if (def.Roles.Contains("Author"))
+                {
+                    authorList.Add(existingUser);
+                }
             }
         }
 
-        var categoryIds = currentCategories.Select(c => c.Id).ToList();
-
-        // 4. Backfill Dữ liệu hình ảnh / bước / nguyên liệu cho recipes đã tồn tại nếu thiếu
-        var existingRecipes = await db.Recipes
-            .Include(r => r.Images)
-            .Include(r => r.Steps)
-            .Include(r => r.Ingredients)
-            .ToListAsync();
-
-        bool hasBackfillUpdates = false;
-        var rand = new Random(SEED);
-
-        foreach (var r in existingRecipes)
+        // 3. Chỉ nạp Master Dataset khi cơ sở dữ liệu chưa có công thức nào
+        // Tuyệt đối không TRUNCATE TABLE trên mỗi lần restart để bảo toàn các công thức do người dùng/tác giả tạo.
+        var hasRecipes = await db.Recipes.IgnoreQueryFilters().AnyAsync();
+        if (hasRecipes)
         {
-            if (r.Images.Count == 0)
-            {
-                int imgCount = rand.Next(2, 4);
-                var samples = RecipeImages.OrderBy(_ => rand.Next()).Take(imgCount).ToList();
-                for (int idx = 0; idx < samples.Count; idx++)
-                {
-                    r.AddImage(
-                        originalUrl: samples[idx].Url,
-                        mediumUrl: samples[idx].Url,
-                        thumbnailUrl: samples[idx].Url,
-                        altText: samples[idx].Alt,
-                        isPrimary: idx == 0);
-                }
-                hasBackfillUpdates = true;
-            }
-
-            if (r.Steps.Count == 0)
-            {
-                int stepCount = rand.Next(5, 8);
-                for (int s = 1; s <= stepCount; s++)
-                {
-                    r.AddStep(
-                        $"Bước {s}: Tiến hành chế biến",
-                        StepDescriptions[rand.Next(StepDescriptions.Length)],
-                        rand.Next(5, 35));
-                }
-                hasBackfillUpdates = true;
-            }
-
-            if (r.Ingredients.Count == 0)
-            {
-                int ingrCount = rand.Next(8, 12);
-                var selected = IngredientPool.OrderBy(_ => rand.Next()).Take(ingrCount).ToList();
-                foreach (var ingr in selected)
-                {
-                    r.AddIngredient(
-                        ingr,
-                        (decimal)rand.Next(10, 500),
-                        "gram",
-                        rand.Next(0, 3) == 0 ? "Ưu tiên chọn loại tươi ngon" : null);
-                }
-                hasBackfillUpdates = true;
-            }
+            return;
         }
 
-        if (hasBackfillUpdates)
+        // 4. Ingest Master Dataset
+        var masterDataset = LoadMasterDataset();
+
+        // 5. Upsert Categories (tất cả 25 danh mục chuẩn)
+        var existingCategories = await db.Categories.ToListAsync();
+        var categoryMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var catItem in masterDataset.Categories)
         {
-            await db.SaveChangesAsync();
+            var existing = existingCategories.FirstOrDefault(c =>
+                string.Equals(c.Slug, catItem.Slug, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Name, catItem.Name, StringComparison.OrdinalIgnoreCase) ||
+                IsCategoryNameMatch(c.Name, catItem.Name) ||
+                c.Id == catItem.Id);
+
+            if (existing != null)
+            {
+                existing.Name = catItem.Name;
+                existing.Slug = catItem.Slug;
+                existing.Description = catItem.Description;
+                existing.ImageUrl = catItem.ImageUrl;
+                existing.OrderIndex = catItem.OrderIndex;
+                categoryMap[catItem.Slug] = existing.Id;
+            }
+            else
+            {
+                var newCat = new Category
+                {
+                    Id = catItem.Id != Guid.Empty ? catItem.Id : Guid.NewGuid(),
+                    Name = catItem.Name,
+                    Slug = catItem.Slug,
+                    Description = catItem.Description,
+                    ImageUrl = catItem.ImageUrl,
+                    OrderIndex = catItem.OrderIndex,
+                    RowVersion = new byte[8]
+                };
+                db.Categories.Add(newCat);
+                categoryMap[catItem.Slug] = newCat.Id;
+            }
         }
+        await db.SaveChangesAsync();
 
-        // 5. Tạo Recipes mới nếu chưa đủ 100 recipes
-        int recipesNeeded = 100 - await db.Recipes.CountAsync();
-        if (recipesNeeded <= 0) return;
+        // 6. Ingest Recipes (104 công thức nấu ăn thực tế qua Rich Domain Model)
+        var demoAuthor = authorList.FirstOrDefault(u => u.Email == "author@culinaryblog.com")
+            ?? authorList.FirstOrDefault()
+            ?? (await userManager.Users.FirstOrDefaultAsync())!;
 
-        var recipeFaker = new Faker<Recipe>()
-            .CustomInstantiator(f =>
-            {
-                var baseTitle = f.PickRandom(RecipeTitles);
-                var title = $"{baseTitle} {f.Random.Int(1, 999)}";
-                var slug = f.Lorem.Slug() + "-" + f.Random.Guid().ToString()[..8];
-                var author = f.PickRandom(authors);
+        var recipesToAdd = new List<Recipe>();
 
-                return Recipe.Create(
-                    title,
-                    slug,
-                    f.Lorem.Paragraph(2),
-                    "Hướng dẫn chi tiết theo các bước thực hiện bên dưới.",
-                    f.Random.Int(15, 60),
-                    f.Random.Int(20, 180),
-                    f.Random.Int(2, 8),
-                    f.PickRandom<RecipeDifficulty>(),
-                    f.PickRandom(categoryIds),
-                    author.Id);
-            });
-
-        var recipes = recipeFaker.UseSeed(SEED).Generate(recipesNeeded);
-
-        // 6. Tạo Steps (5-8 bước), Ingredients (10-15 nguyên liệu), và Images (2-4 ảnh) qua Rich Domain API
-        var stepFaker = new Faker("vi");
-        var ingrFaker = new Faker("vi");
-
-        foreach (var recipe in recipes)
+        for (int rIdx = 0; rIdx < masterDataset.Recipes.Count; rIdx++)
         {
-            int stepCount = stepFaker.Random.Int(5, 8);
-            for (int s = 1; s <= stepCount; s++)
+            var rItem = masterDataset.Recipes[rIdx];
+
+            if (!categoryMap.TryGetValue(rItem.CategorySlug, out var catId))
             {
-                recipe.AddStep(
-                    $"Bước {s}: Tiến hành chế biến",
-                    stepFaker.PickRandom(StepDescriptions),
-                    stepFaker.Random.Int(5, 35));
+                catId = categoryMap.Values.FirstOrDefault();
             }
 
-            int ingrCount = ingrFaker.Random.Int(10, 15);
-            var selectedIngredients = ingrFaker.PickRandom(IngredientPool, ingrCount).ToList();
-
-            for (int i = 0; i < selectedIngredients.Count; i++)
+            // Gán AuthorId: Phở bò tái lăn gán cho author@culinaryblog.com, các món khác phân bổ tác giả thực tế
+            string authorId;
+            if (rItem.Slug == "pho-bo-tai-lan-chuan-vi-ha-thanh")
             {
-                recipe.AddIngredient(
-                    selectedIngredients[i],
-                    ingrFaker.Random.Decimal(5, 500),
-                    ingrFaker.PickRandom("gram", "ml", "thìa canh", "quả", "củ", "nhánh"),
-                    ingrFaker.Random.Bool(0.3f) ? "Ưu tiên chọn loại tươi ngon" : null);
+                authorId = demoAuthor.Id;
+            }
+            else
+            {
+                var matchedAuthor = !string.IsNullOrWhiteSpace(rItem.AuthorEmail)
+                    ? authorList.FirstOrDefault(u => string.Equals(u.Email, rItem.AuthorEmail, StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                if (matchedAuthor != null && matchedAuthor.Email != "author@culinaryblog.com")
+                {
+                    authorId = matchedAuthor.Id;
+                }
+                else
+                {
+                    authorId = authorList[rIdx % authorList.Count].Id;
+                }
             }
 
-            // Thêm từ 2 đến 4 ảnh cho mỗi recipe (ảnh đầu tiên là Primary)
-            int imgCount = stepFaker.Random.Int(2, 4);
-            var selectedImages = stepFaker.PickRandom(RecipeImages, imgCount).DistinctBy(x => x.Url).ToList();
-            for (int idx = 0; idx < selectedImages.Count; idx++)
+            var nutrition = rItem.Nutrition != null
+                ? new RecipeNutrition(
+                    rItem.Nutrition.Calories,
+                    rItem.Nutrition.Protein,
+                    rItem.Nutrition.Carbohydrates,
+                    rItem.Nutrition.Fat,
+                    rItem.Nutrition.Fiber,
+                    rItem.Nutrition.Sodium)
+                : new RecipeNutrition();
+
+            if (!Enum.TryParse<RecipeDifficulty>(rItem.Difficulty, true, out var diff))
             {
-                recipe.AddImage(
-                    originalUrl: selectedImages[idx].Url,
-                    mediumUrl: selectedImages[idx].Url,
-                    thumbnailUrl: selectedImages[idx].Url,
-                    altText: selectedImages[idx].Alt,
-                    isPrimary: idx == 0);
+                diff = RecipeDifficulty.Medium;
             }
 
-            // Seeder tạo dữ liệu Published (cần ít nhất 1 step — đã có ở trên).
+            var recipe = Recipe.Create(
+                rItem.Title,
+                rItem.Slug,
+                rItem.Description,
+                rItem.Instructions,
+                rItem.PrepTimeMinutes,
+                rItem.CookTimeMinutes,
+                rItem.Servings,
+                diff,
+                catId,
+                authorId,
+                nutrition);
+
+            if (rItem.Id != Guid.Empty)
+            {
+                recipe.Id = rItem.Id;
+            }
+
+            // Add Ingredients (>= 10 nguyên liệu)
+            foreach (var ingr in rItem.Ingredients.OrderBy(i => i.OrderIndex))
+            {
+                var qty = ingr.Quantity ?? ingr.Amount ?? 1m;
+                recipe.AddIngredient(ingr.Name, qty, ingr.Unit, ingr.Notes);
+            }
+
+            // Add Steps (>= 5 bước)
+            foreach (var step in rItem.Steps.OrderBy(s => s.StepNumber))
+            {
+                var desc = !string.IsNullOrWhiteSpace(step.Description)
+                    ? step.Description
+                    : (step.Instruction ?? step.Title);
+                var timer = step.TimerMinutes ?? (step.TimerSeconds.HasValue ? step.TimerSeconds.Value / 60 : null);
+                recipe.AddStep(step.Title, desc, timer, step.ImageUrl);
+            }
+
+            // Add Images: Đúng 1 ảnh chính (OrderIndex = 0, IsPrimary = true), 2-4 ảnh phụ (OrderIndex = 1..4, IsPrimary = false)
+            var sortedImages = rItem.Images.OrderBy(img => img.OrderIndex).ToList();
+            for (int i = 0; i < sortedImages.Count; i++)
+            {
+                var img = sortedImages[i];
+                var url = img.Url ?? img.OriginalUrl ?? string.Empty;
+                var alt = img.AltText ?? img.Alt ?? recipe.Title;
+                bool isPrimary = (i == 0);
+                recipe.AddImage(url, img.MediumUrl ?? url, img.ThumbnailUrl ?? url, alt, isPrimary);
+            }
+
+            // Chuyển trạng thái sang Published và gán PublishedAt
             recipe.Publish();
+
+            recipesToAdd.Add(recipe);
         }
 
-        await db.Recipes.AddRangeAsync(recipes);
+        await db.Recipes.AddRangeAsync(recipesToAdd);
         await db.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Tạo các tài khoản Demo chuẩn phục vụ thuyết minh, bảo vệ đồ án và kiểm thử trực quan.
-    /// Admin: admin@culinaryblog.com / Admin@123456
-    /// Author: author@culinaryblog.com / Author@123456
-    /// Reader: user@culinaryblog.com / User@123456
-    /// Kèm 2 công thức showcase với đầy đủ ảnh, bước, nguyên liệu để kiểm thử Gallery & CRUD.
-    /// </summary>
     public static async Task SeedDemoAccountsAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-        var demoAccounts = new[]
+        string[] roles = ["Admin", "Author", "Reader"];
+        foreach (var role in roles)
         {
-            new
+            if (!await roleManager.RoleExistsAsync(role))
             {
-                Email = "admin@culinaryblog.com",
-                UserName = "admin",
-                DisplayName = "Quản Trị Viên",
-                Password = "Admin@123456",
-                Roles = new[] { "Admin", "Author" },
-                Avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
-            },
-            new
-            {
-                Email = "author@culinaryblog.com",
-                UserName = "author",
-                DisplayName = "Đầu bếp Chuẩn Vị",
-                Password = "Author@123456",
-                Roles = new[] { "Author" },
-                Avatar = "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80"
-            },
-            new
-            {
-                Email = "user@culinaryblog.com",
-                UserName = "user",
-                DisplayName = "Thành viên Khám Phá",
-                Password = "User@123456",
-                Roles = new[] { "Reader" },
-                Avatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"
+                await roleManager.CreateAsync(new IdentityRole(role));
             }
-        };
+        }
 
-        ApplicationUser? demoAuthor = null;
-
-        foreach (var demo in demoAccounts)
+        foreach (var def in PredefinedAuthors)
         {
-            var user = await userManager.FindByEmailAsync(demo.Email);
+            var user = await userManager.FindByEmailAsync(def.Email);
             if (user == null)
             {
                 user = new ApplicationUser
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Email = demo.Email,
-                    UserName = demo.UserName,
-                    DisplayName = demo.DisplayName,
+                    Email = def.Email,
+                    UserName = def.UserName,
+                    DisplayName = def.DisplayName,
                     EmailConfirmed = true,
-                    AvatarUrl = demo.Avatar
+                    AvatarUrl = def.Avatar,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                var createRes = await userManager.CreateAsync(user, demo.Password);
+                var createRes = await userManager.CreateAsync(user, def.Password);
                 if (createRes.Succeeded)
                 {
-                    foreach (var role in demo.Roles)
+                    foreach (var role in def.Roles)
                     {
-                        await userManager.AddToRoleAsync(user, role);
+                        try
+                        {
+                            await userManager.AddToRoleAsync(user, role);
+                        }
+                        catch
+                        {
+                            // Best-effort trong môi trường mock testing
+                        }
                     }
                 }
             }
             else
             {
-                if (user.DisplayName != demo.DisplayName || (user.DisplayName != null && user.DisplayName.Contains('?')))
+                if (user.DisplayName != def.DisplayName || (user.DisplayName != null && user.DisplayName.Contains('?')))
                 {
-                    user.DisplayName = demo.DisplayName;
+                    user.DisplayName = def.DisplayName;
                     await userManager.UpdateAsync(user);
                 }
 
-                foreach (var role in demo.Roles)
+                foreach (var role in def.Roles)
                 {
-                    if (!await userManager.IsInRoleAsync(user, role))
+                    try
                     {
-                        await userManager.AddToRoleAsync(user, role);
+                        if (!await userManager.IsInRoleAsync(user, role))
+                        {
+                            await userManager.AddToRoleAsync(user, role);
+                        }
+                    }
+                    catch
+                    {
+                        // Best-effort trong môi trường mock testing
                     }
                 }
-            }
-
-            if (demo.Email == "author@culinaryblog.com")
-            {
-                demoAuthor = user;
             }
         }
+    }
 
-        // Tạo 2 công thức Showcase mẫu cho Demo/Thuyết minh (Author là author@culinaryblog.com)
-        if (demoAuthor != null)
+    public static async Task SeedAuthorBookmarksAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+
+        var recipes = await db.Recipes
+            .Where(r => r.Status == RecipeStatus.Published)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
+        if (recipes.Count == 0) return;
+
+        var users = await db.Users.ToListAsync();
+        if (users.Count == 0) return;
+
+        var adminUser = users.FirstOrDefault(u => u.Email == "admin@culinaryblog.com");
+        var authorUser = users.FirstOrDefault(u => u.Email == "author@culinaryblog.com");
+        var readerUser = users.FirstOrDefault(u => u.Email == "user@culinaryblog.com");
+        var otherAuthors = users.Where(u => u.Email != "admin@culinaryblog.com" && u.Email != "author@culinaryblog.com").ToList();
+
+        var existingBookmarks = await db.RecipeBookmarks.ToListAsync();
+        var existingSet = new HashSet<string>(existingBookmarks.Select(b => $"{b.UserId}_{b.RecipeId}"));
+        var newBookmarks = new List<RecipeBookmark>();
+
+        if (existingBookmarks.Count < 10)
         {
-            var demoCategory = await db.Categories.FirstOrDefaultAsync();
-            if (demoCategory != null)
+            for (int i = 0; i < recipes.Count; i++)
             {
-                var showcaseItems = new[]
+                var recipe = recipes[i];
+                int targetBookmarkCount;
+
+                if (i < 3) targetBookmarkCount = 12 + (i * 2);
+                else if (i < 8) targetBookmarkCount = 7 + (i % 4);
+                else if (i < 20) targetBookmarkCount = 3 + (i % 3);
+                else if (i < 40) targetBookmarkCount = 1 + (i % 2);
+                else targetBookmarkCount = 0;
+
+                var candidateUsers = new List<ApplicationUser>();
+
+                if (authorUser != null && (i == 1 || i == 2 || i == 4 || i == 6 || i == 9 || i == 13 || i == 17))
                 {
-                    new
+                    candidateUsers.Add(authorUser);
+                }
+
+                if (adminUser != null && (i == 0 || i == 2 || i == 3 || i == 5 || i == 8 || i == 12 || i == 16 || i == 20))
+                {
+                    candidateUsers.Add(adminUser);
+                }
+
+                if (readerUser != null && (i == 0 || i == 1 || i == 3 || i == 4 || i == 7 || i == 10))
+                {
+                    candidateUsers.Add(readerUser);
+                }
+
+                int userIdx = i;
+                while (candidateUsers.Count < targetBookmarkCount && otherAuthors.Count > 0)
+                {
+                    var candidate = otherAuthors[userIdx % otherAuthors.Count];
+                    if (!candidateUsers.Contains(candidate))
                     {
-                        Title = "Phở bò tái lăn chuẩn vị Hà Thành",
-                        Slug = "pho-bo-tai-lan-chuan-vi-ha-thanh",
-                        Description = "Công thức nấu phở bò tái lăn đậm đà nước dùng thơm mùi gừng tỏi xào lăn, sợi phở mềm mướt và thịt bò mềm ngọt chuẩn vị truyền thống Hà Nội.",
-                        PrepTime = 30,
-                        CookTime = 90,
-                        Servings = 4,
-                        Difficulty = RecipeDifficulty.Medium,
-                        Images = new[]
-                        {
-                            new ImageSeedItem("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1200&q=80", "Tô phở bò tái lăn bốc khói ngút ngàn"),
-                            new ImageSeedItem("https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=1200&q=80", "Các loại rau thơm và gia vị ăn kèm phở"),
-                            new ImageSeedItem("https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80", "Nồi nước dùng ninh từ xương ống trong veo")
-                        }
-                    },
-                    new
-                    {
-                        Title = "Bánh mì kẹp thịt sườn nướng ngũ vị",
-                        Slug = "banh-mi-kep-thit-suon-nuong-ngu-vi",
-                        Description = "Bánh mì vỏ giòn rụm kẹp thịt sườn ướp ngũ vị hương nướng than hoa, kèm pate gan béo ngậy, đồ chua giòn ngọt và sốt bơ trứng đặc trưng.",
-                        PrepTime = 20,
-                        CookTime = 40,
-                        Servings = 2,
-                        Difficulty = RecipeDifficulty.Easy,
-                        Images = new[]
-                        {
-                            new ImageSeedItem("https://images.unsplash.com/photo-1505253758473-96b3015f21c9?auto=format&fit=crop&w=1200&q=80", "Bánh mì kẹp thịt sườn nướng hấp dẫn"),
-                            new ImageSeedItem("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80", "Thịt sườn nướng xém cạnh thơm phức")
-                        }
+                        candidateUsers.Add(candidate);
                     }
-                };
+                    userIdx++;
+                    if (userIdx - i > otherAuthors.Count * 2) break;
+                }
 
-                foreach (var dr in showcaseItems)
+                foreach (var u in candidateUsers)
                 {
-                    if (!await db.Recipes.AnyAsync(r => r.Slug == dr.Slug))
+                    var key = $"{u.Id}_{recipe.Id}";
+                    if (!existingSet.Contains(key))
                     {
-                        var recipe = Recipe.Create(
-                            dr.Title,
-                            dr.Slug,
-                            dr.Description,
-                            "Hướng dẫn chi tiết từng bước nấu ăn bên dưới.",
-                            dr.PrepTime,
-                            dr.CookTime,
-                            dr.Servings,
-                            dr.Difficulty,
-                            demoCategory.Id,
-                            demoAuthor.Id);
-
-                        recipe.AddStep("Sơ chế nguyên liệu", "Rửa sạch thịt bò và các loại rau gia vị thơm. Cắt thịt bò lát mỏng vừa ăn.", 15);
-                        recipe.AddStep("Xào lăn thịt bò", "Đun chảo nóng già với mỡ gừng tỏi, cho thịt bò vào đảo nhanh tay trên lửa lớn trong 1 phút.", 5);
-                        recipe.AddStep("Chan nước dùng và thưởng thức", "Trần bánh phở, xếp thịt bò lên trên, rắc hành hoa rồi chan nước dùng đang sôi sùng sục.", 5);
-
-                        recipe.AddIngredient("Thịt bò bắp / thăn", 500, "gram", "Chọn thịt tươi màu đỏ thắm");
-                        recipe.AddIngredient("Bánh phở tươi", 1, "kg", "Sợi phở mềm dai tự nhiên");
-                        recipe.AddIngredient("Xương ống hầm", 1.5m, "kg", "Ninh lấy nước ngọt tự nhiên");
-                        recipe.AddIngredient("Gừng già và tỏi ta", 100, "gram", "Đập dập phi thơm");
-
-                        for (int i = 0; i < dr.Images.Length; i++)
-                        {
-                            recipe.AddImage(
-                                dr.Images[i].Url,
-                                dr.Images[i].Url,
-                                dr.Images[i].Url,
-                                dr.Images[i].Alt,
-                                isPrimary: i == 0);
-                        }
-
-                        recipe.Publish();
-                        db.Recipes.Add(recipe);
+                        existingSet.Add(key);
+                        var bm = RecipeBookmark.Create(u.Id, recipe.Id);
+                        newBookmarks.Add(bm);
                     }
                 }
+            }
+
+            if (newBookmarks.Count > 0)
+            {
+                await db.RecipeBookmarks.AddRangeAsync(newBookmarks);
                 await db.SaveChangesAsync();
             }
         }
+
+        var bookmarkCounts = await db.RecipeBookmarks
+            .GroupBy(b => b.RecipeId)
+            .Select(g => new { RecipeId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RecipeId, x => x.Count);
+
+        foreach (var r in recipes)
+        {
+            int currentActualCount = bookmarkCounts.GetValueOrDefault(r.Id, 0);
+            int delta = currentActualCount - r.BookmarkCount;
+            if (delta != 0)
+            {
+                r.AdjustBookmarkCount(delta);
+            }
+
+            if (r.ViewCount == 0 || r.ViewCount < currentActualCount * 10)
+            {
+                long baseViews = currentActualCount > 0 ? (currentActualCount * 140) : 45;
+                long seedViews = baseViews + ((Math.Abs(r.Slug.GetHashCode()) % 250) + 15);
+                long viewDelta = seedViews - r.ViewCount;
+                if (viewDelta > 0)
+                {
+                    r.IncrementViews(viewDelta);
+                }
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static bool IsCategoryNameMatch(string? nameInDb, string datasetName)
+    {
+        if (string.IsNullOrWhiteSpace(nameInDb)) return false;
+        if (nameInDb.Equals("Món canh", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Canh & Súp", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Món chiên rán", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Món chiên & rán", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Món gỏi - nộm", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Món gỏi & nộm", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Mì - Bún - Phở", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Bún - Phở - Mì", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Bánh ngọt", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Bánh ngọt & mặn", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Ẩm thực miền Bắc", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Ẩm thực Miền Bắc", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Ẩm thực miền Trung", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Ẩm thực Miền Trung", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nameInDb.Equals("Ẩm thực miền Nam", StringComparison.OrdinalIgnoreCase) && datasetName.Equals("Ẩm thực Miền Nam", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private static MasterDataset LoadMasterDataset()
+    {
+        // 1. Tìm trong EmbeddedResource của assembly
+        var assembly = typeof(CulinaryBlogSeeder).Assembly;
+        var resourceName = "CulinaryBlog.Infrastructure.Data.Datasets.recipes_master_dataset.json";
+        using (var stream = assembly.GetManifestResourceStream(resourceName))
+        {
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                var json = reader.ReadToEnd();
+                var data = JsonSerializer.Deserialize<MasterDataset>(json, JsonOptions);
+                if (data != null && data.Categories.Count > 0 && data.Recipes.Count > 0)
+                {
+                    return data;
+                }
+            }
+        }
+
+        // 2. Tìm theo các đường dẫn tương đối
+        string[] candidatePaths = [
+            Path.Combine(AppContext.BaseDirectory, "Data", "Datasets", "recipes_master_dataset.json"),
+            Path.Combine(AppContext.BaseDirectory, "recipes_master_dataset.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "backend", "src", "Infrastructure", "Data", "Datasets", "recipes_master_dataset.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "src", "Infrastructure", "Data", "Datasets", "recipes_master_dataset.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "Data", "Datasets", "recipes_master_dataset.json")
+        ];
+
+        foreach (var path in candidatePaths)
+        {
+            if (File.Exists(path))
+            {
+                var json = File.ReadAllText(path, Encoding.UTF8);
+                var data = JsonSerializer.Deserialize<MasterDataset>(json, JsonOptions);
+                if (data != null && data.Categories.Count > 0 && data.Recipes.Count > 0)
+                {
+                    return data;
+                }
+            }
+        }
+
+        // 3. Quét ngược lên các thư mục cha
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && dir.Exists)
+        {
+            var target = Path.Combine(dir.FullName, "backend", "src", "Infrastructure", "Data", "Datasets", "recipes_master_dataset.json");
+            if (File.Exists(target))
+            {
+                var json = File.ReadAllText(target, Encoding.UTF8);
+                var data = JsonSerializer.Deserialize<MasterDataset>(json, JsonOptions);
+                if (data != null && data.Categories.Count > 0 && data.Recipes.Count > 0)
+                {
+                    return data;
+                }
+            }
+            dir = dir.Parent;
+        }
+
+        throw new FileNotFoundException("Không tìm thấy tệp recipes_master_dataset.json trong EmbeddedResource hoặc hệ thống tệp.");
+    }
+
+    private class MasterDataset
+    {
+        public List<CategoryDatasetItem> Categories { get; set; } = [];
+        public List<RecipeDatasetItem> Recipes { get; set; } = [];
+    }
+
+    private class CategoryDatasetItem
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public int OrderIndex { get; set; }
+    }
+
+    private class RecipeDatasetItem
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public string CategorySlug { get; set; } = string.Empty;
+        public Guid? CategoryId { get; set; }
+        public string AuthorEmail { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Instructions { get; set; } = string.Empty;
+        public int PrepTimeMinutes { get; set; }
+        public int CookTimeMinutes { get; set; }
+        public int Servings { get; set; }
+        public string Difficulty { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public RecipeNutritionDatasetItem? Nutrition { get; set; }
+        public List<IngredientDatasetItem> Ingredients { get; set; } = [];
+        public List<StepDatasetItem> Steps { get; set; } = [];
+        public List<ImageDatasetItem> Images { get; set; } = [];
+    }
+
+    private class RecipeNutritionDatasetItem
+    {
+        public decimal? Calories { get; set; }
+        public decimal? Protein { get; set; }
+        public decimal? Carbohydrates { get; set; }
+        public decimal? Fat { get; set; }
+        public decimal? Fiber { get; set; }
+        public decimal? Sodium { get; set; }
+    }
+
+    private class IngredientDatasetItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public decimal? Quantity { get; set; }
+        public decimal? Amount { get; set; }
+        public string? Unit { get; set; }
+        public string? Notes { get; set; }
+        public int OrderIndex { get; set; }
+    }
+
+    private class StepDatasetItem
+    {
+        public int StepNumber { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Instruction { get; set; }
+        public int? TimerMinutes { get; set; }
+        public int? TimerSeconds { get; set; }
+        public string? ImageUrl { get; set; }
+        public int OrderIndex { get; set; }
+    }
+
+    private class ImageDatasetItem
+    {
+        public Guid? Id { get; set; }
+        public string? Url { get; set; }
+        public string? OriginalUrl { get; set; }
+        public string? MediumUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
+        public string? Alt { get; set; }
+        public string? AltText { get; set; }
+        public bool IsPrimary { get; set; }
+        public int OrderIndex { get; set; }
     }
 }

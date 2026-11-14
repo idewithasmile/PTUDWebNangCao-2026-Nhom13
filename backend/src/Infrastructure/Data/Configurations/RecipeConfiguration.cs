@@ -49,6 +49,14 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(r => r.ViewCount)
+            .HasDefaultValue(0L)
+            .IsRequired();
+
+        builder.Property(r => r.BookmarkCount)
+            .HasDefaultValue(0)
+            .IsRequired();
+
         // Concurrency token tường minh trên cột bytea, giá trị do client quản lý
         // (AuditInterceptor/seeder). ValueGeneratedNever để EF luôn gửi giá trị
         // client trên INSERT (Npgsql không có default cho bytea, bỏ qua sẽ

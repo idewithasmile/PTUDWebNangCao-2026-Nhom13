@@ -16,6 +16,8 @@ export interface DashboardStatsDto {
   draftRecipes: number;
   archivedRecipes: number;
   totalAuthors: number | null;
+  totalViews?: number;
+  totalBookmarks?: number;
   categoryDistribution: CategoryDistributionDto[];
   activity7Days: DailyActivityDto[];
   isSystemScope: boolean;

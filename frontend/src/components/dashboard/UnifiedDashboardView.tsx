@@ -12,6 +12,8 @@ import DashboardCategoriesView from './views/DashboardCategoriesView';
 import DashboardRecipeCreateView from './views/DashboardRecipeCreateView';
 import DashboardRecipeEditView from './views/DashboardRecipeEditView';
 import DashboardProfileSettingsView from './views/DashboardProfileSettingsView';
+import DashboardUsersView from './views/DashboardUsersView';
+import DashboardSavedRecipesView from './views/DashboardSavedRecipesView';
 
 interface UnifiedDashboardViewProps {
   user: UserProfile;
@@ -82,9 +84,10 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
 
       {/* 2. Cột phải: Toàn bộ nội dung Bảng điều khiển (Dashboard Canvas) */}
       <div className="flex-1 min-w-0 p-5 sm:p-7 space-y-6 overflow-x-hidden">
-        {/* Header trên cùng (tự động bật Studio Mode khi soạn bài để chống phân tâm) */}
+        {/* Header trên cùng (Top Navigation Bar: Thanh tìm kiếm & Thông tin tài khoản) */}
         <DashboardHeader
           user={user}
+          showGreeting={false}
           isStudioMode={activeTab === 'recipes-create' || activeTab === 'recipes-edit'}
         />
 
@@ -118,6 +121,8 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
           <DashboardRecipesView user={user} subFilter="archived" />
         )}
 
+        {activeTab === 'recipes-saved' && <DashboardSavedRecipesView />}
+
         {activeTab === 'recipes-create' && (
           <DashboardRecipeCreateView user={user} onSelectTab={handleSelectTab} />
         )}
@@ -127,6 +132,10 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         )}
 
         {activeTab === 'categories' && isAdmin && <DashboardCategoriesView />}
+
+        {activeTab === 'users' && (
+          <DashboardUsersView user={user} isAdmin={isAdmin} />
+        )}
 
         {(activeTab === 'settings' || activeTab === 'profile') && (
           <DashboardProfileSettingsView currentUser={user} />

@@ -50,11 +50,18 @@ export async function refreshApi(): Promise<AuthResponse> {
 
 // FR-AUTH-005: POST /auth/logout → 204.
 export async function logoutApi(): Promise<void> {
-  await apiClient<void>(
-    '/auth/logout',
-    withAuth({ method: 'POST' }),
-  );
-  setAccessToken(null);
+  try {
+    await apiClient<void>(
+      '/auth/logout',
+      withAuth({ method: 'POST' }),
+    );
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[auth] server logout failed, proceeding with local logout:', err);
+    }
+  } finally {
+    setAccessToken(null);
+  }
 }
 
 // FR-AUTH-006: GET /auth/me.

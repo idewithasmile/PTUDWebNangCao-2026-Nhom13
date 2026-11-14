@@ -212,7 +212,11 @@ builder.Services.AddStackExchangeRedisOutputCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "CulinaryBlog_";
 });
-builder.Services.AddOutputCache();
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy("PublicRecipes", CulinaryBlog.API.Policies.PublicRecipesCachePolicy.Instance);
+    options.AddPolicy("PublicRecipeDetail", CulinaryBlog.API.Policies.PublicRecipeDetailCachePolicy.Instance);
+});
 
 // CORS tuân thủ nghiêm ngặt NFR-SEC-005
 builder.Services.AddCors(options =>
@@ -265,11 +269,11 @@ app.UseSerilogRequestLogging(options =>
 });
 
 app.UseCors("FrontendPolicy");
-app.UseOutputCache();
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseMiddleware<UserLogEnrichmentMiddleware>();
 app.UseAuthorization();
+app.UseOutputCache();
+app.UseRateLimiter();
 
 // OpenAPI & Scalar Documentation + Tự động Migration và Seed Data
 if (app.Environment.IsDevelopment())
@@ -290,6 +294,7 @@ if (app.Environment.IsDevelopment())
 
     await CulinaryBlogSeeder.SeedAsync(app.Services);
     await CulinaryBlogSeeder.SeedDemoAccountsAsync(app.Services);
+    await CulinaryBlogSeeder.SeedAuthorBookmarksAsync(app.Services);
 }
 
 // Hangfire Dashboard (Dev & Admin) & Recurring Jobs (FR-JOB)
@@ -317,6 +322,7 @@ v1.MapGroup("/recipes").MapRecipesEndpoints();
 v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/files").MapFilesEndpoints();
 v1.MapGroup("/dashboard").MapDashboardEndpoints();
+v1.MapGroup("/users").MapUsersEndpoints();
 
 // Health Check Endpoints (/health, /health/live, /health/ready)
 app.MapHealthChecks();

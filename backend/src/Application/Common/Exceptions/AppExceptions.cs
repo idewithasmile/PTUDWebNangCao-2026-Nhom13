@@ -45,3 +45,8 @@ public class ForbiddenException : AppException
 {
     public ForbiddenException(string errorCode, string message) : base(errorCode, message, 403) { }
 }
+
+public class UnauthorizedException : AppException
+{
+    public UnauthorizedException(string errorCode, string message) : base(errorCode, message, 401) { }
+}

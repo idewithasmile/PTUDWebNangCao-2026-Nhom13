@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { DailyActivityDto } from '@/lib/types/dashboard';
+import { ChefHat, TrendingUp } from 'lucide-react';
 
 interface ActivityTrendChartProps {
   activity7Days?: DailyActivityDto[];
@@ -10,94 +11,94 @@ interface ActivityTrendChartProps {
 
 export default function ActivityTrendChart({
   activity7Days,
-  isSystemScope,
+  isSystemScope = false,
 }: ActivityTrendChartProps) {
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    date: string;
-    views: number;
-    users: number;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Dữ liệu mẫu khớp hình 1 (hoặc lấy từ API nếu có)
-  const dates = ['10/09', '11/09', '12/09', '13/09', '14/09', '15/09', '16/09'];
-  const viewsData = [2400, 3100, 4800, 4600, 5432, 4900, 6200];
-  const usersData = [1500, 1900, 3100, 2900, 3210, 3050, 4100];
+  // Chuẩn bị dữ liệu 7 ngày thực tế từ API (hoặc tạo 7 ngày gần nhất với 0 công thức nếu chưa có)
+  const data = useMemo(() => {
+    if (activity7Days && activity7Days.length > 0) {
+      return activity7Days;
+    }
+    const days: DailyActivityDto[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      days.push({ date: dateStr, recipeCount: 0 });
+    }
+    return days;
+  }, [activity7Days]);
 
-  const data = dates.map((d, i) => {
-    const apiCount = activity7Days && activity7Days[i] ? activity7Days[i].recipeCount * 300 : 0;
-    return {
-      date: d,
-      views: apiCount > 0 ? apiCount + 2000 : viewsData[i],
-      users: apiCount > 0 ? Math.round(apiCount * 0.6) + 1200 : usersData[i],
-    };
-  });
+  const total7Days = useMemo(
+    () => data.reduce((sum, item) => sum + item.recipeCount, 0),
+    [data]
+  );
+
+  const rawMax = Math.max(...data.map((d) => d.recipeCount), 0);
+  // Đảm bảo trục tung có ít nhất 4 đơn vị để vẽ lưới đẹp
+  const maxVal = Math.max(rawMax, 4);
 
   const width = 600;
-  const height = 240;
+  const height = 220;
   const paddingX = 45;
-  const paddingY = 30;
+  const paddingY = 25;
 
-  const maxVal = 8000;
-  const minVal = 0;
-
-  const pointsViews = data.map((d, index) => {
+  const points = data.map((d, index) => {
     const x = paddingX + (index * (width - 2 * paddingX)) / (data.length - 1);
-    const y = height - paddingY - ((d.views - minVal) / (maxVal - minVal)) * (height - 2 * paddingY);
+    const y = height - paddingY - (d.recipeCount / maxVal) * (height - 2 * paddingY);
     return { x, y, ...d };
   });
 
-  const pointsUsers = data.map((d, index) => {
-    const x = paddingX + (index * (width - 2 * paddingX)) / (data.length - 1);
-    const y = height - paddingY - ((d.users - minVal) / (maxVal - minVal)) * (height - 2 * paddingY);
-    return { x, y, ...d };
-  });
-
-  const pathViews = pointsViews.reduce((acc, curr, index) => {
+  const pathLine = points.reduce((acc, curr, index) => {
     return index === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`;
   }, '');
 
-  const areaViews = `${pathViews} L ${pointsViews[pointsViews.length - 1].x} ${height - paddingY} L ${pointsViews[0].x} ${height - paddingY} Z`;
+  const areaLine = `${pathLine} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
 
-  const pathUsers = pointsUsers.reduce((acc, curr, index) => {
-    return index === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`;
-  }, '');
+  // Các vạch ngang trục tung
+  const yTicks = [0, Math.ceil(maxVal / 2), maxVal];
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs relative">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs flex flex-col justify-between h-full">
+      {/* Header Biểu Đồ */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
-          <h3 className="text-base font-bold text-gray-900">
-            Lượt xem bài viết (7 ngày gần đây)
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-gray-900">
+              Hoạt động đăng bài (7 ngày qua)
+            </h3>
+            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+              {total7Days} công thức
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {isSystemScope
+              ? 'Số công thức mới đăng tải trên toàn hệ thống'
+              : 'Số công thức bạn đã soạn thảo và đăng tải'}
+          </p>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-blue-600">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-            <span>Lượt xem</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-indigo-600">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-            <span>Người dùng</span>
-          </div>
+        {/* Legend thực tế (1 chỉ số thật duy nhất) */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 self-start sm:self-auto">
+          <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+          <span>Công thức mới</span>
         </div>
       </div>
 
       {/* SVG Chart Container */}
-      <div className="relative w-full overflow-hidden select-none">
+      <div className="relative w-full overflow-hidden select-none my-auto">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
           <defs>
-            <linearGradient id="areaGradientViews" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.01" />
+            <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
           {/* Grid lines */}
-          {[0, 2000, 4000, 6000, 8000].map((val, idx) => {
+          {yTicks.map((val, idx) => {
             const y = height - paddingY - (val / maxVal) * (height - 2 * paddingY);
             return (
               <g key={idx}>
@@ -108,124 +109,112 @@ export default function ActivityTrendChart({
                   y2={y}
                   stroke="#f1f5f9"
                   strokeWidth="1"
+                  strokeDasharray="4 4"
                 />
                 <text
                   x={paddingX - 10}
                   y={y + 3}
                   textAnchor="end"
-                  fontSize="9"
+                  fontSize="10"
                   fill="#94a3b8"
                   fontWeight="600"
                 >
-                  {val.toLocaleString('vi-VN')}
+                  {val}
                 </text>
               </g>
             );
           })}
 
-          {/* Area fill */}
-          <path d={areaViews} fill="url(#areaGradientViews)" />
+          {/* Vùng đổ bóng màu */}
+          <path d={areaLine} fill="url(#activityGradient)" />
 
-          {/* Line 1: Lượt xem */}
+          {/* Đường đồ thị thực */}
           <path
-            d={pathViews}
+            d={pathLine}
             fill="none"
-            stroke="#3b82f6"
+            stroke="#2563eb"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
 
-          {/* Line 2: Người dùng */}
-          <path
-            d={pathUsers}
-            fill="none"
-            stroke="#6366f1"
-            strokeWidth="2"
-            strokeDasharray="4 2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* X axis labels & circles */}
-          {pointsViews.map((pt, idx) => (
-            <g key={idx}>
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r={hoveredPoint?.date === pt.date ? 5 : 3.5}
-                fill="#ffffff"
-                stroke="#3b82f6"
-                strokeWidth="2"
-                className="cursor-pointer transition-all hover:scale-125"
-                onMouseEnter={() =>
-                  setHoveredPoint({
-                    date: pt.date,
-                    views: pt.views,
-                    users: pt.users,
-                    x: pt.x,
-                    y: pt.y,
-                  })
-                }
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-              <text
-                x={pt.x}
-                y={height - 8}
-                textAnchor="middle"
-                fontSize="10"
-                fill="#64748b"
-                fontWeight="600"
+          {/* Điểm nút và nhãn trục X */}
+          {points.map((p, idx) => {
+            const isHovered = hoveredIndex === idx;
+            return (
+              <g
+                key={idx}
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(idx)}
+                onMouseLeave={() => setHoveredIndex(null)}
               >
-                {pt.date}
-              </text>
-            </g>
-          ))}
-        </svg>
+                {/* Cột bắt sự kiện chuột rộng hơn */}
+                <rect
+                  x={p.x - 20}
+                  y={0}
+                  width="40"
+                  height={height}
+                  fill="transparent"
+                />
 
-        {/* Floating Tooltip */}
-        {hoveredPoint ? (
-          <div
-            className="absolute z-20 pointer-events-none transform -translate-x-1/2 -translate-y-full bg-white text-gray-800 rounded-xl p-2.5 text-[11px] shadow-xl border border-gray-100 animate-fade-in"
-            style={{
-              left: `${(hoveredPoint.x / width) * 100}%`,
-              top: `${(hoveredPoint.y / height) * 100 - 10}%`,
-            }}
-          >
-            <p className="font-bold text-gray-400 text-[10px] pb-1 border-b border-gray-100">
-              {hoveredPoint.date}/2026
-            </p>
-            <p className="text-blue-600 font-bold mt-1 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              Lượt xem: {hoveredPoint.views.toLocaleString('vi-VN')}
-            </p>
-            <p className="text-indigo-600 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" />
-              Người dùng: {hoveredPoint.users.toLocaleString('vi-VN')}
-            </p>
-          </div>
-        ) : (
-          /* Default Tooltip pinned at 14/09 as in Image 1 */
-          <div
-            className="absolute z-10 pointer-events-none transform -translate-x-1/2 -translate-y-full bg-white text-gray-800 rounded-xl p-2.5 text-[11px] shadow-lg border border-gray-100"
-            style={{
-              left: `${(pointsViews[4].x / width) * 100}%`,
-              top: `${(pointsViews[4].y / height) * 100 - 10}%`,
-            }}
-          >
-            <p className="font-bold text-gray-400 text-[10px] pb-1 border-b border-gray-100">
-              14/09/2026
-            </p>
-            <p className="text-blue-600 font-bold mt-1 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              Lượt xem: 5.432
-            </p>
-            <p className="text-indigo-600 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" />
-              Người dùng: 3.210
-            </p>
-          </div>
-        )}
+                {/* Điểm tròn */}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={isHovered ? 6 : 4}
+                  fill="#ffffff"
+                  stroke="#2563eb"
+                  strokeWidth={isHovered ? 3 : 2}
+                  className="transition-all duration-150"
+                />
+
+                {/* Nhãn ngày trục X */}
+                <text
+                  x={p.x}
+                  y={height - 8}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill={isHovered ? '#1e293b' : '#64748b'}
+                  fontWeight={isHovered ? 'bold' : '500'}
+                  className="transition-colors"
+                >
+                  {p.date}
+                </text>
+
+                {/* Tooltip khi di chuột */}
+                {isHovered && (
+                  <g>
+                    <rect
+                      x={p.x - 45}
+                      y={p.y - 32}
+                      width="90"
+                      height="24"
+                      rx="8"
+                      fill="#0f172a"
+                      className="shadow-md"
+                    />
+                    <text
+                      x={p.x}
+                      y={p.y - 16}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fill="#ffffff"
+                      fontWeight="bold"
+                    >
+                      {p.recipeCount} công thức
+                    </text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Footer ghi chú */}
+      <div className="pt-2 border-t border-gray-50 flex items-center justify-between text-[11px] text-gray-400">
+        <span>Cập nhật tự động từ CSDL</span>
+        <span>7 ngày gần nhất</span>
       </div>
     </div>
   );
