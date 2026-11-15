@@ -16,6 +16,7 @@ public class CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> optio
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<RecipeBookmark> RecipeBookmarks => Set<RecipeBookmark>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<NewsletterSubscriber> NewsletterSubscribers => Set<NewsletterSubscriber>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

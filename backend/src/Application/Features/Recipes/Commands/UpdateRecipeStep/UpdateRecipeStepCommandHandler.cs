@@ -26,7 +26,7 @@ public class UpdateRecipeStepCommandHandler(
         if (!currentUser.IsAuthenticated || string.IsNullOrEmpty(currentUser.UserId))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập để thực hiện chức năng này.");
 
-        if (!string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền sửa bước của công thức người khác.");
 
         var step = recipe.Steps.FirstOrDefault(s => s.Id == request.StepId)

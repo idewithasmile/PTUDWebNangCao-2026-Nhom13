@@ -48,7 +48,13 @@ public static class DependencyInjection
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         })
         .AddRoles<IdentityRole>()
-        .AddEntityFrameworkStores<CulinaryBlogDbContext>();
+        .AddEntityFrameworkStores<CulinaryBlogDbContext>()
+        .AddDefaultTokenProviders();
+
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
+        {
+            options.TokenLifespan = TimeSpan.FromMinutes(30);
+        });
 
         var redisConn = config.GetConnectionString("Redis") ?? "localhost:6379";
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConn));
@@ -64,6 +70,7 @@ public static class DependencyInjection
 
         // FR-JOB services & abstractions (CONS-001)
         services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
+        services.AddScoped<IAppUrlService, AppUrlService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IImageProcessingService, ImageProcessingService>();
         services.AddScoped<ISitemapService, SitemapService>();
@@ -71,6 +78,12 @@ public static class DependencyInjection
         // FR-JOB job classes
         services.AddScoped<IWelcomeEmailJob, WelcomeEmailJob>();
         services.AddScoped<WelcomeEmailJob>();
+        services.AddScoped<IPasswordResetEmailJob, PasswordResetEmailJob>();
+        services.AddScoped<PasswordResetEmailJob>();
+        services.AddScoped<INewsletterWelcomeEmailJob, NewsletterWelcomeEmailJob>();
+        services.AddScoped<NewsletterWelcomeEmailJob>();
+        services.AddScoped<ISendRecipeEmailJob, SendRecipeEmailJob>();
+        services.AddScoped<SendRecipeEmailJob>();
         services.AddScoped<IRecipeImageResizeJob, RecipeImageResizeJob>();
         services.AddScoped<RecipeImageResizeJob>();
         services.AddScoped<ISitemapGenerationJob, SitemapGenerationJob>();
@@ -85,6 +98,9 @@ public static class DependencyInjection
         services.AddHttpClient<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddScoped<AuthWelcomeEmailJob>();
         services.AddScoped<IWelcomeEmailDispatcher, WelcomeEmailDispatcher>();
+        services.AddScoped<IPasswordResetEmailDispatcher, PasswordResetEmailDispatcher>();
+        services.AddScoped<INewsletterEmailDispatcher, NewsletterEmailDispatcher>();
+        services.AddScoped<IRecipeEmailDispatcher, RecipeEmailDispatcher>();
 
         // FR-RCP-008 (Thành viên D): cleanup file ảnh MinIO qua Hangfire (FR-FILE-002).
         services.AddScoped<RecipeImageDeleteJob>();
@@ -95,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddScoped<IRecipeBookmarkRepository, RecipeBookmarkRepository>();
+        services.AddScoped<INewsletterSubscriberRepository, NewsletterSubscriberRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddHttpContextAccessor();
 

@@ -46,6 +46,13 @@ export default function RecipeGalleryViewer({
   // Phím tắt bàn phím khi mở Lightbox hoặc xem ảnh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (!isLightboxOpen && document.querySelector('[role="dialog"]')) {
+        return;
+      }
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'Escape' && isLightboxOpen) setIsLightboxOpen(false);
@@ -84,7 +91,7 @@ export default function RecipeGalleryViewer({
 
           {/* Badge số thứ tự ảnh */}
           {total > 1 && (
-            <div className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-stone-200 backdrop-blur-md border border-white/10 select-none">
+            <div className="print:hidden absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-stone-200 backdrop-blur-md border border-white/10 select-none">
               {selectedIndex + 1} / {total}
             </div>
           )}
@@ -93,7 +100,7 @@ export default function RecipeGalleryViewer({
           <button
             type="button"
             onClick={() => setIsLightboxOpen(true)}
-            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-stone-200 backdrop-blur-md hover:bg-black/90 hover:text-white transition border border-white/10 shadow-sm"
+            className="print:hidden absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-stone-200 backdrop-blur-md hover:bg-black/90 hover:text-white transition border border-white/10 shadow-sm"
             title="Xem toàn màn hình"
           >
             <Maximize2 className="h-4 w-4" />
@@ -108,7 +115,7 @@ export default function RecipeGalleryViewer({
                   e.stopPropagation();
                   handlePrev();
                 }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-black/80 hover:scale-105 transition-all shadow-md"
+                className="print:hidden absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-black/80 hover:scale-105 transition-all shadow-md"
                 title="Ảnh trước"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -119,7 +126,7 @@ export default function RecipeGalleryViewer({
                   e.stopPropagation();
                   handleNext();
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-black/80 hover:scale-105 transition-all shadow-md"
+                className="print:hidden absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-black/80 hover:scale-105 transition-all shadow-md"
                 title="Ảnh tiếp theo"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -130,7 +137,7 @@ export default function RecipeGalleryViewer({
 
         {/* Thanh Thumbnails căn giữa bên dưới theo ảnh mẫu */}
         {total > 1 && (
-          <div className="flex items-center justify-center gap-2.5 sm:gap-3 pt-3 pb-1 overflow-x-auto">
+          <div className="print:hidden flex items-center justify-center gap-2.5 sm:gap-3 pt-3 pb-1 overflow-x-auto">
             {sortedImages.map((img, idx) => {
               const isActive = idx === selectedIndex;
               return (

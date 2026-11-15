@@ -148,4 +148,29 @@ public class UpdateRecipeCommandHandlerTests
         result.Should().NotBeNull();
         recipe.Images.Should().ContainSingle(i => i.IsPrimary && i.OriginalUrl == "https://example.com/new.jpg");
     }
+
+    [Fact]
+    public async Task Handle_AdminEditingAnotherAuthorsRecipe_Succeeds()
+    {
+        // Arrange
+        var recipe = Recipe.Create("Title", "title", "Desc", "Inst", 10, 10, 2, CulinaryBlog.Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), "author-1", null);
+        var command = new UpdateRecipeCommand(recipe.Id, "Admin Edited", "Desc", "Instructions", 10, 10, 2, CulinaryBlog.Domain.Enums.RecipeDifficulty.Easy, Guid.NewGuid(), 10m, 10m, 10m, 10m, "dGVzdA==");
+
+        _mockRecipeRepo.Setup(r => r.GetByIdAsync(command.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipe);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-1");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+        _mockRecipeRepo.Setup(r => r.IsSlugUniqueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _mockUnitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Title.Should().Be("Admin Edited");
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

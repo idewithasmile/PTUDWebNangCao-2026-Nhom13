@@ -311,4 +311,20 @@ export const recipeService = {
   async deleteStep(recipeId: string, stepId: string): Promise<void> {
     return this.deleteRecipeStep(recipeId, stepId);
   },
+
+  /**
+   * Gửi danh sách nguyên liệu & hướng dẫn nấu món ăn qua email khách hàng
+   */
+  async sendToEmail(
+    recipeId: string,
+    payload: { email: string; servings?: number; subscribeNewsletter?: boolean },
+  ): Promise<{ message: string; email: string; servings: number }> {
+    return apiClient<{ message: string; email: string; servings: number }>(
+      `/recipes/${recipeId}/send-to-email`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+  },
 };

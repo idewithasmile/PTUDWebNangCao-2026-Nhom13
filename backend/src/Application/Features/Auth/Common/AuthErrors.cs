@@ -14,4 +14,6 @@ public static class AuthErrors
     public const string RefreshTokenExpired = "AUTH_REFRESH_TOKEN_EXPIRED";     // 401
     public const string RefreshTokenRevoked = "AUTH_REFRESH_TOKEN_REVOKED";     // 401
     public const string UserNotFound = "AUTH_USER_NOT_FOUND";                   // 404
+    public const string ResetTokenInvalid = "AUTH_RESET_TOKEN_INVALID";         // 400
+    public const string PasswordSameAsOld = "AUTH_PASSWORD_SAME_AS_OLD";        // 400
 }

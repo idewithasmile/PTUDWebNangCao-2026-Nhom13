@@ -100,6 +100,33 @@ public static class AuthEndpoints
                 GetUserId(http), body.DisplayName, body.AvatarUrl, body.Bio))))
             .RequireAuthorization();
 
+        // FR-AUTH-008: Quên mật khẩu — luôn trả 200 OK để chống email enumeration.
+        group.MapPost("/forgot-password", async (
+            ForgotPasswordRequest body, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(
+                new CulinaryBlog.Application.Features.Auth.Commands.ForgotPassword.ForgotPasswordCommand(body.Email),
+                ct);
+            return Results.Ok(new
+            {
+                message = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi."
+            });
+        }).AllowAnonymous();
+
+        // FR-AUTH-009: Đặt lại mật khẩu bằng token qua email — 200 OK.
+        group.MapPost("/reset-password", async (
+            ResetPasswordRequest body, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(
+                new CulinaryBlog.Application.Features.Auth.Commands.ResetPassword.ResetPasswordCommand(
+                    body.Email, body.Token, body.NewPassword),
+                ct);
+            return Results.Ok(new
+            {
+                message = "Mật khẩu đã được đặt lại thành công. Bạn có thể đăng nhập với mật khẩu mới."
+            });
+        }).AllowAnonymous();
+
         return group;
     }
 
@@ -146,3 +173,5 @@ public sealed record RegisterRequest(string Email, string Password, string UserN
 public sealed record LoginRequest(string Email, string Password);
 public sealed record GoogleRequest(string IdToken);
 public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarUrl, string? Bio);
+public sealed record ForgotPasswordRequest(string Email);
+public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);

@@ -38,3 +38,11 @@ public interface IWelcomeEmailDispatcher
 {
     Task DispatchAsync(string email, string displayName, CancellationToken ct = default);
 }
+
+/// <summary>
+/// Gửi email khôi phục mật khẩu qua Hangfire background job (best-effort).
+/// </summary>
+public interface IPasswordResetEmailDispatcher
+{
+    Task DispatchAsync(string email, string displayName, string resetUrl, CancellationToken ct = default);
+}

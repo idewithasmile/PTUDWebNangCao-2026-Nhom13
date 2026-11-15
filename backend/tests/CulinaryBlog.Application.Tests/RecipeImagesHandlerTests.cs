@@ -199,4 +199,23 @@ public class RecipeImagesHandlerTests
         await act.Should().ThrowAsync<NotFoundException>().Where(e => e.ErrorCode == "RECIPE_IMAGE_NOT_FOUND");
         _mockCleanup.Verify(c => c.EnqueueDeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task SetPrimary_AdminOnAnotherAuthorsRecipe_Succeeds()
+    {
+        var recipe = NewRecipe("author-1");
+        recipe.AddImage("https://cdn/img1.jpg");
+        var img2 = recipe.AddImage("https://cdn/img2.jpg");
+        SetupQueryable(recipe);
+        _mockCurrentUser.Setup(c => c.IsAuthenticated).Returns(true);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-1");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+
+        var handler = new SetPrimaryImageCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        await handler.Handle(new SetPrimaryImageCommand(recipe.Id, img2.Id), CancellationToken.None);
+
+        img2.IsPrimary.Should().BeTrue();
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

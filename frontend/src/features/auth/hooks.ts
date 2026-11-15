@@ -9,6 +9,8 @@ import {
   refreshApi,
   registerApi,
   updateMeApi,
+  forgotPasswordApi,
+  resetPasswordApi,
 } from './api';
 import { AUTH_ERROR_MESSAGES, problemMessage, type ProblemDetails } from './types';
 import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
@@ -159,5 +161,19 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: updateMeApi,
     onSuccess: (user) => qc.setQueryData(authKeys.me, user),
+  });
+}
+
+// FR-AUTH-008
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) => forgotPasswordApi(email),
+  });
+}
+
+// FR-AUTH-009
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: resetPasswordApi,
   });
 }

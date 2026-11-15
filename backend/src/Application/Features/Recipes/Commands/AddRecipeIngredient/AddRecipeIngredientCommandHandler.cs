@@ -26,7 +26,7 @@ public class AddRecipeIngredientCommandHandler(
         if (!currentUser.IsAuthenticated || string.IsNullOrEmpty(currentUser.UserId))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập để thực hiện chức năng này.");
 
-        if (!string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền thêm nguyên liệu vào công thức của người khác.");
 
         var ingredient = recipe.AddIngredient(

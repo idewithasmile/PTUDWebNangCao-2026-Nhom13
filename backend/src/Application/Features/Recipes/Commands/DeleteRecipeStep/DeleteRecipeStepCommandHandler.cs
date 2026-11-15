@@ -25,7 +25,7 @@ public class DeleteRecipeStepCommandHandler(
         if (!currentUser.IsAuthenticated || string.IsNullOrEmpty(currentUser.UserId))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn cần đăng nhập để thực hiện chức năng này.");
 
-        if (!string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
             throw new ForbiddenException("RECIPE_FORBIDDEN", "Bạn không có quyền xóa bước của công thức người khác.");
 
         _ = recipe.Steps.FirstOrDefault(s => s.Id == request.StepId)
