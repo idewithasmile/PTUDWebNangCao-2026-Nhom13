@@ -62,7 +62,7 @@ export default function RecipeIngredientsList({
           <h3 className="text-lg">Nguyên liệu chuẩn bị</h3>
         </div>
         <span className="rounded-full bg-orange-50 dark:bg-orange-950/60 px-3 py-1 text-xs font-semibold text-orange-700 dark:text-orange-300">
-          {ingredients.length} nguyên liệu
+          {ingredients.length} nguyên liệu ({activeServings} phần)
         </span>
       </div>
 

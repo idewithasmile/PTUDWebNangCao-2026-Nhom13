@@ -31,7 +31,7 @@ export default function RecipeActionButtons({ recipe }: RecipeActionButtonsProps
   const isDraft = recipe.status === 'Draft' || statusNum === 0;
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-sm border border-slate-700/60 animate-fade-in my-2">
+    <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-sm border border-slate-700/60 animate-fade-in my-2">
       <div className="flex items-center gap-2.5 text-xs">
         <div className="w-8 h-8 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
           <ChefHat className="w-4 h-4" />

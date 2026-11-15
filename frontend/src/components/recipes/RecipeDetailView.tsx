@@ -13,6 +13,7 @@ import SendRecipeEmailModal from '@/components/recipes/SendRecipeEmailModal';
 import CookingModeModal from '@/components/recipes/CookingModeModal';
 import { useRecipeViewTracker } from '@/features/recipes/useRecipeViewTracker';
 import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
+import { useToastStore } from '@/features/toast/useToastStore';
 import { resolveMediaUrl } from '@/lib/utils';
 import {
   Clock,
@@ -53,6 +54,7 @@ export default function RecipeDetailView({
 }: RecipeDetailViewProps) {
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
   const { isBookmarked, toggleBookmark, init } = useBookmarkStore();
+  const { addToast } = useToastStore();
   const [localBookmarkCount, setLocalBookmarkCount] = useState<number | null>(null);
   const [activeServings, setActiveServings] = useState<number | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -152,7 +154,7 @@ export default function RecipeDetailView({
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Nút Quay lại danh sách */}
       {!hideBackLink && (
-        <div>
+        <div className="print:hidden">
           {onBack ? (
             <button
               type="button"
@@ -228,6 +230,12 @@ export default function RecipeDetailView({
               onClick={() => {
                 navigator.clipboard?.writeText(window.location.href).catch(() => {});
                 setCopiedLink(true);
+                addToast({
+                  type: 'success',
+                  title: 'Đã sao chép liên kết! 🔗',
+                  message: `Đã sao chép đường dẫn món "${recipe.title}" vào bộ nhớ tạm.`,
+                  duration: 3000,
+                });
                 setTimeout(() => setCopiedLink(false), 2000);
               }}
               className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-zinc-200 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
@@ -321,7 +329,7 @@ export default function RecipeDetailView({
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Khẩu phần</p>
-            <p className="text-sm font-bold text-gray-900">{recipe.servings} phần</p>
+            <p className="text-sm font-bold text-gray-900">{activeServings ?? recipe.servings} phần</p>
           </div>
         </div>
       </div>

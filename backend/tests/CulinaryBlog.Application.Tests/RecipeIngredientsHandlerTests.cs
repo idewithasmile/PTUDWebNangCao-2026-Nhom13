@@ -201,4 +201,31 @@ public class RecipeIngredientsHandlerTests
 
         result.IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task AddUpdateDelete_AdminOnAnotherAuthorsRecipe_Succeeds()
+    {
+        var recipe = NewRecipe("author-1");
+        SetupQueryable(recipe);
+        _mockCurrentUser.Setup(c => c.IsAuthenticated).Returns(true);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-1");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+
+        var addHandler = new AddRecipeIngredientCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        var added = await addHandler.Handle(
+            new AddRecipeIngredientCommand(recipe.Id, "Hành tím", 50m, "gram"), CancellationToken.None);
+
+        var updateHandler = new UpdateRecipeIngredientCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        var updated = await updateHandler.Handle(
+            new UpdateRecipeIngredientCommand(recipe.Id, added.Id, "Hành tím nướng", 60m, "gram", "Nướng thơm"), CancellationToken.None);
+        updated.Name.Should().Be("Hành tím nướng");
+
+        var deleteHandler = new DeleteRecipeIngredientCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        await deleteHandler.Handle(
+            new DeleteRecipeIngredientCommand(recipe.Id, added.Id), CancellationToken.None);
+        recipe.Ingredients.Should().BeEmpty();
+    }
 }

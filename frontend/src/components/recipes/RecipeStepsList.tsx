@@ -42,7 +42,7 @@ function StepTimer({ minutes }: { minutes: number }) {
       <span className="font-medium">
         Đồng hồ bấm giờ: {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
       </span>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-1.5 print:hidden">
         <button
           type="button"
           onClick={toggleTimer}

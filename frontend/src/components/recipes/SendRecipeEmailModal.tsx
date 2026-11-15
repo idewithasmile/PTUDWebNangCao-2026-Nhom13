@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { CheckCircle2, Mail, X } from 'lucide-react';
 import { recipeService } from '@/lib/services/recipe-service';
+import { useToastStore } from '@/features/toast/useToastStore';
+import { toErrorMessage } from '@/features/auth/hooks';
 
 interface SendRecipeEmailModalProps {
   recipeId: string;
@@ -19,12 +21,21 @@ export default function SendRecipeEmailModal({
   isOpen,
   onClose,
 }: SendRecipeEmailModalProps) {
+  const { addToast } = useToastStore();
   const [email, setEmail] = useState('');
   const [servings, setServings] = useState<number>(defaultServings > 0 ? defaultServings : 2);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setServings(defaultServings > 0 ? defaultServings : 2);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+    }
+  }, [defaultServings, isOpen]);
 
   if (!isOpen) return null;
 
@@ -33,25 +44,29 @@ export default function SendRecipeEmailModal({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!email.trim()) {
-      setErrorMsg('Vui lòng nhập email nhận phiếu đi chợ.');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setErrorMsg('Vui lòng nhập địa chỉ email hợp lệ để nhận phiếu đi chợ.');
       return;
     }
 
     setIsSending(true);
     try {
       const res = await recipeService.sendToEmail(recipeId, {
-        email: email.trim(),
+        email: trimmedEmail,
         servings,
         subscribeNewsletter,
       });
       setSuccessMsg(res.message);
       setEmail('');
+      addToast({
+        type: 'success',
+        title: 'Đã gửi phiếu đi chợ qua Email! 📩',
+        message: res.message,
+        duration: 4000,
+      });
     } catch (err: unknown) {
-      setErrorMsg(
-        (err as { detail?: string; message?: string })?.detail ||
-          'Không thể gửi email lúc này. Vui lòng thử lại.',
-      );
+      setErrorMsg(toErrorMessage(err, 'Không thể gửi email lúc này. Vui lòng thử lại.'));
     } finally {
       setIsSending(false);
     }

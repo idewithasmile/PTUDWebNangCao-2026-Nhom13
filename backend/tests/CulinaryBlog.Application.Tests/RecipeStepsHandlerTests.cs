@@ -202,4 +202,31 @@ public class RecipeStepsHandlerTests
 
         result.IsValid.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task AddUpdateDelete_AdminOnAnotherAuthorsRecipe_Succeeds()
+    {
+        var recipe = NewRecipe("author-1");
+        SetupQueryable(recipe);
+        _mockCurrentUser.Setup(c => c.IsAuthenticated).Returns(true);
+        _mockCurrentUser.Setup(c => c.UserId).Returns("admin-1");
+        _mockCurrentUser.Setup(c => c.IsAdmin).Returns(true);
+
+        var addHandler = new AddRecipeStepCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        var added = await addHandler.Handle(
+            new AddRecipeStepCommand(recipe.Id, "Luộc gà 20 phút", "Luộc gà", 20), CancellationToken.None);
+
+        var updateHandler = new UpdateRecipeStepCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        var updated = await updateHandler.Handle(
+            new UpdateRecipeStepCommand(recipe.Id, added.Id, "Luộc gà lửa nhỏ 25 phút", "Luộc gà", 25, null), CancellationToken.None);
+        updated.TimerMinutes.Should().Be(25);
+
+        var deleteHandler = new DeleteRecipeStepCommandHandler(
+            _mockRecipeRepo.Object, _mockUnitOfWork.Object, _mockCurrentUser.Object, _mockCache.Object);
+        await deleteHandler.Handle(
+            new DeleteRecipeStepCommand(recipe.Id, added.Id), CancellationToken.None);
+        recipe.Steps.Should().BeEmpty();
+    }
 }

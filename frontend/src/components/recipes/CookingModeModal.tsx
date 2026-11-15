@@ -44,6 +44,13 @@ export default function CookingModeModal({
   const [timerRunning, setTimerRunning] = useState(false);
 
   useEffect(() => {
+    if (isOpen) {
+      setStepIdx(0);
+      setShowIngredients(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     setSecondsLeft(activeStep?.timerMinutes ? activeStep.timerMinutes * 60 : 0);
     setTimerRunning(false);
   }, [stepIdx, activeStep?.timerMinutes]);
@@ -59,23 +66,36 @@ export default function CookingModeModal({
     return () => clearInterval(timer);
   }, [timerRunning, secondsLeft]);
 
-  // Keep screen awake when supported while cooking
+  // Keep screen awake when supported while cooking (re-acquire on visibilitychange)
   useEffect(() => {
     if (!isOpen) return;
     let sentinel: { release?: () => Promise<void> } | null = null;
     const nav = navigator as Navigator & {
       wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> };
     };
-    nav.wakeLock
-      ?.request('screen')
-      .then((lock) => {
-        sentinel = lock;
-      })
-      .catch(() => {
-        // WakeLock optional / unsupported
-      });
+
+    const requestWakeLock = () => {
+      nav.wakeLock
+        ?.request('screen')
+        .then((lock) => {
+          sentinel = lock;
+        })
+        .catch(() => {
+          // WakeLock optional / unsupported
+        });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    requestWakeLock();
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       sentinel?.release?.().catch(() => {});
     };
   }, [isOpen]);

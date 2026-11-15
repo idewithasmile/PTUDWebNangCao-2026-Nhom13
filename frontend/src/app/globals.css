@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
   body {
     background: #ffffff !important;
     color: #111827 !important;

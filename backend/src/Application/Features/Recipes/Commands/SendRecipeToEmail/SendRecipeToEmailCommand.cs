@@ -35,7 +35,7 @@ public sealed class SendRecipeToEmailCommandValidator : AbstractValidator<SendRe
             .MaximumLength(256);
 
         RuleFor(x => x.Servings)
-            .InclusiveBetween(1, 50).WithMessage("Số khẩu phần phải từ 1 đến 50.")
+            .InclusiveBetween(1, 100).WithMessage("Số khẩu phần phải từ 1 đến 100.")
             .When(x => x.Servings.HasValue);
     }
 }

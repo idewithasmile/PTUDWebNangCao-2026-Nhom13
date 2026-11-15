@@ -20,7 +20,7 @@ public class SendRecipeToEmailCommandHandlerTests
     public void Validator_InvalidServingsAndEmail_ShouldFail()
     {
         var validator = new SendRecipeToEmailCommandValidator();
-        var result = validator.Validate(new SendRecipeToEmailCommand(Guid.NewGuid(), "invalid-email", Servings: 100));
+        var result = validator.Validate(new SendRecipeToEmailCommand(Guid.NewGuid(), "invalid-email", Servings: 101));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(SendRecipeToEmailCommand.Email));

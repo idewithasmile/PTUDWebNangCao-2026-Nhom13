@@ -31,10 +31,11 @@ public static class NewsletterEndpoints
                     body.FavoriteCategorySlug,
                     string.IsNullOrWhiteSpace(body.Source) ? "HomeBanner" : body.Source),
                 ct);
-            return Results.Ok(result);
+            return Results.Created($"/api/v1/newsletter/subscribers/{result.Id}", result);
         })
         .AllowAnonymous()
         .WithSummary("Đăng ký nhận bản tin ẩm thực & công thức mới")
+        .Produces<NewsletterSubscribeResultDto>(StatusCodes.Status201Created)
         .Produces<NewsletterSubscribeResultDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest);
 
