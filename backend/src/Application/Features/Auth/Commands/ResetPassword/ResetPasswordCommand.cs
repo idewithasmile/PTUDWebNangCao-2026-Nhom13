@@ -59,6 +59,25 @@ public sealed class ResetPasswordCommandHandler(
                 400);
         }
 
+        var tokenPurpose = UserManager<ApplicationUser>.ResetPasswordTokenPurpose;
+        var tokenProvider = users.Options.Tokens.PasswordResetTokenProvider;
+        var isValidToken = await users.VerifyUserTokenAsync(user, tokenProvider, tokenPurpose, decodedToken);
+        if (!isValidToken)
+        {
+            throw new AppEx.AppException(
+                AuthErrors.ResetTokenInvalid,
+                "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
+                400);
+        }
+
+        if (await users.CheckPasswordAsync(user, request.NewPassword))
+        {
+            throw new AppEx.AppException(
+                AuthErrors.PasswordSameAsOld,
+                "Mật khẩu mới không được giống với mật khẩu hiện tại. Vui lòng chọn mật khẩu khác.",
+                400);
+        }
+
         var result = await users.ResetPasswordAsync(user, decodedToken, request.NewPassword);
         if (!result.Succeeded)
         {

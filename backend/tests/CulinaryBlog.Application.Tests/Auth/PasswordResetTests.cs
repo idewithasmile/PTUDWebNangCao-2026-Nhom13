@@ -187,4 +187,69 @@ public sealed class PasswordResetTests
         ex.Which.ErrorCode.Should().Be(AuthErrors.ResetTokenInvalid);
         ex.Which.StatusCode.Should().Be(400);
     }
+
+    [Fact]
+    public async Task ResetPassword_SameAsCurrentPassword_ThrowsPasswordSameAsOld()
+    {
+        var (users, _) = CreateUsersWithResetProvider();
+        var user = new ApplicationUser
+        {
+            UserName = "same_pw_u",
+            Email = "same@example.com",
+            DisplayName = "Same Password User",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        await users.CreateAsync(user, "OldP@ssw0rd1");
+
+        var refreshStore = new FakeRefreshTokenStore();
+        await refreshStore.AddAsync(new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = "hash-keep-token",
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var rawToken = await users.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = AuthTokenEncoding.Base64UrlEncode(rawToken);
+
+        var handler = new ResetPasswordCommandHandler(users, refreshStore);
+        var act = async () => await handler.Handle(
+            new ResetPasswordCommand("same@example.com", encodedToken, "OldP@ssw0rd1"),
+            CancellationToken.None);
+
+        var ex = await act.Should().ThrowAsync<AppException>();
+        ex.Which.ErrorCode.Should().Be(AuthErrors.PasswordSameAsOld);
+        ex.Which.StatusCode.Should().Be(400);
+        (await users.CheckPasswordAsync(user, "OldP@ssw0rd1")).Should().BeTrue();
+        (await refreshStore.ListActiveByUserAsync(user.Id)).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task ResetPassword_InvalidToken_WithSamePassword_ThrowsResetTokenInvalid()
+    {
+        var (users, _) = CreateUsersWithResetProvider();
+        var user = new ApplicationUser
+        {
+            UserName = "bad_same_u",
+            Email = "badsame@example.com",
+            DisplayName = "Bad Same",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        await users.CreateAsync(user, "OldP@ssw0rd1");
+
+        var handler = new ResetPasswordCommandHandler(users, new FakeRefreshTokenStore());
+        var encodedBad = AuthTokenEncoding.Base64UrlEncode("wrong-token");
+
+        var act = async () => await handler.Handle(
+            new ResetPasswordCommand("badsame@example.com", encodedBad, "OldP@ssw0rd1"),
+            CancellationToken.None);
+
+        var ex = await act.Should().ThrowAsync<AppException>();
+        ex.Which.ErrorCode.Should().Be(AuthErrors.ResetTokenInvalid);
+        ex.Which.StatusCode.Should().Be(400);
+    }
 }
