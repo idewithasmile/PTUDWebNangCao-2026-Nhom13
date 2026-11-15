@@ -46,10 +46,18 @@ const nextConfig = {
   },
   async rewrites() {
     const minioUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
+    const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1').replace(
+      /\/api\/v1\/?$/,
+      '',
+    );
     return [
       {
         source: '/culinary-blog/:path*',
         destination: `${minioUrl}/culinary-blog/:path*`,
+      },
+      {
+        source: '/sitemap.xml',
+        destination: `${apiOrigin}/sitemap.xml`,
       },
     ];
   },

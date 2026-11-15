@@ -323,6 +323,7 @@ v1.MapGroup("/categories").MapCategoriesEndpoints();
 v1.MapGroup("/files").MapFilesEndpoints();
 v1.MapGroup("/dashboard").MapDashboardEndpoints();
 v1.MapGroup("/users").MapUsersEndpoints();
+v1.MapGroup("/newsletter").MapNewsletterEndpoints();
 
 // Health Check Endpoints (/health, /health/live, /health/ready)
 app.MapHealthChecks();

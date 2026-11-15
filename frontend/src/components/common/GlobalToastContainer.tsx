@@ -95,7 +95,7 @@ export default function GlobalToastContainer() {
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50 pointer-events-none flex flex-col gap-2.5 max-w-sm w-full"
+      className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50 print:hidden pointer-events-none flex flex-col gap-2.5 max-w-sm w-full"
     >
       {toasts.map((toast) => (
         <ToastCard key={toast.id} toast={toast} onClose={removeToast} />

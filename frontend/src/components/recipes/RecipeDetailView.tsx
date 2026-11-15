@@ -9,6 +9,8 @@ import RecipeStepsList from '@/components/recipes/RecipeStepsList';
 import RecipeNutritionCard from '@/components/recipes/RecipeNutritionCard';
 import RecipeActionButtons from '@/components/recipes/RecipeActionButtons';
 import RecipeGalleryViewer from '@/components/recipes/RecipeGalleryViewer';
+import SendRecipeEmailModal from '@/components/recipes/SendRecipeEmailModal';
+import CookingModeModal from '@/components/recipes/CookingModeModal';
 import { useRecipeViewTracker } from '@/features/recipes/useRecipeViewTracker';
 import { useBookmarkStore } from '@/features/bookmarks/useBookmarkStore';
 import { resolveMediaUrl } from '@/lib/utils';
@@ -24,6 +26,11 @@ import {
   ChevronLeft,
   Eye,
   Bookmark,
+  Mail,
+  Printer,
+  Share2,
+  Check,
+  ChefHat,
 } from 'lucide-react';
 
 interface RecipeDetailViewProps {
@@ -47,6 +54,10 @@ export default function RecipeDetailView({
   const { data: recipe, isLoading, isError, error, refetch } = useRecipeDetail(slug);
   const { isBookmarked, toggleBookmark, init } = useBookmarkStore();
   const [localBookmarkCount, setLocalBookmarkCount] = useState<number | null>(null);
+  const [activeServings, setActiveServings] = useState<number | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showCookingMode, setShowCookingMode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     init();
@@ -182,20 +193,63 @@ export default function RecipeDetailView({
             </h1>
           </div>
 
-          {/* Nút Lưu trữ công thức */}
-          <button
-            type="button"
-            onClick={handleToggleBookmark}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0 ${
-              isSaved
-                ? 'bg-orange-500 text-white hover:bg-orange-600'
-                : 'bg-white hover:bg-orange-50 text-gray-700 border border-gray-200 hover:border-orange-200 hover:text-orange-600'
-            }`}
-            title={isSaved ? 'Bỏ lưu công thức' : 'Lưu công thức vào danh sách'}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
-            <span>{isSaved ? 'Đã lưu công thức' : 'Lưu công thức'}</span>
-          </button>
+          {/* Nhóm công cụ tiện ích cho người nấu */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
+            {recipe.steps && recipe.steps.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCookingMode(true)}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-stone-900 dark:bg-orange-600 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition hover:bg-stone-800 dark:hover:bg-orange-700"
+              >
+                <ChefHat className="h-4 w-4" />
+                <span>Vào Bếp</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowEmailModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-zinc-200 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+              title="Gửi danh sách nguyên liệu qua Email"
+            >
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Gửi Email</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-zinc-200 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+              title="In công thức nấu ăn"
+            >
+              <Printer className="h-4 w-4" />
+              <span className="hidden md:inline">In</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(window.location.href).catch(() => {});
+                setCopiedLink(true);
+                setTimeout(() => setCopiedLink(false), 2000);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-zinc-200 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+              title="Sao chép liên kết chia sẻ"
+            >
+              {copiedLink ? <Check className="h-4 w-4 text-emerald-600" /> : <Share2 className="h-4 w-4" />}
+              <span className="hidden md:inline">{copiedLink ? 'Đã chép' : 'Chia sẻ'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleBookmark}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 ${
+                isSaved
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-white dark:bg-zinc-900 hover:bg-orange-50 text-gray-700 dark:text-zinc-200 border border-gray-200 dark:border-zinc-700 hover:border-orange-200 hover:text-orange-600'
+              }`}
+              title={isSaved ? 'Bỏ lưu công thức' : 'Lưu công thức vào danh sách'}
+            >
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
+              <span>{isSaved ? 'Đã lưu công thức' : 'Lưu công thức'}</span>
+            </button>
+          </div>
         </div>
 
         <p className="text-base leading-relaxed text-gray-600">{recipe.description}</p>
@@ -282,6 +336,8 @@ export default function RecipeDetailView({
           <RecipeIngredientsList
             ingredients={recipe.ingredients}
             servings={recipe.servings}
+            currentServings={activeServings ?? recipe.servings}
+            onServingsChange={(next) => setActiveServings(next)}
           />
         </div>
 
@@ -293,6 +349,24 @@ export default function RecipeDetailView({
           />
         </div>
       </div>
+
+      <SendRecipeEmailModal
+        recipeId={recipe.id}
+        recipeTitle={recipe.title}
+        defaultServings={activeServings ?? recipe.servings}
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+      />
+
+      <CookingModeModal
+        isOpen={showCookingMode}
+        onClose={() => setShowCookingMode(false)}
+        recipeTitle={recipe.title}
+        steps={recipe.steps}
+        ingredients={recipe.ingredients}
+        servings={activeServings ?? recipe.servings}
+        baseServings={recipe.servings}
+      />
     </div>
   );
 }

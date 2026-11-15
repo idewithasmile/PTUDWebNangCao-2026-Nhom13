@@ -14,6 +14,7 @@ import DashboardRecipeEditView from './views/DashboardRecipeEditView';
 import DashboardProfileSettingsView from './views/DashboardProfileSettingsView';
 import DashboardUsersView from './views/DashboardUsersView';
 import DashboardSavedRecipesView from './views/DashboardSavedRecipesView';
+import DashboardSubscribersView from './views/DashboardSubscribersView';
 
 interface UnifiedDashboardViewProps {
   user: UserProfile;
@@ -31,7 +32,7 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
   // Sync state if URL search query changes
   useEffect(() => {
     if (tabParam && tabParam !== activeTab) {
-      if (!isAdmin && tabParam === 'categories') {
+      if (!isAdmin && (tabParam === 'categories' || tabParam === 'subscribers')) {
         setActiveTab('overview');
         router.replace('/dashboard?tab=overview', { scroll: false });
       } else {
@@ -40,16 +41,16 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
     }
   }, [tabParam, activeTab, isAdmin, router]);
 
-  // FR-CAT: Chỉ Admin mới có quyền quản lý danh mục. Tự động chuyển về 'overview' nếu Author truy cập.
+  // FR-CAT / FR-NWL: Chỉ Admin mới có quyền quản lý danh mục & email khách hàng.
   useEffect(() => {
-    if (!isAdmin && activeTab === 'categories') {
+    if (!isAdmin && (activeTab === 'categories' || activeTab === 'subscribers')) {
       setActiveTab('overview');
       router.replace('/dashboard?tab=overview', { scroll: false });
     }
   }, [isAdmin, activeTab, router]);
 
   const handleSelectTab = (tab: DashboardTab) => {
-    if (!isAdmin && tab === 'categories') {
+    if (!isAdmin && (tab === 'categories' || tab === 'subscribers')) {
       return;
     }
     setActiveTab(tab);
@@ -136,6 +137,8 @@ function DashboardContent({ user }: UnifiedDashboardViewProps) {
         {activeTab === 'users' && (
           <DashboardUsersView user={user} isAdmin={isAdmin} />
         )}
+
+        {activeTab === 'subscribers' && isAdmin && <DashboardSubscribersView />}
 
         {(activeTab === 'settings' || activeTab === 'profile') && (
           <DashboardProfileSettingsView currentUser={user} />

@@ -22,9 +22,8 @@ public class UpdateRecipeCommandHandler(
             throw new NotFoundException("RECIPE_NOT_FOUND", $"Không tìm thấy công thức với Id {request.Id}");
         }
 
-        // Check Authorization (Resource-based)
-        // Hiện tại chỉ owner mới được sửa (có thể mở rộng cho Admin sau nếu có role claims)
-        if (recipe.AuthorId != currentUser.UserId)
+        // Check Authorization (Resource-based: Owner hoặc Admin theo SRS 2.3)
+        if (!currentUser.IsAdmin && !string.Equals(recipe.AuthorId, currentUser.UserId, StringComparison.Ordinal))
         {
             throw new ForbiddenException("FORBIDDEN", "Bạn không có quyền chỉnh sửa công thức này.");
         }

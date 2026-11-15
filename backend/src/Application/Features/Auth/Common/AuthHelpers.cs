@@ -29,3 +29,28 @@ public static class PasswordRules
             .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
             .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
 }
+
+/// <summary>Helper mã hóa/giải mã Base64Url an toàn cho URL đặt lại mật khẩu.</summary>
+public static class AuthTokenEncoding
+{
+    public static string Base64UrlEncode(string value)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
+    public static string Base64UrlDecode(string encoded)
+    {
+        var padded = encoded.Replace('-', '+').Replace('_', '/');
+        switch (padded.Length % 4)
+        {
+            case 2: padded += "=="; break;
+            case 3: padded += "="; break;
+        }
+        var bytes = Convert.FromBase64String(padded);
+        return System.Text.Encoding.UTF8.GetString(bytes);
+    }
+}

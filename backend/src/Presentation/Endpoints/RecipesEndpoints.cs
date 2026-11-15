@@ -203,6 +203,14 @@ public static class RecipesEndpoints
             .AllowAnonymous()
             .Produces<List<RecipeSummaryDto>>(StatusCodes.Status200OK);
 
+        // Gửi danh sách nguyên liệu & hướng dẫn nấu món ăn qua email khách hàng
+        group.MapPost("/{id:guid}/send-to-email", SendRecipeToEmail)
+            .AllowAnonymous()
+            .WithSummary("Gửi danh sách nguyên liệu công thức qua email")
+            .Produces<CulinaryBlog.Application.Features.Recipes.Commands.SendRecipeToEmail.SendRecipeToEmailResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return group;
     }
 
@@ -582,4 +590,19 @@ public static class RecipesEndpoints
         var result = await sender.Send(new GetBatchRecipesSummaryQuery(recipeIds));
         return Results.Ok(result);
     }
+
+    private static async Task<IResult> SendRecipeToEmail(
+        Guid id,
+        [FromBody] SendRecipeToEmailRequest request,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new CulinaryBlog.Application.Features.Recipes.Commands.SendRecipeToEmail.SendRecipeToEmailCommand(
+                id, request.Email, request.Servings, request.SubscribeNewsletter),
+            ct);
+        return Results.Ok(result);
+    }
+
+    public sealed record SendRecipeToEmailRequest(string Email, int? Servings = null, bool SubscribeNewsletter = false);
 }

@@ -81,3 +81,23 @@ export async function updateMeApi(payload: UpdateProfileForm): Promise<UserProfi
 export function hasSession(): boolean {
   return getAccessToken() !== null;
 }
+
+// FR-AUTH-008: POST /auth/forgot-password
+export async function forgotPasswordApi(email: string): Promise<{ message: string }> {
+  return apiClient<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+// FR-AUTH-009: POST /auth/reset-password
+export async function resetPasswordApi(payload: {
+  email: string;
+  token: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  return apiClient<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

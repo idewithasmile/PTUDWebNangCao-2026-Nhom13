@@ -9,6 +9,7 @@ import HomeCategorySection from './HomeCategorySection';
 import HomeLatestRecipes from './HomeLatestRecipes';
 import HomePopularRecipes from './HomePopularRecipes';
 import HomeWhyChooseUs from './HomeWhyChooseUs';
+import HomeNewsletterSection from './HomeNewsletterSection';
 
 export default function HomeClientView() {
   // 1. Tải danh mục thực tế từ REST API
@@ -69,6 +70,9 @@ export default function HomeClientView() {
 
       {/* 5. KHU VỰC GIỚI THIỆU: VÌ SAO NÊN CHỌN CULINARY BLOG? */}
       <HomeWhyChooseUs />
+
+      {/* 6. KHU VỰC ĐĂNG KÝ BẢN TIN ẨM THỰC (LEAD CAPTURE) */}
+      <HomeNewsletterSection categories={categories} />
     </div>
   );
 }

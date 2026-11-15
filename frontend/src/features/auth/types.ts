@@ -37,6 +37,7 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   AUTH_REFRESH_TOKEN_EXPIRED: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.',
   AUTH_REFRESH_TOKEN_REVOKED: 'Phiên đăng nhập đã bị thu hồi, vui lòng đăng nhập lại.',
   AUTH_USER_NOT_FOUND: 'Không tìm thấy người dùng.',
+  AUTH_RESET_TOKEN_INVALID: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
   VALIDATION_ERROR: 'Dữ liệu nhập chưa hợp lệ.',
 };
 

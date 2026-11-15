@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   BookOpen,
   Bookmark,
+  Mail,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/auth';
 import type { DashboardStatsDto } from '@/lib/types/dashboard';
@@ -35,6 +36,7 @@ export type DashboardTab =
   | 'recipes-create'
   | 'recipes-edit'
   | 'categories'
+  | 'subscribers'
   | 'users'
   | 'profile'
   | 'settings';
@@ -319,6 +321,22 @@ export default function DashboardSidebar({
               </span>
             )}
           </button>
+
+          {/* 4.5 Email khách hàng (Newsletter Subscribers - Chỉ Admin) */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => onSelectTab('subscribers')}
+              className={`flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl transition font-medium text-left ${
+                activeTab === 'subscribers'
+                  ? 'bg-[#2563eb] text-white font-bold shadow-xs'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>Email khách hàng</span>
+            </button>
+          )}
 
           {/* 5. Hồ sơ cá nhân (/profile - Độc lập, không có mũi tên >) */}
           <button

@@ -52,3 +52,22 @@ export const updateProfileSchema = z.object({
 export type RegisterForm = z.infer<typeof registerSchema>;
 export type LoginForm = z.infer<typeof loginSchema>;
 export type UpdateProfileForm = z.infer<typeof updateProfileSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Email bắt buộc.').email('Email không hợp lệ.'),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    email: z.string().min(1, 'Email bắt buộc.').email('Email không hợp lệ.'),
+    token: z.string().min(1, 'Token đặt lại mật khẩu không hợp lệ.'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu mới.'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Mật khẩu xác nhận không khớp.',
+    path: ['confirmPassword'],
+  });
+
+export type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
