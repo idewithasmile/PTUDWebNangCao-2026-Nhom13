@@ -30,12 +30,20 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo    ✓ PostgreSQL đã sẵn sàng!
 
-echo [3/4] Đang đồng bộ cơ sở dữ liệu từ infrastructure\seed_data.sql...
-docker exec -i culinary_postgres psql -U postgres -d culinary_blog < infrastructure\seed_data.sql > nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo    [CẢNH BÁO] Không thể nạp qua seed_data.sql trực tiếp, tiếp tục bước sau...
+echo [3/4] Đang đồng bộ cơ sở dữ liệu từ infrastructure\seed_data.sql (Chuẩn UTF-8)...
+where python > nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    python -c "import subprocess, sys; data = open(r'infrastructure\seed_data.sql', 'rb').read(); p = subprocess.Popen(['docker', 'exec', '-i', 'culinary_postgres', 'psql', '-U', 'postgres', '-d', 'culinary_blog'], stdin=subprocess.PIPE); out, err = p.communicate(input=data); sys.exit(p.returncode)" > nul 2>&1
 ) else (
+    docker exec -i culinary_postgres psql -U postgres -d culinary_blog < infrastructure\seed_data.sql > nul 2>&1
+)
+if %ERRORLEVEL% NEQ 0 (
+    docker exec -i culinary_postgres psql -U postgres -d culinary_blog < infrastructure\seed_data.sql > nul 2>&1
+)
+if %ERRORLEVEL% EQU 0 (
     echo    ✓ Đã đồng bộ toàn bộ công thức, danh mục, tài khoản và nguyên liệu thành công!
+) else (
+    echo    [CẢNH BÁO] Không thể nạp qua seed_data.sql trực tiếp, tiếp tục bước sau...
 )
 
 echo [4/4] Đang đồng bộ hình ảnh món ăn vào MinIO Object Storage...
