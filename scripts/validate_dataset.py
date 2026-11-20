@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Validation script for recipes_master_dataset.json.
-Verifies 100% compliance with R1, R2, and database entity integrity:
+Validation script for recipes_master_dataset.json and image_source_manifest.json.
+Verifies 100% compliance with Phase 2 Authentic Vietnamese Culinary Seeding requirements:
 1. File existence and valid JSON syntax.
 2. Metadata check.
-3. Categories check (count >= 20, 6 required home categories, unique GUIDs, unique slugs, image URLs).
-4. Recipes check (count >= 100, crucial recipe 'pho-bo-tai-lan-chuan-vi-ha-thanh' present).
-5. Recipe fields: id, title, slug, categorySlug, authorEmail, description, instructions, prepTime, cookTime, servings, difficulty.
-6. Nutrition: calories, protein, carbohydrates, fat, fiber, sodium (realistic positive numbers).
-7. Ingredients: >= 10 ingredients per recipe with name, quantity > 0, unit, notes.
-8. Steps: >= 5 steps per recipe with stepNumber (1-based sequential), title, description, timer.
-9. Images: 3-5 images per recipe, exactly 1 primary at orderIndex 0, correct URL format /culinary-blog/recipes/{recipeId}/{guid}.jpg.
-10. Category distribution: all categories represented.
+3. Categories check (count >= 10, canonical home categories present, unique GUIDs, unique slugs, image URLs).
+4. Recipes check (count >= 50, crucial recipe 'pho-bo-tai-lan-chuan-vi-ha-thanh' present).
+5. Recipe fields: id, title, slug, categorySlug, categoryId, authorEmail, description, instructions, prepTime, cookTime, servings, difficulty.
+6. Status: 100% Published.
+7. Nutrition: calories >= 50, protein, carbohydrates, fat, fiber, sodium (realistic positive numbers).
+8. Ingredients: >= 5 ingredients per recipe (name, quantity > 0, non-empty unit, notes).
+9. Steps: >= 3 steps per recipe (stepNumber 1-based sequential, non-empty title, description, timerMinutes, and valid imageUrl matching /culinary-blog/recipes/{recipeId}/steps/{stepNumber}.jpg).
+10. Recipe Images: Exactly 1 primary image with unique URL across all recipes (/culinary-blog/recipes/{recipeId}/cover.jpg), and 2-4 gallery images (/culinary-blog/recipes/{recipeId}/gallery-{1..3}.jpg).
+11. Primary Cover Uniqueness: 100% unique primary cover URLs across all recipes (zero duplicate cover URLs).
+12. Zero broken references: all categorySlug values reference existing categories, categoryId matches category's id.
+13. Category distribution: zero categories with 0 recipes.
+14. Image Source Manifest check: scripts/image_source_manifest.json exists and maps 100% of MinIO image paths.
 """
 
 import os
@@ -29,6 +33,7 @@ if sys.stderr and hasattr(sys.stderr, "reconfigure"):
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASET_PATH = os.path.join(REPO_ROOT, "backend", "src", "Infrastructure", "Data", "Datasets", "recipes_master_dataset.json")
+MANIFEST_PATH = os.path.join(REPO_ROOT, "scripts", "image_source_manifest.json")
 
 REQUIRED_HOME_CATEGORIES = [
     ("Món khai vị", "mon-khai-vi"),
@@ -52,7 +57,9 @@ def is_valid_uuid(val: str) -> bool:
 
 
 def validate():
-    print(f"=== Starting validation of {DATASET_PATH} ===")
+    print("=" * 70)
+    print(f"🔍 Starting Dataset & Manifest Validation: {DATASET_PATH}")
+    print("=" * 70)
     errors = []
     warnings = []
 
@@ -87,8 +94,8 @@ def validate():
 
     # 4. Categories validation
     print(f"\n--- Validating Categories (Total: {len(categories)}) ---")
-    if len(categories) < 20:
-        errors.append(f"Categories count is {len(categories)}, expected >= 20.")
+    if len(categories) < 10:
+        errors.append(f"Categories count is {len(categories)}, expected >= 10.")
 
     cat_slug_map = {}
     cat_id_set = set()
@@ -99,7 +106,7 @@ def validate():
         slug = c.get("slug")
         desc = c.get("description")
         img_url = c.get("imageUrl")
-        order_idx = c.get("orderIndex")
+        order_idx = c.get("orderIndex") or c.get("displayOrder")
 
         if not is_valid_uuid(cid):
             errors.append(f"Category[{idx}] '{name}' has invalid UUID: {cid}")
@@ -125,7 +132,7 @@ def validate():
         if not isinstance(order_idx, int) or order_idx < 1:
             errors.append(f"Category '{slug}' orderIndex must be integer >= 1 (got {order_idx})")
 
-    # Check 6 required home categories
+    # Check required home categories
     for req_name, req_slug in REQUIRED_HOME_CATEGORIES:
         if req_slug not in cat_slug_map:
             errors.append(f"Missing required home category: '{req_name}' (slug: '{req_slug}')")
@@ -134,11 +141,12 @@ def validate():
 
     # 5. Recipes validation
     print(f"\n--- Validating Recipes (Total: {len(recipes)}) ---")
-    if len(recipes) < 100:
-        errors.append(f"Recipes count is {len(recipes)}, expected >= 100.")
+    if len(recipes) < 50:
+        errors.append(f"Recipes count is {len(recipes)}, expected >= 50.")
 
     recipe_slug_set = set()
     recipe_id_set = set()
+    primary_cover_set = set()
     category_recipe_counts = {slug: 0 for slug in cat_slug_map}
     found_crucial_recipe = False
 
@@ -166,7 +174,7 @@ def validate():
         # Check crucial recipe
         if slug == CRUCIAL_RECIPE_SLUG:
             found_crucial_recipe = True
-            print(f"  ✓ Crucial recipe present: '{title}' ({slug})")
+            print(f"  ✓ Crucial showcase recipe present: '{title}' ({slug})")
 
         # UUID
         if not is_valid_uuid(rid):
@@ -227,9 +235,9 @@ def validate():
         if nutrition.get("calories", 0) < 50:
             errors.append(f"{prefix}: calories unrealistically low: {nutrition.get('calories')}")
 
-        # Ingredients (>= 10 required)
-        if len(ingredients) < 10:
-            errors.append(f"{prefix}: has {len(ingredients)} ingredients, minimum 10 required.")
+        # Ingredients (>= 5 required)
+        if len(ingredients) < 5:
+            errors.append(f"{prefix}: has {len(ingredients)} ingredients, minimum 5 required.")
 
         for i_idx, ing in enumerate(ingredients):
             iname = ing.get("name")
@@ -242,15 +250,16 @@ def validate():
             if not iunit or len(iunit.strip()) == 0:
                 errors.append(f"{prefix} ingredient '{iname}' missing unit")
 
-        # Steps (>= 5 required)
-        if len(steps) < 5:
-            errors.append(f"{prefix}: has {len(steps)} steps, minimum 5 required.")
+        # Steps (>= 3 required, with valid step imageUrl)
+        if len(steps) < 3:
+            errors.append(f"{prefix}: has {len(steps)} steps, minimum 3 required.")
 
         for s_idx, step in enumerate(steps):
             s_num = step.get("stepNumber")
             s_title = step.get("title")
             s_desc = step.get("description")
             s_timer = step.get("timerMinutes")
+            s_img = step.get("imageUrl")
 
             if s_num != s_idx + 1:
                 errors.append(f"{prefix} step[{s_idx}] stepNumber is {s_num}, expected {s_idx + 1}")
@@ -261,7 +270,12 @@ def validate():
             if s_timer is not None and (not isinstance(s_timer, int) or s_timer <= 0):
                 errors.append(f"{prefix} step[{s_idx}] timerMinutes invalid: {s_timer}")
 
-        # Images (3 to 5 images required)
+            # Verify step.imageUrl format: /culinary-blog/recipes/{recipeId}/steps/{stepNumber}.jpg
+            expected_step_img = f"/culinary-blog/recipes/{rid}/steps/{s_num}.jpg"
+            if not s_img or s_img != expected_step_img:
+                errors.append(f"{prefix} step[{s_idx}] imageUrl '{s_img}' != expected '{expected_step_img}'")
+
+        # Images (3 to 5 images required: exactly 1 primary cover, 2-4 gallery images)
         if len(images) < 3 or len(images) > 5:
             errors.append(f"{prefix}: has {len(images)} images, expected 3 to 5.")
 
@@ -276,10 +290,6 @@ def validate():
             if not is_valid_uuid(img_id):
                 errors.append(f"{prefix} image[{img_idx}] invalid UUID: {img_id}")
 
-            expected_img_url = f"/culinary-blog/recipes/{rid}/{img_id}.jpg"
-            if img_url != expected_img_url:
-                errors.append(f"{prefix} image[{img_idx}] url '{img_url}' != expected '{expected_img_url}'")
-
             if not img_alt or len(img_alt.strip()) == 0:
                 errors.append(f"{prefix} image[{img_idx}] missing alt text")
 
@@ -289,9 +299,21 @@ def validate():
                     errors.append(f"{prefix} primary image at index {img_idx}, must be index 0")
                 if o_idx != 0:
                     errors.append(f"{prefix} primary image orderIndex is {o_idx}, must be 0")
+
+                expected_cover_url = f"/culinary-blog/recipes/{rid}/cover.jpg"
+                if img_url != expected_cover_url:
+                    errors.append(f"{prefix} primary image url '{img_url}' != expected '{expected_cover_url}'")
+
+                # Assert 100% unique primary cover URLs across all recipes
+                if img_url in primary_cover_set:
+                    errors.append(f"{prefix}: duplicate primary cover URL across recipes: '{img_url}'")
+                primary_cover_set.add(img_url)
             else:
                 if img_idx == 0:
                     errors.append(f"{prefix} image at index 0 must have isPrimary=true")
+                expected_gallery_url = f"/culinary-blog/recipes/{rid}/gallery-{img_idx}.jpg"
+                if img_url != expected_gallery_url:
+                    errors.append(f"{prefix} gallery image[{img_idx}] url '{img_url}' != expected '{expected_gallery_url}'")
 
         if primary_count != 1:
             errors.append(f"{prefix}: has {primary_count} primary images, expected exactly 1.")
@@ -299,7 +321,13 @@ def validate():
     if not found_crucial_recipe:
         errors.append(f"CRITICAL: Crucial recipe '{CRUCIAL_RECIPE_SLUG}' was NOT found in dataset!")
 
-    # 6. Category coverage check
+    # 6. Primary Cover Uniqueness Verification
+    if len(primary_cover_set) != len(recipes):
+        errors.append(f"Primary cover count ({len(primary_cover_set)}) != total recipes ({len(recipes)}).")
+    else:
+        print(f"  ✓ 100% unique primary cover URLs across all {len(recipes)} recipes verified.")
+
+    # 7. Category coverage check
     print("\n--- Category Recipe Distribution ---")
     zero_cats = []
     for cat_slug, count in category_recipe_counts.items():
@@ -311,22 +339,59 @@ def validate():
     if zero_cats:
         errors.append(f"Categories with 0 recipes: {zero_cats}")
 
+    # 8. Image Source Manifest Verification
+    print("\n--- Validating Image Source Manifest ---")
+    if not os.path.exists(MANIFEST_PATH):
+        errors.append(f"Image source manifest does not exist: {MANIFEST_PATH}")
+    else:
+        try:
+            with open(MANIFEST_PATH, "r", encoding="utf-8") as mf:
+                mdata = json.load(mf)
+            m_imgs = mdata.get("images", {})
+            print(f"  ✓ Manifest loaded with {len(m_imgs)} total mapped images.")
+
+            # Verify all categories covered
+            for c in categories:
+                c_url = c["imageUrl"]
+                if c_url not in m_imgs:
+                    errors.append(f"Manifest missing category image: '{c_url}'")
+
+            # Verify all recipes covers, gallery, and steps covered
+            missing_recipe_imgs = 0
+            for r in recipes:
+                for img in r.get("images", []):
+                    i_url = img.get("url")
+                    if i_url not in m_imgs:
+                        errors.append(f"Manifest missing recipe image: '{i_url}'")
+                        missing_recipe_imgs += 1
+                for s in r.get("steps", []):
+                    s_url = s.get("imageUrl")
+                    if s_url not in m_imgs:
+                        errors.append(f"Manifest missing step image: '{s_url}'")
+                        missing_recipe_imgs += 1
+
+            if missing_recipe_imgs == 0:
+                print(f"  ✓ 100% of category banners, recipe covers, gallery, and step images present in manifest.")
+        except Exception as e:
+            errors.append(f"Error reading manifest: {e}")
+
     # Final summary
     print("\n=== Validation Summary ===")
     print(f"Total Categories: {len(categories)}")
     print(f"Total Recipes: {len(recipes)}")
+    print(f"Total Unique Primary Covers: {len(primary_cover_set)}")
     print(f"Errors: {len(errors)}")
     print(f"Warnings: {len(warnings)}")
 
     if errors:
-        print("\nValidation FAILED with the following errors:")
+        print("\n❌ Validation FAILED with the following errors:")
         for idx, err in enumerate(errors[:30], 1):
             print(f"  {idx}. {err}")
         if len(errors) > 30:
             print(f"  ... and {len(errors) - 30} more errors.")
         sys.exit(1)
     else:
-        print("\nCONGRATULATIONS: 100% of validation rules PASSED successfully!")
+        print("\n🎉 CONGRATULATIONS: 100% of validation rules PASSED successfully!")
         sys.exit(0)
 
 

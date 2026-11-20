@@ -469,6 +469,7 @@ public static class RecipesEndpoints
     private static async Task<IResult> SearchRecipes(
         [FromQuery] string? q,
         [FromQuery] string? searchTerm,
+        [FromQuery(Name = "query")] string? queryParam,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         [FromQuery] Guid? categoryId,
@@ -477,7 +478,7 @@ public static class RecipesEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        var queryTerm = q ?? searchTerm;
+        var queryTerm = q ?? searchTerm ?? queryParam;
         if (string.IsNullOrWhiteSpace(queryTerm) || queryTerm.Trim().Length < 2)
         {
             return Results.UnprocessableEntity(new ProblemDetails
@@ -545,13 +546,19 @@ public static class RecipesEndpoints
     private static async Task<IResult> ToggleBookmark(
         Guid id,
         ClaimsPrincipal user,
-        ISender sender)
+        ISender sender,
+        [FromServices] Microsoft.AspNetCore.OutputCaching.IOutputCacheStore? cacheStore = null,
+        CancellationToken ct = default)
     {
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? user.FindFirst("sub")?.Value
             ?? string.Empty;
 
-        var result = await sender.Send(new ToggleRecipeBookmarkCommand(id, userId));
+        var result = await sender.Send(new ToggleRecipeBookmarkCommand(id, userId), ct);
+        if (cacheStore != null)
+        {
+            await cacheStore.EvictByTagAsync("recipes", ct);
+        }
         return Results.Ok(result);
     }
 

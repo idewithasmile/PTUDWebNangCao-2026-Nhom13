@@ -39,12 +39,16 @@ export function resolveMediaUrl(url?: string | null): string {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
     return url;
   }
-  // Chuẩn hóa đường dẫn tương đối MinIO S3 bucket (/culinary-blog/...)
+  const minioHost = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MINIO_URL)
+    ? process.env.NEXT_PUBLIC_MINIO_URL
+    : (process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000');
+
+  // Chuẩn hóa đường dẫn tương đối MinIO S3 bucket (/culinary-blog/... hoặc culinary-blog/...)
   if (url.startsWith('/culinary-blog/')) {
-    const minioHost = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MINIO_URL
-      ? process.env.NEXT_PUBLIC_MINIO_URL
-      : 'http://localhost:9000';
     return `${minioHost}${url}`;
+  }
+  if (url.startsWith('culinary-blog/')) {
+    return `${minioHost}/${url}`;
   }
   return url;
 }

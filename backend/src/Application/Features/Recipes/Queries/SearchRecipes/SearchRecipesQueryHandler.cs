@@ -57,39 +57,49 @@ public class SearchRecipesQueryHandler(IRecipeRepository recipeRepository)
         var searchTerm = request.SearchTerm?.Trim() ?? string.Empty;
 
         // 3. Thực thi tìm kiếm toàn văn bản
-        var isPostgreSql = rawQuery.Provider.GetType().Assembly.GetName().Name?
-            .Contains("Npgsql", StringComparison.OrdinalIgnoreCase) ?? false;
+        var isPostgreSql = recipeRepository.IsPostgreSql;
 
         if (isPostgreSql)
         {
-            // Tìm kiếm tiếng Việt không dấu trên PostgreSQL với tsvector, unaccent và ts_rank
-            var unaccentedTerm = RemoveDiacritics(searchTerm);
-            var tsQuery = EF.Functions.PlainToTsQuery("simple", unaccentedTerm);
+            try
+            {
+                // Tìm kiếm tiếng Việt không dấu trên PostgreSQL với tsvector, unaccent và ts_rank
+                var unaccentedTerm = RemoveDiacritics(searchTerm);
 
-            var ftsQuery = rawQuery
-                .Where(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + r.Description)).Matches(tsQuery))
-                .OrderByDescending(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + r.Description)).Rank(tsQuery));
+                var ftsQuery = rawQuery
+                    .Where(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + (r.Description ?? "")))
+                        .Matches(EF.Functions.PlainToTsQuery("simple", unaccentedTerm)))
+                    .OrderByDescending(r => EF.Functions.ToTsVector("simple", EF.Functions.Unaccent(r.Title + " " + (r.Description ?? "")))
+                        .Rank(EF.Functions.PlainToTsQuery("simple", unaccentedTerm)));
 
-            var totalCount = await ftsQuery.CountAsync(cancellationToken);
+                var ftsTotalCount = await ftsQuery.CountAsync(cancellationToken);
 
-            var items = await ftsQuery
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectToType<RecipeSummaryDto>()
-                .ToListAsync(cancellationToken);
+                var ftsItems = await ftsQuery
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ProjectToType<RecipeSummaryDto>()
+                    .ToListAsync(cancellationToken);
 
-            return new PaginatedResult<RecipeSummaryDto>(items, totalCount, page, pageSize);
+                return new PaginatedResult<RecipeSummaryDto>(ftsItems, ftsTotalCount, page, pageSize);
+            }
+            catch
+            {
+                // Nếu PostgreSQL FTS gặp ký tự đặc biệt hoặc lỗi chuyển đổi, tự động fallback sang cơ chế tìm kiếm token
+            }
         }
-        else
-        {
-            // Xử lý tìm kiếm tiếng Việt không dấu cho môi trường In-Memory / Unit Tests
-            var normalizedTerm = RemoveDiacritics(searchTerm).ToLowerInvariant();
+
+        // Xử lý tìm kiếm tiếng Việt không dấu cho môi trường In-Memory / Unit Tests hoặc khi FTS fallback
+        var normalizedTerm = RemoveDiacritics(searchTerm).ToLowerInvariant();
+            var tokens = normalizedTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             var filteredList = await rawQuery.ToListAsync(cancellationToken);
 
             var matchedList = filteredList
-                .Where(r => RemoveDiacritics(r.Title).Contains(normalizedTerm, StringComparison.OrdinalIgnoreCase)
-                         || RemoveDiacritics(r.Description).Contains(normalizedTerm, StringComparison.OrdinalIgnoreCase))
+                .Where(r => {
+                    var title = RemoveDiacritics(r.Title);
+                    var desc = RemoveDiacritics(r.Description ?? string.Empty);
+                    return tokens.All(tok => title.Contains(tok, StringComparison.OrdinalIgnoreCase) || desc.Contains(tok, StringComparison.OrdinalIgnoreCase));
+                })
                 .ToList();
 
             var totalCount = matchedList.Count;
@@ -102,7 +112,6 @@ public class SearchRecipesQueryHandler(IRecipeRepository recipeRepository)
                 .ToList();
 
             return new PaginatedResult<RecipeSummaryDto>(items, totalCount, page, pageSize);
-        }
     }
 
     /// <summary>
