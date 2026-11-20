@@ -75,4 +75,6 @@ public class RecipeRepository(CulinaryBlogDbContext dbContext) : BaseRepository<
     {
         return Context.Recipes.AsQueryable();
     }
+
+    public bool IsPostgreSql => Context.Database.IsNpgsql();
 }

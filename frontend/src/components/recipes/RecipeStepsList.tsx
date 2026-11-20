@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { RecipeStepDto } from '@/lib/types/recipe';
-import { ChefHat, Play, Pause, RotateCcw, Clock } from 'lucide-react';
+import { ChefHat, Play, Pause, RotateCcw, Clock, Image as ImageIcon } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/utils';
 
 interface RecipeStepsListProps {
   steps: RecipeStepDto[];
@@ -106,13 +107,21 @@ export default function RecipeStepsList({ steps, instructions }: RecipeStepsList
 
                 {/* Ảnh minh họa của bước (nếu có) */}
                 {step.imageUrl && (
-                  <div className="mt-3 overflow-hidden rounded-xl border border-gray-100 max-w-md">
+                  <div className="group/stepimg relative mt-3 w-full sm:max-w-xl overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 shadow-2xs transition duration-200 hover:shadow-md">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={step.imageUrl}
+                      src={resolveMediaUrl(step.imageUrl)}
                       alt={`Bước ${step.stepNumber}: ${step.title || 'Hình minh họa'}`}
-                      className="w-full object-cover max-h-64"
+                      loading="lazy"
+                      className="aspect-video sm:aspect-[16/10] w-full object-cover transition-transform duration-300 group-hover/stepimg:scale-[1.02]"
+                      onError={(e) => {
+                        (e.currentTarget.parentElement as HTMLElement)?.classList.add('hidden');
+                      }}
                     />
+                    <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-xs select-none">
+                      <ImageIcon className="h-3 w-3 text-orange-400" />
+                      <span>Ảnh bước {step.stepNumber}</span>
+                    </div>
                   </div>
                 )}
               </div>

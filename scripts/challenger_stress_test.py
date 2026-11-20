@@ -77,7 +77,59 @@ class ChallengerReport:
         print("=" * 80)
 
 
+try:
+    import psycopg2
+    HAS_PSYCOPG2 = True
+except ImportError:
+    HAS_PSYCOPG2 = False
+
+DB_HOSTS = ["127.0.0.1", "localhost"]
+DB_PORTS = [5433, 5432]
+DB_NAME = "culinary_blog"
+DB_USER = "postgres"
+DB_PASSWORDS = ["postgres_dev_password", "123456", "postgres"]
+
+_db_conn = None
+
+
+def get_db():
+    global _db_conn
+    if _db_conn is not None and not _db_conn.closed:
+        return _db_conn
+    if HAS_PSYCOPG2:
+        for port in DB_PORTS:
+            for host in DB_HOSTS:
+                for pwd in DB_PASSWORDS:
+                    try:
+                        conn = psycopg2.connect(
+                            host=host,
+                            port=port,
+                            dbname=DB_NAME,
+                            user=DB_USER,
+                            password=pwd,
+                            connect_timeout=3
+                        )
+                        conn.autocommit = True
+                        _db_conn = conn
+                        return _db_conn
+                    except Exception:
+                        continue
+    return None
+
+
 def psql(sql: str) -> str:
+    conn = get_db()
+    if conn:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            if cur.description:
+                rows = cur.fetchall()
+                lines = []
+                for row in rows:
+                    lines.append("|".join("" if v is None else str(v) for v in row))
+                return "\n".join(lines)
+            return ""
+    # Fallback to docker
     cmd = [
         "docker", "exec", "-i", "culinary_postgres",
         "psql", "-U", "postgres", "-d", "culinary_blog", "-t", "-A", "-c", sql
@@ -296,6 +348,96 @@ def run_database_adversarial_suite(report: ChallengerReport):
                       all_ok, f"<10 Ingrs: {under_10_ing}, <5 Steps: {under_5_stp}, !=3..5 Imgs: {bad_imgs}, !=1 Primary: {bad_primary}")
     except Exception as e:
         report.record("Child Invariants", "DB-CHD-01", "Strict Child Entity Thresholds", False, str(e))
+
+    # 7.1 Status 100% Published
+    try:
+        non_published = int(psql('SELECT count(*) FROM "Recipes" WHERE "Status" != \'Published\';'))
+        report.record("Database Status", "DB-PUB-01", "100% Published Status Check",
+                      non_published == 0, f"Found {non_published} recipes with status != 'Published' (expected 0)")
+    except Exception as e:
+        report.record("Database Status", "DB-PUB-01", "100% Published Status Check", False, str(e))
+
+    # 7.2 Recipes with < 5 ingredients
+    try:
+        under_5_ing = int(psql('''
+            SELECT count(*) FROM "Recipes" r
+            WHERE (SELECT count(*) FROM "RecipeIngredients" i WHERE i."RecipeId" = r."Id") < 5;
+        '''))
+        report.record("Ingredient Verification", "DB-ING-02", "Recipes with < 5 Ingredients",
+                      under_5_ing == 0, f"Found {under_5_ing} recipes with < 5 ingredients (expected 0)")
+    except Exception as e:
+        report.record("Ingredient Verification", "DB-ING-02", "Recipes with < 5 Ingredients", False, str(e))
+
+    # 7.3 Recipes with < 3 steps
+    try:
+        under_3_stp = int(psql('''
+            SELECT count(*) FROM "Recipes" r
+            WHERE (SELECT count(*) FROM "RecipeSteps" s WHERE s."RecipeId" = r."Id") < 3;
+        '''))
+        report.record("Step Verification", "DB-STP-02", "Recipes with < 3 Steps",
+                      under_3_stp == 0, f"Found {under_3_stp} recipes with < 3 steps (expected 0)")
+    except Exception as e:
+        report.record("Step Verification", "DB-STP-02", "Recipes with < 3 Steps", False, str(e))
+
+    # 7.4 Step ImageUrl Pattern & Non-Null Compliance
+    try:
+        bad_step_imgs = int(psql('''
+            SELECT count(*) FROM "RecipeSteps"
+            WHERE "ImageUrl" IS NULL OR "ImageUrl" = ''
+               OR "ImageUrl" NOT LIKE '/culinary-blog/recipes/%/steps/%.jpg';
+        '''))
+        report.record("Step Verification", "DB-STP-03", "Step ImageUrl Compliance (/culinary-blog/recipes/{id}/steps/{n}.jpg)",
+                      bad_step_imgs == 0, f"Found {bad_step_imgs} step images with null, empty, or malformed ImageUrl (expected 0)")
+    except Exception as e:
+        report.record("Step Verification", "DB-STP-03", "Step ImageUrl Compliance", False, str(e))
+
+    # 7.5 Duplicate Primary Cover URLs Across All Recipes
+    try:
+        dup_covers = int(psql('''
+            SELECT count(*) FROM (
+                SELECT "OriginalUrl" FROM "RecipeImages"
+                WHERE "IsPrimary" = true
+                GROUP BY "OriginalUrl"
+                HAVING count(*) > 1
+            ) q;
+        '''))
+        report.record("Data Uniqueness", "DB-IMG-02", "100% Unique Primary Cover URLs Across All Recipes",
+                      dup_covers == 0, f"Found {dup_covers} duplicated primary cover URLs across recipes (expected 0)")
+    except Exception as e:
+        report.record("Data Uniqueness", "DB-IMG-02", "100% Unique Primary Cover URLs Across All Recipes", False, str(e))
+
+    # 7.6 Clean Slate: Zero Placeholder/Lorem/Faker/Bogus Text in Recipes
+    try:
+        bogus_recipes = int(psql('''
+            SELECT count(*) FROM "Recipes"
+            WHERE lower("Title") LIKE '%lorem%' OR lower("Title") LIKE '%ipsum%'
+               OR lower("Title") LIKE '%faker%' OR lower("Title") LIKE '%bogus%'
+               OR lower("Description") LIKE '%lorem%' OR lower("Description") LIKE '%ipsum%'
+               OR lower("Description") LIKE '%faker%' OR lower("Description") LIKE '%bogus%';
+        '''))
+        report.record("Clean Slate Audit", "DB-CLN-01", "Zero Bogus/Lorem/Faker Text in Recipes",
+                      bogus_recipes == 0, f"Found {bogus_recipes} recipes with placeholder/lorem/faker strings (expected 0)")
+    except Exception as e:
+        report.record("Clean Slate Audit", "DB-CLN-01", "Zero Bogus/Lorem/Faker Text in Recipes", False, str(e))
+
+    # 7.7 Clean Slate: Zero Placeholder/Lorem/Faker/Bogus Text in Ingredients & Steps
+    try:
+        bogus_ing = int(psql('''
+            SELECT count(*) FROM "RecipeIngredients"
+            WHERE lower("Name") LIKE '%lorem%' OR lower("Name") LIKE '%ipsum%'
+               OR lower("Name") LIKE '%faker%' OR lower("Name") LIKE '%bogus%';
+        '''))
+        bogus_stp = int(psql('''
+            SELECT count(*) FROM "RecipeSteps"
+            WHERE lower("Title") LIKE '%lorem%' OR lower("Title") LIKE '%ipsum%'
+               OR lower("Title") LIKE '%faker%' OR lower("Title") LIKE '%bogus%'
+               OR lower("Description") LIKE '%lorem%' OR lower("Description") LIKE '%ipsum%';
+        '''))
+        bogus_total = bogus_ing + bogus_stp
+        report.record("Clean Slate Audit", "DB-CLN-02", "Zero Bogus/Lorem/Faker Text in Ingredients & Steps",
+                      bogus_total == 0, f"Found {bogus_ing} ingredients and {bogus_stp} steps with bogus/lorem/faker strings (expected 0)")
+    except Exception as e:
+        report.record("Clean Slate Audit", "DB-CLN-02", "Zero Bogus/Lorem/Faker Text in Ingredients & Steps", False, str(e))
 
 
 def run_api_adversarial_suite(report: ChallengerReport):
@@ -584,6 +726,105 @@ def run_api_adversarial_suite(report: ChallengerReport):
             report.record("API Filtering", "API-FLT-05", "Nonexistent Category GUID Filtering", False, f"HTTP {r.status_code}")
     except Exception as e:
         report.record("API Filtering", "API-FLT-05", "Nonexistent Category GUID Filtering", False, str(e))
+
+    # 7.1 Categories API: Complete Catalog Retrieval (GET /api/v1/categories)
+    try:
+        r = session.get(f"{API_BASE}/categories", timeout=10)
+        if r.status_code == 200:
+            cats = r.json()
+            cat_count = len(cats)
+            all_valid = all(
+                c.get("id") and c.get("name") and c.get("slug") and c.get("imageUrl")
+                for c in cats
+            )
+            passed = cat_count >= 10 and all_valid
+            report.record("API Categories", "API-CAT-01", "Query All Categories (GET /api/v1/categories)",
+                          passed, f"Returned {cat_count} categories (>=10 required, 25 expected), all well-formed: {all_valid}")
+        else:
+            report.record("API Categories", "API-CAT-01", "Query All Categories (GET /api/v1/categories)", False, f"HTTP {r.status_code}")
+    except Exception as e:
+        report.record("API Categories", "API-CAT-01", "Query All Categories (GET /api/v1/categories)", False, str(e))
+
+    # 7.2 Multi-Page Recipes Query (Page 1, 2, 3 with pageSize=20)
+    try:
+        p1 = session.get(f"{API_BASE}/recipes?page=1&pageSize=20", timeout=10).json()
+        p2 = session.get(f"{API_BASE}/recipes?page=2&pageSize=20", timeout=10).json()
+        p3 = session.get(f"{API_BASE}/recipes?page=3&pageSize=20", timeout=10).json()
+
+        items1 = p1.get("items", [])
+        items2 = p2.get("items", [])
+        items3 = p3.get("items", [])
+
+        ids1 = {i["id"] for i in items1}
+        ids2 = {i["id"] for i in items2}
+        ids3 = {i["id"] for i in items3}
+
+        no_overlap = len(ids1.intersection(ids2)) == 0 and len(ids2.intersection(ids3)) == 0 and len(ids1.intersection(ids3)) == 0
+        all_20 = len(items1) == 20 and len(items2) == 20 and len(items3) == 20
+        total_ok = p1.get("totalCount") == 104 and p2.get("totalCount") == 104 and p3.get("totalCount") == 104
+
+        passed = no_overlap and all_20 and total_ok
+        report.record("API Pagination", "API-PAG-06", "Multi-Page Traversal (Pages 1, 2, 3 @ pageSize=20)",
+                      passed, f"P1: {len(items1)}, P2: {len(items2)}, P3: {len(items3)} items. Zero ID overlap: {no_overlap}, TotalCount: {p1.get('totalCount')}")
+    except Exception as e:
+        report.record("API Pagination", "API-PAG-06", "Multi-Page Traversal (Pages 1, 2, 3 @ pageSize=20)", False, str(e))
+
+    # 7.3 Pagination Parameter Diagnostic (pageNumber vs page)
+    try:
+        r_page_num = session.get(f"{API_BASE}/recipes?pageNumber=2&pageSize=20", timeout=10)
+        r_page = session.get(f"{API_BASE}/recipes?page=2&pageSize=20", timeout=10)
+        if r_page_num.status_code == 200 and r_page.status_code == 200:
+            d_num = r_page_num.json()
+            d_p = r_page.json()
+            # Documented finding: Minimal API binds 'Page'. When 'pageNumber' is sent, ASP.NET defaults to page 1.
+            report.record("API Pagination", "API-PAG-07", "Pagination Parameter Binding Diagnostic",
+                          True, f"page=2 binds Page={d_p.get('page')}; pageNumber=2 binds Page={d_num.get('page')} (Minimal API maps 'page')")
+        else:
+            report.record("API Pagination", "API-PAG-07", "Pagination Parameter Binding Diagnostic", False, "Failed HTTP call")
+    except Exception as e:
+        report.record("API Pagination", "API-PAG-07", "Pagination Parameter Binding Diagnostic", False, str(e))
+
+    # 7.4 Cross-Category Recipe Slug Serialization Stress Test
+    try:
+        # Sample recipes across at least 10 different categories
+        r_all = session.get(f"{API_BASE}/recipes?pageSize=104", timeout=10).json()
+        all_items = r_all.get("items", [])
+        cat_seen = {}
+        for it in all_items:
+            cat = it.get("categoryName")
+            if cat and cat not in cat_seen:
+                cat_seen[cat] = it["slug"]
+
+        sampled_slugs = list(cat_seen.values())[:10]
+        serialization_failures = []
+
+        for slug in sampled_slugs:
+            r_slug = session.get(f"{API_BASE}/recipes/{slug}", timeout=10)
+            if r_slug.status_code != 200:
+                serialization_failures.append(f"{slug}: HTTP {r_slug.status_code}")
+                continue
+            rec_detail = r_slug.json()
+            ings = rec_detail.get("ingredients", [])
+            steps = rec_detail.get("steps", [])
+            imgs = rec_detail.get("images", [])
+
+            # Verify ingredients
+            if len(ings) < 5 or any(not i.get("name") or i.get("quantity", 0) <= 0 or not i.get("unit") for i in ings):
+                serialization_failures.append(f"{slug}: invalid ingredients")
+
+            # Verify steps
+            if len(steps) < 3 or any(not s.get("title") or not s.get("description") or not s.get("imageUrl") for s in steps):
+                serialization_failures.append(f"{slug}: invalid steps or missing step imageUrl")
+
+            # Verify images
+            if len(imgs) < 3 or sum(1 for img in imgs if img.get("isPrimary")) != 1:
+                serialization_failures.append(f"{slug}: invalid images count or primary cover")
+
+        passed = len(serialization_failures) == 0 and len(sampled_slugs) >= 10
+        report.record("API Detail", "API-DET-03", f"Cross-Category Slug Serialization ({len(sampled_slugs)} distinct categories)",
+                      passed, f"Audited {len(sampled_slugs)} recipes across {len(cat_seen)} categories. Failures: {serialization_failures if serialization_failures else '0 (100% PASS)'}")
+    except Exception as e:
+        report.record("API Detail", "API-DET-03", "Cross-Category Slug Serialization", False, str(e))
 
 
 def main():

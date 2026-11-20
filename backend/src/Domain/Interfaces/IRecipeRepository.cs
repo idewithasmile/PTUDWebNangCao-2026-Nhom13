@@ -9,4 +9,5 @@ public interface IRecipeRepository : IRepository<Recipe>
     Task<bool> IsSlugUniqueAsync(string slug, CancellationToken ct = default);
     Task<string> GenerateUniqueSlugAsync(string baseSlug, CancellationToken ct = default);
     IQueryable<Recipe> GetQueryable();
+    bool IsPostgreSql { get; }
 }
