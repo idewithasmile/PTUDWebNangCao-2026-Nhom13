@@ -209,6 +209,25 @@ async function runDatasetE2EVerification() {
       await page.locator('button:has-text("Tạm dừng")').first().click();
     }
 
+    console.log('  🔍 3.7 Kiểm tra Ảnh minh họa cho từng bước nấu ăn...');
+    const stepImages = page.locator('div.space-y-6 > div.flex.items-start.gap-4 img[alt*="Bước"]');
+    const stepImgCount = await stepImages.count();
+    console.log(`  ✓ Tìm thấy ${stepImgCount} ảnh minh họa các bước chế biến.`);
+    if (stepImgCount < 3) {
+      throw new Error(`Yêu cầu tối thiểu 3 ảnh các bước, tìm thấy ${stepImgCount}`);
+    }
+    for (let i = 0; i < stepImgCount; i++) {
+      const img = stepImages.nth(i);
+      await img.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(200);
+      const isVis = await img.isVisible();
+      const naturalWidth = await img.evaluate((el) => el.naturalWidth);
+      if (!isVis || naturalWidth <= 0) {
+        throw new Error(`Ảnh bước ${i + 1} không hiển thị hợp lệ (visible=${isVis}, naturalWidth=${naturalWidth})`);
+      }
+    }
+    console.log(`  ✓ PASS: 100% (${stepImgCount}/${stepImgCount}) ảnh minh họa các bước tải thành công với naturalWidth > 0.`);
+
     // =========================================================================
     // PHẦN 4: KIỂM THỬ TRANG DASHBOARD & THỐNG KÊ QUẢN TRỊ
     // =========================================================================
@@ -216,12 +235,15 @@ async function runDatasetE2EVerification() {
     await page.goto(`${BASE_URL}/login?returnUrl=/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(1000);
 
-    const emailInput = page.locator('input[type="email"]');
+    const emailInput = page.locator('form input#email, input#email, form input[type="email"]').first();
     if (await emailInput.isVisible()) {
       await emailInput.fill('admin@culinaryblog.com');
-      await page.locator('input[type="password"]').fill('Admin@123456');
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((url) => url.pathname.includes('/dashboard'), { timeout: 15000 });
+      await page.locator('form input#password, input#password, form input[type="password"]').first().fill('Admin@123456');
+      await page.locator('button:has-text("Đăng nhập"), button[type="submit"]').first().click();
+      await page.waitForURL((url) => url.pathname.includes('/dashboard'), { waitUntil: 'commit', timeout: 15000 }).catch(async () => {
+        // Fallback for Next.js soft client router push
+        await page.waitForSelector('text=Tổng bài viết', { timeout: 10000 });
+      });
       console.log('  ✓ PASS: Đăng nhập Admin thành công vào Dashboard.');
     }
 

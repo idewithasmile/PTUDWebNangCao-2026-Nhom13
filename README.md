@@ -107,6 +107,35 @@ Hệ thống được thiết kế theo mô hình **API-Driven Architecture**, t
 
 ## 🛠 Hướng dẫn Cài đặt & Chạy dự án (Getting Started)
 
+### ⚡ Cách nhanh nhất: Đồng bộ dữ liệu & Khởi động 1-Click (Khuyên dùng)
+
+Dành cho thành viên nhóm hoặc giảng viên cần chạy ngay với **dữ liệu và hình ảnh đầy đủ 100% giống hệt môi trường chuẩn**:
+
+#### 1. Khởi tạo & Đồng bộ Dữ liệu (Chạy 1 lần đầu)
+- **Windows:** Nhấp đúp chuột chạy file **`setup_data.bat`** tại thư mục gốc.
+- **macOS / Linux:** Mở terminal tại thư mục gốc và chạy:
+  ```bash
+  chmod +x setup_data.sh && ./setup_data.sh
+  ```
+  *Kịch bản sẽ tự động:*
+  - Khởi động Docker containers: PostgreSQL (`5433`), MinIO (`9000`), Redis (`6379`).
+  - Nạp đầy đủ 100% dữ liệu danh mục, công thức, nguyên liệu và các bước từ `infrastructure/seed_data.sql`.
+  - Tải và đồng bộ toàn bộ ảnh đại diện, ảnh danh mục và ảnh các bước nấu ăn vào MinIO bucket `culinary-blog`.
+
+#### 2. Khởi chạy Ứng dụng (Frontend + Backend)
+- **Windows:** Nhấp đúp chuột chạy file **`start_app.bat`**.
+  *Tự động khởi chạy cả Backend WebAPI (.NET 10 - Port 5001) và Frontend Next.js (Port 3000).*
+- **Truy cập ứng dụng:**
+  - **Frontend Web:** [`http://localhost:3000`](http://localhost:3000)
+  - **Backend API & Swagger:** [`http://localhost:5001/scalar`](http://localhost:5001/scalar)
+  - **MinIO S3 Console:** [`http://localhost:9001`](http://localhost:9001) (`minioadmin` / `minioadminpassword`)
+
+---
+
+### 🔧 Hướng dẫn Chạy Thủ công từng bước (Manual Setup)
+
+Nếu bạn muốn tự chạy từng service riêng biệt trong các cửa sổ terminal:
+
 ### Bước 1: Khởi động Hạ tầng (Infrastructure)
 Dự án sử dụng Docker Compose để tự động dựng PostgreSQL, Redis, MinIO, Seq và MailHog:
 
@@ -120,30 +149,20 @@ docker compose up -d
 *Các cổng dịch vụ mặc định:*
 - **PostgreSQL 16:** `5433 -> 5432` (kết nối qua `localhost:5433` hoặc container nội bộ `5432`)
 - **Redis 7:** `6379`
-- **MinIO S3 API:** `9000` | **MinIO Console UI:** `9001` (User: `minioadmin` / Pass: `minioadmin`)
+- **MinIO S3 API:** `9000` | **MinIO Console UI:** `9001` (User: `minioadmin` / Pass: `minioadminpassword`)
 - **Seq Log Dashboard:** `5341`
 - **MailHog SMTP:** `1025` | **MailHog Web UI:** `8025`
 
 ### Bước 2: Chạy Backend API (.NET 10)
 ```bash
-# Di chuyển vào thư mục Backend (project CulinaryBlog.API nằm ở src/Presentation)
-cd backend/src/Presentation
-
-# Khôi phục các packages
-dotnet restore
-
-# Chạy Entity Framework Migrations để tạo cấu trúc Database
-dotnet ef database update -p ../Infrastructure
-
 # Khởi chạy API
-dotnet run
+dotnet run --project backend/src/Presentation/CulinaryBlog.API.csproj --launch-profile http
 ```
-*API sẽ chạy tại: `http://localhost:5000/api/v1`* (Giao diện Scalar OpenAPI có tại `http://localhost:5000/scalar`).
+*API sẽ chạy tại: `http://localhost:5001/api/v1`* (Giao diện Scalar OpenAPI có tại `http://localhost:5001/scalar`).
 
-Chạy toàn bộ 284 bài test tự động:
+Chạy toàn bộ bài test tự động Backend:
 ```bash
-cd backend
-dotnet test CulinaryBlog.sln
+dotnet test backend/CulinaryBlog.slnx
 ```
 
 ### Bước 3: Chạy Frontend (Next.js 15)

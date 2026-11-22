@@ -158,6 +158,29 @@ public static class CulinaryBlogSeeder
             }
             else
             {
+                var updated = false;
+                if (!string.IsNullOrEmpty(def.DisplayName) && existingUser.DisplayName != def.DisplayName)
+                {
+                    existingUser.DisplayName = def.DisplayName;
+                    updated = true;
+                }
+                if (!string.IsNullOrEmpty(def.Avatar) && existingUser.AvatarUrl != def.Avatar)
+                {
+                    existingUser.AvatarUrl = def.Avatar;
+                    updated = true;
+                }
+                if (updated)
+                {
+                    try
+                    {
+                        await userManager.UpdateAsync(existingUser);
+                    }
+                    catch
+                    {
+                        // Best-effort
+                    }
+                }
+
                 foreach (var role in def.Roles)
                 {
                     try

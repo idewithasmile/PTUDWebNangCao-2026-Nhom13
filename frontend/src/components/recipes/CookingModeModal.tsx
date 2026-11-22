@@ -7,12 +7,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Image as ImageIcon,
   Pause,
   Play,
   RotateCcw,
   ShoppingBag,
   X,
 } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/utils';
 
 interface CookingModeModalProps {
   isOpen: boolean;
@@ -186,6 +188,25 @@ export default function CookingModeModal({
               <h3 className="text-2xl font-extrabold text-white sm:text-4xl">
                 {activeStep.title}
               </h3>
+            )}
+
+            {/* Ảnh minh họa của bước (nếu có) */}
+            {activeStep.imageUrl && (
+              <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-stone-900 shadow-xl max-w-2xl w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={resolveMediaUrl(activeStep.imageUrl)}
+                  alt={`Bước ${stepIdx + 1}: ${activeStep.title || 'Hình minh họa'}`}
+                  className="aspect-video sm:aspect-[16/9] w-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget.parentElement as HTMLElement)?.classList.add('hidden');
+                  }}
+                />
+                <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-xs select-none">
+                  <ImageIcon className="h-3.5 w-3.5 text-orange-400" />
+                  <span>Ảnh bước {stepIdx + 1}</span>
+                </div>
+              </div>
             )}
 
             <p className="whitespace-pre-line text-lg leading-relaxed text-stone-200 sm:text-2xl sm:leading-relaxed">
