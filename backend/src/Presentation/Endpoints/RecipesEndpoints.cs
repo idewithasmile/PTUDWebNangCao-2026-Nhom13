@@ -30,6 +30,7 @@ public static class RecipesEndpoints
 {
     public static RouteGroupBuilder MapRecipesEndpoints(this RouteGroupBuilder group)
     {
+        // 1. FR-RCP-003: Tạo công thức mới (Yêu cầu đăng nhập, trả về 201 Created)
         group.MapPost("/", CreateRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status201Created)
@@ -37,11 +38,13 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // 2. FR-RCP-001: Xem danh sách công thức (Công khai, phân trang, lưu Cache Redis "PublicRecipes")
         group.MapGet("/", GetRecipes)
             .AllowAnonymous()
             .CacheOutput("PublicRecipes")
             .Produces<PagedResult<RecipeSummaryDto>>(StatusCodes.Status200OK);
 
+        // 3. FR-SRCH-001: Tìm kiếm công thức toàn văn (Full-Text Search) PostgreSQL tsvector
         group.MapGet("/search", SearchRecipes)
             .AllowAnonymous()
             .WithName("SearchRecipes")
@@ -50,6 +53,7 @@ public static class RecipesEndpoints
             .Produces<PaginatedResult<RecipeSummaryDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // 4. FR-RCP-002: Xem chi tiết công thức theo Slug (Công khai bài Published, cache Redis "PublicRecipeDetail")
         group.MapGet("/{slug}", GetRecipeBySlug)
             .AllowAnonymous()
             .CacheOutput("PublicRecipeDetail")
@@ -57,6 +61,7 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        // 5. FR-RCP-004: Chỉnh sửa công thức (Yêu cầu Author sở hữu/Admin, Concurrency RowVersion 409)
         group.MapPut("/{id:guid}", UpdateRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status200OK)
@@ -66,6 +71,7 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // 6. FR-RCP-005: Xuất bản bài viết công khai (Yêu cầu có >= 1 bước nấu ăn)
         group.MapPatch("/{id:guid}/publish", PublishRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status200OK)
@@ -73,18 +79,21 @@ public static class RecipesEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // 7. FR-RCP-005: Rút bài viết về bản nháp (Draft)
         group.MapPatch("/{id:guid}/unpublish", UnpublishRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        // 8. FR-RCP-006: Cất bài viết vào kho lưu trữ (Archive)
         group.MapPatch("/{id:guid}/archive", ArchiveRecipe)
             .RequireAuthorization()
             .Produces<RecipeDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        // 9. FR-RCP-007: Xóa mềm bài viết (Soft Delete, trả về 204 NoContent)
         group.MapDelete("/{id:guid}", DeleteRecipe)
             .RequireAuthorization()
             .Produces(StatusCodes.Status204NoContent)

@@ -177,24 +177,33 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// Authentication với JWT Bearer
+// ==============================================================================
+// CẤU HÌNH XÁC THỰC (AUTHENTICATION) & PHÂN QUYỀN (AUTHORIZATION) VỚI JWT BEARER
+// ==============================================================================
+// Đăng ký dịch vụ xác thực mặc định với lược đồ JwtBearer.
+// Mỗi khi Client gửi request có header "Authorization: Bearer <token>", middleware sẽ tự động thẩm định:
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+            ValidateIssuer = true,          // Bắt buộc kiểm tra bên phát hành token (Issuer)
+            ValidateAudience = true,        // Bắt buộc kiểm tra bên nhận token (Audience)
+            ValidateLifetime = true,        // Bắt buộc kiểm tra thời hạn sống của token (nếu exp < now -> từ chối 401)
+            ValidateIssuerSigningKey = true,// Bắt buộc xác minh chữ ký điện tử HMAC-SHA256 bằng SecretKey
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            // ClockSkew = Zero: Triệt tiêu độ trễ đồng hồ 5 phút mặc định của .NET.
+            // Nhờ đó, Access Token hết hạn sau đúng 15 phút sẽ bị khóa ngay lập tức, không có độ trễ du di.
             ClockSkew = TimeSpan.Zero
         };
     });
+
+// Cấu hình các chính sách phân quyền (Authorization Policies):
 builder.Services.AddAuthorization(options =>
 {
+    // AdminPolicy: Kiểm tra quyền quản trị viên cao nhất
     if (builder.Environment.IsDevelopment())
     {
         options.AddPolicy("AdminPolicy", policy => policy.RequireAssertion(_ => true));
@@ -203,6 +212,7 @@ builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
     }
+    // AuthorPolicy: Áp dụng cho các tính năng viết/sửa bài (Cho phép cả Author và Admin truy cập)
     options.AddPolicy("AuthorPolicy", policy => policy.RequireRole("Author", "Admin"));
 });
 

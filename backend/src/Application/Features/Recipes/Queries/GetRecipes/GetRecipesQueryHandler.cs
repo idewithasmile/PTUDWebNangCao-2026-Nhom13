@@ -7,6 +7,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes;
 
+/// <summary>
+/// HANDLER XỬ LÝ LẤY DANH SÁCH CÔNG THỨC (FR-RCP-001):
+/// Trọng tâm:
+/// 1. Phân quyền xem danh sách (Guest chỉ thấy Published; Author thấy thêm bài Draft/Archived của mình; Admin thấy tất cả).
+/// 2. Lọc đa điều kiện: Danh mục, độ khó, thời gian nấu tối đa, tìm kiếm tiêu đề.
+/// 3. Sắp xếp linh hoạt (Mới nhất, Cũ nhất, Nhanh nhất, Lượt xem, Yêu thích, Hot/Trending).
+/// 4. Phân trang dữ liệu dạng Offset: CountAsync -> Skip -> Take.
+/// </summary>
 public class GetRecipesQueryHandler(
     IRecipeRepository recipeRepository,
     ICurrentUser currentUser)
@@ -14,13 +22,14 @@ public class GetRecipesQueryHandler(
 {
     public async Task<PagedResult<RecipeSummaryDto>> Handle(GetRecipesQuery request, CancellationToken cancellationToken)
     {
+        // Khởi tạo truy vấn AsNoTracking (Chỉ đọc, tối ưu tốc độ và giải phóng RAM)
         var queryable = recipeRepository.GetQueryable()
             .Include(r => r.Category)
             .Include(r => r.Author)
             .Include(r => r.Images)
             .AsNoTracking();
 
-        // 1. Authorization & Ownership Filter
+        // 1. PHÂN QUYỀN VÀ BỘ LỌC SỞ HỮU (AUTHORIZATION & OWNERSHIP FILTER)
         var userId = currentUser.UserId;
         var isAdmin = currentUser.IsAdmin;
 
@@ -28,12 +37,12 @@ public class GetRecipesQueryHandler(
         {
             if (string.IsNullOrEmpty(userId))
             {
-                // Chưa đăng nhập mà yêu cầu OnlyMine -> trả về rỗng
+                // Chưa đăng nhập mà yêu cầu xem bài của mình -> Trả về danh sách rỗng
                 queryable = queryable.Where(r => false);
             }
             else
             {
-                // Chỉ lấy bài của chính user này
+                // Chỉ lấy các bài viết do chính tài khoản này tạo ra
                 queryable = queryable.Where(r => r.AuthorId == userId);
             }
         }
@@ -41,16 +50,16 @@ public class GetRecipesQueryHandler(
         {
             if (isAdmin)
             {
-                // Admin xem được toàn bộ bài viết trên hệ thống (Published, Draft, Archived)
+                // Admin: Thấy toàn bộ công thức trong hệ thống (kể cả bản nháp Draft và Archived)
             }
             else if (string.IsNullOrEmpty(userId))
             {
-                // Guest chỉ thấy bài Published
+                // Khách vãng lai: CHỈ ĐƯỢC THẤY các bài đã xuất bản công khai (Published)
                 queryable = queryable.Where(r => r.Status == RecipeStatus.Published);
             }
             else
             {
-                // Author thấy bài Published của mọi người VÀ mọi bài của chính mình (Draft, Archived)
+                // Tác giả đăng nhập: Thấy bài Published của mọi người VÀ thấy bài Draft/Archived của chính mình
                 queryable = queryable.Where(r => r.Status == RecipeStatus.Published || r.AuthorId == userId);
             }
         }
@@ -60,7 +69,7 @@ public class GetRecipesQueryHandler(
             queryable = queryable.Where(r => r.Status == request.Status.Value);
         }
 
-        // 2. Filters
+        // 2. BỘ LỌC TÌM KIẾM THEO TIÊU CHÍ (FILTERS)
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var search = request.SearchTerm.ToLower();
@@ -79,6 +88,7 @@ public class GetRecipesQueryHandler(
 
         if (request.MaxTotalTimeMinutes.HasValue)
         {
+            // Lọc theo tổng thời gian chuẩn bị + thời gian nấu
             queryable = queryable.Where(r => (r.PrepTimeMinutes + r.CookTimeMinutes) <= request.MaxTotalTimeMinutes.Value);
         }
 
@@ -88,7 +98,7 @@ public class GetRecipesQueryHandler(
             queryable = queryable.Where(r => r.CreatedAt >= cutoff);
         }
 
-        // 3. Sorting
+        // 3. SẮP XẾP DỮ LIỆU (SORTING QUA C# SWITCH EXPRESSION)
         queryable = request.SortBy?.ToLower() switch
         {
             "oldest" => queryable.OrderBy(r => r.CreatedAt),
@@ -99,15 +109,17 @@ public class GetRecipesQueryHandler(
             "bookmarks_desc" => queryable.OrderByDescending(r => r.BookmarkCount).ThenByDescending(r => r.CreatedAt),
             "bookmarks_asc" => queryable.OrderBy(r => r.BookmarkCount).ThenByDescending(r => r.CreatedAt),
             "hot" or "trending" => queryable.OrderByDescending(r => (r.BookmarkCount * 5) + r.ViewCount).ThenByDescending(r => r.CreatedAt),
-            _ => queryable.OrderByDescending(r => r.CreatedAt) // Mặc định newest
+            _ => queryable.OrderByDescending(r => r.CreatedAt) // Mặc định: Bài viết mới nhất lên đầu
         };
 
-        // 4. Pagination
+        // 4. PHÂN TRANG (PAGINATION)
+        // 4.1. Đếm tổng số bản ghi thỏa mãn điều kiện lọc
         var totalCount = await queryable.CountAsync(cancellationToken);
 
         var page = request.Page < 1 ? 1 : request.Page;
         var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
 
+        // 4.2. Áp dụng Skip và Take để chỉ lấy đúng số lượng của trang hiện tại
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -132,6 +144,7 @@ public class GetRecipesQueryHandler(
             ))
             .ToListAsync(cancellationToken);
 
+        // 4.3. Đóng gói kết quả phân trang trả về cho Client
         return new PagedResult<RecipeSummaryDto>(items, totalCount, page, pageSize);
     }
 }

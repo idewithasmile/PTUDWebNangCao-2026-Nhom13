@@ -54,7 +54,10 @@ public static class AuthEndpoints
             return Results.Json(ToAuthResponse(result.AccessToken, result.User));
         });
 
-        // FR-AUTH-004: Refresh — đọc token từ HttpOnly Cookie (SPEC Mâu thuẫn 3).
+        // FR-AUTH-004: Endpoint làm mới Token (/api/v1/auth/refresh)
+        // 1. Trích xuất Refresh Token trực tiếp từ HttpOnly Cookie của Request (chống lộ token qua XSS JavaScript)
+        // 2. Gửi Command qua MediatR để xoay vòng token (Token Rotation)
+        // 3. Ghi đè Refresh Token mới vào Cookie và trả về Access Token mới trong JSON Body
         group.MapPost("/refresh", async (ISender sender, HttpContext http) =>
         {
             var raw = http.Request.Cookies[RefreshCookieName];
@@ -135,6 +138,13 @@ public static class AuthEndpoints
         ?? http.User.FindFirstValue(JwtRegisteredClaimNames.Sub)
         ?? throw new AppException(AuthErrors.UserNotFound, "User not found.", 404);
 
+    /// <summary>
+    /// Ghi Refresh Token vào Cookie phản hồi với các cờ bảo mật cao nhất:
+    /// - HttpOnly = true: Cấm tuyệt đối JavaScript phía trình duyệt đọc cookie này (triệt tiêu 100% rủi ro bị XSS đánh cắp token).
+    /// - Secure = true: Chỉ gửi cookie qua giao thức mã hóa HTTPS (trừ môi trường local dev).
+    /// - SameSite = Strict: Ngăn chặn trình duyệt gửi cookie trong các request liên trang (chống tấn công CSRF).
+    /// - MaxAge = 7 ngày: Khớp với thời hạn của Refresh Token trong Database.
+    /// </summary>
     private static void SetRefreshCookie(HttpContext http, string rawToken, DateTime expiresAt)
     {
         // SPEC Mâu thuẫn 3: HttpOnly + Secure + SameSite=Strict. Refresh 7 ngày (CONS-004).

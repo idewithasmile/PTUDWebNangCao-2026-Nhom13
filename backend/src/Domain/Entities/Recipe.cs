@@ -41,11 +41,16 @@ public class Recipe : BaseEntity
 
     private Recipe() { } // Dành cho EF Core
 
+    /// <summary>
+    /// FACTORY METHOD TẠO MỚI CÔNG THỨC:
+    /// - Kiểm tra toàn bộ tính toàn vẹn dữ liệu (Domain Validation Rules).
+    /// - Bài viết mới tạo luôn luôn ở trạng thái mặc định là Bản nháp (RecipeStatus.Draft).
+    /// </summary>
     public static Recipe Create(
         string title,
         string slug,
         string description,
-        string instructions,
+        string? instructions,
         int prepTimeMinutes,
         int cookTimeMinutes,
         int servings,
@@ -54,6 +59,7 @@ public class Recipe : BaseEntity
         string authorId,
         RecipeNutrition? nutrition = null)
     {
+        // 1. Kiểm tra không được để rỗng các trường bắt buộc
         if (string.IsNullOrWhiteSpace(title))
             throw new DomainException("Tiêu đề công thức không được để rỗng.");
 
@@ -63,6 +69,7 @@ public class Recipe : BaseEntity
         if (string.IsNullOrWhiteSpace(description))
             throw new DomainException("Mô tả công thức không được để rỗng.");
 
+        // 2. Ràng buộc thời gian và khẩu phần không được âm
         if (prepTimeMinutes < 0 || cookTimeMinutes < 0)
             throw new DomainException("Thời gian chuẩn bị và nấu không được nhỏ hơn 0.");
 
@@ -75,6 +82,7 @@ public class Recipe : BaseEntity
         if (string.IsNullOrWhiteSpace(authorId))
             throw new DomainException("Tác giả công thức không được để rỗng.");
 
+        // 3. Khởi tạo đối tượng với trạng thái ban đầu luôn là Draft
         var recipe = new Recipe
         {
             Title = title.Trim(),
@@ -85,7 +93,7 @@ public class Recipe : BaseEntity
             CookTimeMinutes = cookTimeMinutes,
             Servings = servings,
             Difficulty = difficulty,
-            Status = RecipeStatus.Draft,
+            Status = RecipeStatus.Draft, // Luôn là Draft khi vừa tạo
             CategoryId = categoryId,
             AuthorId = authorId,
             Nutrition = nutrition ?? new RecipeNutrition()
@@ -94,6 +102,10 @@ public class Recipe : BaseEntity
         return recipe;
     }
 
+    /// <summary>
+    /// HÀM CẬP NHẬT THÔNG TIN CÔNG THỨC:
+    /// Kiểm tra tính hợp lệ của dữ liệu trước khi cho phép gán đè.
+    /// </summary>
     public void Update(
         string title,
         string slug,
@@ -135,6 +147,10 @@ public class Recipe : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// HÀM XUẤT BẢN / ĐĂNG BÀI CÔNG KHAI (FR-RCP-005):
+    /// Luật bất biến: BẮT BUỘC PHẢI CÓ ÍT NHẤT 1 BƯỚC NẤU ĂN (_steps.Count > 0) MỚI CHO PHÉP ĐĂNG.
+    /// </summary>
     public void Publish()
     {
         if (_steps.Count == 0)
@@ -145,18 +161,25 @@ public class Recipe : BaseEntity
         if (Status == RecipeStatus.Published)
             return;
 
-
         Status = RecipeStatus.Published;
         PublishedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// HÀM RÚT BÀI VỀ BẢN NHÁP (UNPUBLISH):
+    /// Chuyển trạng thái từ Published lùi về Draft để tác giả chỉnh sửa lại.
+    /// </summary>
     public void Unpublish()
     {
         Status = RecipeStatus.Draft;
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// HÀM CẤT VÀO KHO LƯU TRỮ (ARCHIVE):
+    /// Chuyển trạng thái sang Archived (ẩn khỏi trang chủ nhưng không xóa dữ liệu).
+    /// </summary>
     public void Archive()
     {
         Status = RecipeStatus.Archived;

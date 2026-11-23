@@ -26,6 +26,16 @@ interface CookingModeModalProps {
   baseServings: number;
 }
 
+// ------------------------------------------------------------------------------------------------
+// Component Chế Độ Vào Bếp Rảnh Tay (Cooking Mode Fullscreen Modal)
+// Tính năng nâng cao hỗ trợ người dùng nấu ăn trực tiếp:
+// 1. Chế độ toàn màn hình (Fullscreen) với giao diện tối (Dark mode) tương phản cao.
+// 2. Chuyển từng bước lớn rõ ràng (Step-by-step), hỗ trợ phím tắt bàn phím (Mũi tên trái/phải, Esc).
+// 3. Tích hợp bộ đếm giờ (Timer) đếm ngược trực tiếp cho từng bước có chỉ định thời gian.
+// 4. Giữ màn hình luôn sáng (Screen Wake Lock API) để điện thoại/máy tính bảng không tự tắt khi đang nấu.
+// 5. Tự động quy đổi định lượng nguyên liệu theo số khẩu phần ăn đang chọn.
+// ------------------------------------------------------------------------------------------------
+
 export default function CookingModeModal({
   isOpen,
   onClose,
@@ -35,16 +45,27 @@ export default function CookingModeModal({
   servings,
   baseServings,
 }: CookingModeModalProps) {
+  // 1. Sắp xếp danh sách các bước chế biến theo số thứ tự (StepNumber) từ nhỏ đến lớn
   const sortedSteps = [...steps].sort((a, b) => a.stepNumber - b.stepNumber);
+
+  // 2. Sắp xếp danh sách nguyên liệu theo thứ tự hiển thị (OrderIndex)
   const sortedIngredients = [...ingredients].sort((a, b) => a.orderIndex - b.orderIndex);
+
+  // State lưu vị trí bước nấu hiện tại (bắt đầu từ bước 0)
   const [stepIdx, setStepIdx] = useState(0);
+
+  // State đóng/mở thanh xem nhanh nguyên liệu bên hông
   const [showIngredients, setShowIngredients] = useState(false);
 
+  // Lấy thông tin bước nấu đang được xem
   const activeStep = sortedSteps[stepIdx];
+
+  // Tính số giây hẹn giờ ban đầu cho bước này (nếu có TimerMinutes)
   const initialSeconds = activeStep?.timerMinutes ? activeStep.timerMinutes * 60 : 0;
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
   const [timerRunning, setTimerRunning] = useState(false);
 
+  // Khi modal mở ra, luôn đặt lại trạng thái về bước 1 đầu tiên
   useEffect(() => {
     if (isOpen) {
       setStepIdx(0);
@@ -52,11 +73,13 @@ export default function CookingModeModal({
     }
   }, [isOpen]);
 
+  // Khi người dùng chuyển sang bước khác, nạp lại thời gian hẹn giờ cho bước mới
   useEffect(() => {
     setSecondsLeft(activeStep?.timerMinutes ? activeStep.timerMinutes * 60 : 0);
     setTimerRunning(false);
   }, [stepIdx, activeStep?.timerMinutes]);
 
+  // Quản lý bộ đếm ngược thời gian (Timer) bằng setInterval mỗi 1000ms (1 giây)
   useEffect(() => {
     if (!timerRunning || secondsLeft <= 0) {
       if (secondsLeft === 0) setTimerRunning(false);
@@ -68,7 +91,8 @@ export default function CookingModeModal({
     return () => clearInterval(timer);
   }, [timerRunning, secondsLeft]);
 
-  // Keep screen awake when supported while cooking (re-acquire on visibilitychange)
+  // Tận dụng Screen Wake Lock API của trình duyệt hiện đại:
+  // Giữ màn hình thiết bị luôn sáng trong khi nấu ăn, chống tự động khóa máy/tắt màn hình
   useEffect(() => {
     if (!isOpen) return;
     let sentinel: { release?: () => Promise<void> } | null = null;
@@ -83,10 +107,11 @@ export default function CookingModeModal({
           sentinel = lock;
         })
         .catch(() => {
-          // WakeLock optional / unsupported
+          // Trình duyệt không hỗ trợ hoặc người dùng chặn quyền WakeLock
         });
     };
 
+    // Khi người dùng chuyển tab rồi quay lại, xin lại quyền giữ màn hình sáng
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         requestWakeLock();
@@ -102,6 +127,7 @@ export default function CookingModeModal({
     };
   }, [isOpen]);
 
+  // Hỗ trợ phím tắt bàn phím: ← (Bước trước), → (Bước tiếp), Esc (Thoát)
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -117,11 +143,17 @@ export default function CookingModeModal({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, sortedSteps.length, onClose]);
 
+  // Nếu modal không mở hoặc không có bước nào thì không render gì cả
   if (!isOpen || sortedSteps.length === 0 || !activeStep) return null;
 
+  // Tính tỷ lệ nhân số lượng nguyên liệu: Khẩu phần mục tiêu / Khẩu phần gốc
   const ratio = servings / (baseServings > 0 ? baseServings : 1);
+
+  // Định dạng hiển thị phút:giây (ví dụ 05:09)
   const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
   const secs = String(secondsLeft % 60).padStart(2, '0');
+
+  // Tính tỷ lệ tiến độ hoàn thành thanh Progress bar (theo %)
   const progress = Math.round(((stepIdx + 1) / sortedSteps.length) * 100);
 
   return (

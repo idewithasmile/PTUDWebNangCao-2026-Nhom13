@@ -54,6 +54,15 @@ export interface ServingsAdjustmentModalProps {
   }) => void;
 }
 
+// ------------------------------------------------------------------------------------------------
+// Component Hộp Thoại Tùy Chỉnh Khẩu Phần Ăn (Servings Adjustment Modal)
+// Tính năng thông minh:
+// 1. Cho phép người dùng tăng/giảm số người ăn (Servings).
+// 2. Tự động tính toán lại định lượng (Quantity) cho toàn bộ danh sách nguyên liệu.
+// 3. Quét thông minh (Smart Regex Scan) trong mô tả các bước nấu để phát hiện và đồng bộ các con số định lượng.
+// 4. Tùy chọn cập nhật chỉ số dinh dưỡng (Calories, Carb, Fat...) tương ứng theo khẩu phần mới.
+// ------------------------------------------------------------------------------------------------
+
 export default function ServingsAdjustmentModal({
   isOpen,
   onClose,
@@ -65,14 +74,21 @@ export default function ServingsAdjustmentModal({
   nutrition,
   onConfirm,
 }: ServingsAdjustmentModalProps) {
+  // Đảm bảo số khẩu phần gốc tối thiểu bằng 2 nếu dữ liệu bị lỗi <= 0
   const safeBaseServings = baseServings > 0 ? baseServings : 2;
+
+  // State lưu số khẩu phần người dùng đang chọn điều chỉnh
   const [currentServings, setCurrentServings] = useState<number>(() => {
     return targetServings > 0 ? targetServings : safeBaseServings;
   });
+
+  // Chế độ áp dụng bước: 'safe' (chỉ đổi bảng nguyên liệu) hoặc 'sync' (đồng bộ cả con số trong mô tả các bước)
   const [stepMode, setStepMode] = useState<'safe' | 'sync'>('safe');
+
+  // Có cập nhật lại giá trị dinh dưỡng (Calories, Protein...) theo khẩu phần mới hay không
   const [includeNutrition, setIncludeNutrition] = useState(true);
 
-  // Đồng bộ khi modal được mở hoặc props thay đổi
+  // Đồng bộ lại state khi modal được mở hoặc props từ cha thay đổi
   useEffect(() => {
     if (isOpen) {
       setCurrentServings(targetServings > 0 ? targetServings : safeBaseServings);
@@ -81,10 +97,11 @@ export default function ServingsAdjustmentModal({
 
   if (!isOpen) return null;
 
-  // Tính tỷ lệ chính xác (unrounded để không bị sai lệch số học)
+  // 1. Tính hệ số nhân chính xác (Multiplier): Khẩu phần mới / Khẩu phần gốc (ví dụ: 4 / 2 = 2.0x)
   const currentMultiplier = safeBaseServings > 0 ? currentServings / safeBaseServings : 1;
 
-  // Tính toán trước danh sách nguyên liệu sau khi nhân tỷ lệ
+  // 2. Tính toán trước định lượng mới cho toàn bộ nguyên liệu:
+  // newQty = oldQty * currentMultiplier (làm tròn 1 chữ số thập phân nếu là số lẻ)
   const scaledIngredients = ingredients.map((ing) => {
     let newQty: number | null = null;
     if (ing.quantity !== null && ing.quantity !== undefined && !isNaN(Number(ing.quantity))) {
@@ -98,7 +115,9 @@ export default function ServingsAdjustmentModal({
     };
   });
 
-  // Quét các bước để phát hiện các con số trùng với số lượng nguyên liệu cũ
+  // 3. Thuật toán Quét & Gợi ý Thông Minh (Smart Regex Scan):
+  // Quét nội dung văn bản của từng bước (step.description), tìm kiếm các con số khớp với định lượng nguyên liệu cũ
+  // và chuẩn bị sẵn chuỗi văn bản thay thế tương ứng với định lượng mới.
   const stepSuggestions: Array<{
     stepIndex: number;
     title?: string;
@@ -113,7 +132,7 @@ export default function ServingsAdjustmentModal({
 
     scaledIngredients.forEach((ing) => {
       if (ing.oldQty && ing.newQty && ing.oldQty !== ing.newQty) {
-        // Tìm pattern số lượng + đơn vị (ví dụ 300g hoặc 300 g)
+        // Tìm pattern số lượng + đơn vị (ví dụ: "300g", "300 g", "300 gram")
         const unitPart = ing.unit ? `\\s*${ing.unit}` : '';
         const regex = new RegExp(`\\b${ing.oldQty}${unitPart}\\b`, 'gi');
         if (regex.test(modified)) {
@@ -123,6 +142,7 @@ export default function ServingsAdjustmentModal({
       }
     });
 
+    // Nếu tìm thấy ít nhất 1 con số cần thay đổi trong bước này thì lưu vào danh sách gợi ý
     if (changes > 0) {
       stepSuggestions.push({
         stepIndex: sIdx,
@@ -134,6 +154,7 @@ export default function ServingsAdjustmentModal({
     }
   });
 
+  // 4. Xử lý khi người dùng nhấn nút Xác Nhận Áp Dụng
   const handleApply = () => {
     const finalSteps =
       stepMode === 'sync'
