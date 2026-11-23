@@ -282,13 +282,13 @@ culinary-blog/
 | 1 | Domain entities + EF configs | Ch.7 | Trần Ngọc Bảo Phước, Nguyễn Thành Minh, Đặng Nam Huy | Trịnh Trung Hiếu | ✅ 100% Hoàn thành |
 | 1 | **FR-AUTH** (đăng ký, login, Google OAuth, refresh, logout, profile) | 7 FR | **Trịnh Trung Hiếu** | — | ✅ 100% Hoàn thành |
 | 2 | **FR-CAT** (CRUD danh mục, cần role Admin) | 5 FR | **Trần Ngọc Bảo Phước** | Trịnh Trung Hiếu | ✅ 100% Hoàn thành |
-| 2 | **FR-FILE** (upload/xóa ảnh trên MinIO S3) | 2 FR | **Đặng Nam Huy** | — | ✅ 100% Hoàn thành |
+| 2 | **FR-FILE** (upload/xóa ảnh trên MinIO S3) | 2 FR | **Đặng Nam Huy(Trần Ngọc Bảo Phước)** | — | ✅ 100% Hoàn thành |
 | 2–3 | **FR-RCP-001→004** (list, detail, tạo, cập nhật recipe) | 4 FR | **Nguyễn Thành Minh** | — | ✅ 100% Hoàn thành |
 | 3–4 | **FR-RCP-005→007** (publish/unpublish, archive, xóa mềm) | 3 FR | **Nguyễn Thành Minh** | — | ✅ 100% Hoàn thành |
-| 3–4 | **FR-RCP-008→010** (ảnh, nguyên liệu, các bước nấu) | 3 FR | **Đặng Nam Huy** | — | ✅ 100% Hoàn thành |
+| 3–4 | **FR-RCP-008→010** (ảnh, nguyên liệu, các bước nấu) | 3 FR | **Đặng Nam Huy(Trịnh Trung Hiếu)** | — | ✅ 100% Hoàn thành |
 | 4 | **FR-SRCH** (full-text search tiếng Việt, filter, sort) | 4 FR | **Trần Ngọc Bảo Phước** | Nguyễn Thành Minh | ✅ 100% Hoàn thành |
 | 2–5 | **FR-OBS** (health check, structured logging, tracing) | 3 FR | **Trịnh Trung Hiếu** | — | ✅ 100% Hoàn thành |
-| 5 | **FR-JOB** (welcome email, resize ảnh ImageSharp, sitemap XML) | 3 FR | **Đặng Nam Huy** | Trịnh Trung Hiếu | ✅ 100% Hoàn thành |
+| 5 | **FR-JOB** (welcome email, resize ảnh ImageSharp, sitemap XML) | 3 FR | **Đặng Nam Huy(Trịnh Trung Hiếu)** | Trịnh Trung Hiếu | ✅ 100% Hoàn thành |
 | 6 | **NFR-SEO** hoàn thiện (JSON-LD Schema.org, meta tags, sitemap route, ISR) | 4 NFR | **Trần Ngọc Bảo Phước, Nguyễn Thành Minh** | — | ✅ 100% Hoàn thành |
 | 6–7 | Hardening: NFR-SEC, NFR-PERF, 284 Tests, CI Pipeline, Báo cáo & Tài liệu | — | Cả 4 người | — | ✅ 100% Hoàn thành |
 
